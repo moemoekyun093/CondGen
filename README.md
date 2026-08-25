@@ -254,8 +254,11 @@ editing the scripts, for example
 `sbatch --export=ALL,DATANAME=shoppers,FT_MODEL=ft_periodic_small_d64_L4_seed0 doob_h_train.sh`.
 
 The sampler uses guidance strength 1.0 and writes both the generated CSV and a
-`.constraints.json` report with joint and per-column hit rates.  A 100% joint
-hit rate means every generated numerical row satisfied every saved interval.
+`.constraints.json` report with raw and normalized-space joint and per-column
+hit rates. `joint_hit_rate` is evaluated on the final inverse-transformed table
+in raw units; the normalized rate is retained as a diagnostic because quantile
+normalization is not one-to-one for repeated values. A 100% raw joint hit rate
+means every generated numerical row satisfied every saved user-facing interval.
 The default per-coordinate correction clamp is 5 normalized units and can be
 changed with `--max-correction`.
 

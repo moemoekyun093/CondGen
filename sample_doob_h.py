@@ -37,6 +37,26 @@ def torch_load(path: str, device: torch.device):
         return torch.load(path, map_location=device)
 
 
+def raw_constraint_hits(frame, column_specs: list[dict]) -> tuple[np.ndarray, np.ndarray]:
+    """Evaluate saved numerical intervals in the final, user-facing raw space."""
+    hits = []
+    for spec in column_specs:
+        name = spec.get("name")
+        lower = spec.get("raw_lower")
+        upper = spec.get("raw_upper")
+        if name not in frame.columns or lower is None or upper is None:
+            raise ValueError(f"raw constraint metadata is incomplete for column {name!r}")
+        values = frame[name].to_numpy(dtype=np.float64)
+        scale = max(1.0, abs(float(lower)), abs(float(upper)))
+        tolerance = 1e-7 * scale
+        hits.append(
+            (values >= float(lower) - tolerance)
+            & (values <= float(upper) + tolerance)
+        )
+    per_value = np.stack(hits, axis=1)
+    return per_value, per_value.all(axis=1)
+
+
 def main() -> None:
     args = parse_args()
     if args.num_samples <= 0 or args.batch_size <= 0:
@@ -81,7 +101,9 @@ def main() -> None:
     )
     query = NumericalBoxQuery.from_dict(metadata["query"])
     d_numerical = runtime.dataset.d_numerical
-    hit_rate = query.contains(samples[:, :d_numerical]).float().mean().item()
+    normalized_joint_hit_rate = (
+        query.contains(samples[:, :d_numerical]).float().mean().item()
+    )
     lower = query.lower[None, :]
     upper = query.upper[None, :]
     per_value_satisfied = (
@@ -103,6 +125,19 @@ def main() -> None:
     }
     frame.rename(columns=index_to_name, inplace=True)
 
+    column_specs = metadata["query"].get("columns", [])
+    if len(column_specs) != d_numerical:
+        raise ValueError(
+            "saved query does not contain raw bounds for every numerical column: "
+            f"expected {d_numerical}, found {len(column_specs)}"
+        )
+    raw_per_value_satisfied, raw_rows_satisfied = raw_constraint_hits(
+        frame,
+        column_specs,
+    )
+    raw_per_column_hit_rate = raw_per_value_satisfied.mean(axis=0)
+    raw_joint_hit_rate = raw_rows_satisfied.mean()
+
     output = Path(
         args.output
         or f"conditional_samples/{dataname}/doob_h_fixed_box.csv"
@@ -110,21 +145,25 @@ def main() -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     frame.to_csv(output, index=False)
 
-    column_specs = metadata["query"].get("columns", [])
     constraint_report = {
         "constraint_id": metadata["query"].get("constraint_id"),
         "num_samples": len(frame),
-        "joint_hit_rate": hit_rate,
-        "all_rows_satisfy": bool(hit_rate == 1.0),
+        "evaluation_space": "raw generated table",
+        "joint_hit_rate": float(raw_joint_hit_rate),
+        "raw_joint_hit_rate": float(raw_joint_hit_rate),
+        "normalized_joint_hit_rate": normalized_joint_hit_rate,
+        "all_rows_satisfy": bool(raw_rows_satisfied.all()),
         "per_column": [],
     }
-    for index, column_hit_rate in enumerate(per_column_hit_rate.tolist()):
+    for index, normalized_column_hit_rate in enumerate(per_column_hit_rate.tolist()):
         saved_column = column_specs[index] if index < len(column_specs) else {}
         constraint_report["per_column"].append(
             {
                 "model_index": index,
                 "name": saved_column.get("name", f"numerical_{index}"),
-                "hit_rate": column_hit_rate,
+                "hit_rate": float(raw_per_column_hit_rate[index]),
+                "raw_hit_rate": float(raw_per_column_hit_rate[index]),
+                "normalized_hit_rate": normalized_column_hit_rate,
                 "normalized_lower": float(query.lower[index]),
                 "normalized_upper": float(query.upper[index]),
                 "raw_lower": saved_column.get("raw_lower"),
@@ -136,7 +175,8 @@ def main() -> None:
         json.dump(constraint_report, stream, indent=2)
 
     print(f"Generated {len(frame)} conditional rows")
-    print(f"Fixed numerical query hit rate: {hit_rate:.2%}")
+    print(f"Raw-space numerical query hit rate: {raw_joint_hit_rate:.2%}")
+    print(f"Normalized-space diagnostic hit rate: {normalized_joint_hit_rate:.2%}")
     print(f"Training-data query hit rate: {metadata['query']['training_hit_rate']:.2%}")
     print(f"Saved {output}")
     print(f"Saved constraint report {report_output}")

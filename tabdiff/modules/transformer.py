@@ -135,6 +135,112 @@ class MultiheadAttention(nn.Module):
             x = self.W_out(x)
 
         return x
+
+
+class FeatureGate(nn.Module):
+    def __init__(self, d_token, temperature=0.5):
+        super().__init__()
+
+        self.temperature = temperature
+
+        self.score = nn.Sequential(
+            nn.Linear(d_token, d_token),
+            nn.ReLU(),
+            nn.Linear(d_token, 1)
+        )
+
+    def forward(self, x):
+        # x : (B,F,D)
+
+        scores = self.score(x).squeeze(-1)
+
+        weights = F.softmax(scores / self.temperature, dim=-1)
+
+        # sharpen
+        weights = weights.pow(4)
+
+        weights = weights / (
+            weights.sum(dim=-1, keepdim=True) + 1e-8
+        )
+
+        return x * weights.unsqueeze(-1)
+
+class Sparsemax(nn.Module):
+    """Martins & Astudillo (2016) — projects onto the simplex, exact zeros."""
+    def forward(self, z):
+        z_sorted, _ = torch.sort(z, dim=-1, descending=True)
+        z_cumsum = z_sorted.cumsum(dim=-1)
+        k = torch.arange(1, z.shape[-1] + 1, device=z.device, dtype=z.dtype)
+        k_selected = 1 + k * z_sorted > z_cumsum
+        k_max = k_selected.sum(dim=-1, keepdim=True).clamp(min=1)
+        tau = (z_cumsum.gather(-1, k_max - 1) - 1) / k_max.to(z.dtype)
+        return torch.clamp(z - tau, min=0)
+
+
+class AttentiveTransformer(nn.Module):
+    """Produces a sparse, instance-wise, noise-aware mask over the F feature tokens."""
+    def __init__(self, d_token, n_features):
+        super().__init__()
+        self.fc = nn.Linear(d_token * 2, n_features)   # *2 because we concat t_emb
+        self.norm = nn.LayerNorm(n_features)
+        self.sparsemax = Sparsemax()
+
+    def forward(self, x_summary, t_emb, prior_scale):
+        # x_summary: (B, d_token) pooled tokens, t_emb: (B, d_token)
+        z = torch.cat([x_summary, t_emb], dim=-1)
+        a = self.norm(self.fc(z))                    # (B, n_features)
+        mask = self.sparsemax(a * prior_scale)         # zero out already-used features
+        return mask
+
+
+class GLUBlock(nn.Module):
+    """Shared feature transformer, GLU-gated like TabNet's."""
+    def __init__(self, d_token):
+        super().__init__()
+        self.fc = nn.Linear(d_token, 2 * d_token)
+        self.norm = nn.LayerNorm(2 * d_token)
+
+    def forward(self, x):
+        # x: (B, F, D)
+        h = self.norm(self.fc(x))
+        a, b = h.chunk(2, dim=-1)
+        return a * torch.sigmoid(b)
+
+class GLUStack(nn.Module):
+    """Stack of GLU blocks with residual + sqrt(0.5) scaling, TabNet-style."""
+    def __init__(self, d_token, n_glu=2):
+        super().__init__()
+        self.blocks = nn.ModuleList([GLUBlock(d_token) for _ in range(n_glu)])
+        self.scale = math.sqrt(0.5)
+
+    def forward(self, x):
+        x = self.blocks[0](x)
+        for blk in self.blocks[1:]:
+            x = (x + blk(x)) * self.scale   # residual, variance-preserving
+        return x
+
+
+class TabNetDenoiseStep(nn.Module):
+    def __init__(self, d_token, n_features, n_heads, attention_dropout=0.0, gamma=1.5):
+        super().__init__()
+        self.attentive = AttentiveTransformer(d_token, n_features)
+        self.attention = MultiheadAttention(d_token, n_heads, attention_dropout)
+        self.feat_transform = GLUBlock(d_token)
+        self.norm = nn.LayerNorm(d_token)
+        self.gamma = gamma
+
+    def forward(self, x, prior_scale, t_emb):
+        # x: (B, F, D), prior_scale: (B, F), t_emb: (B, D)
+        x_summary = x.mean(dim=1)                            # (B, D)
+        mask = self.attentive(x_summary, t_emb, prior_scale)   # (B, F)
+        prior_scale = prior_scale * (self.gamma - mask)
+
+        x_masked = x * mask.unsqueeze(-1)                     # sparse feature selection
+        x_attn = self.attention(x_masked, x_masked)            # mixing among selected features
+        x_attn = self.norm(x_attn + x_masked)                  # residual + norm
+
+        decision = F.relu(self.feat_transform(x_attn))
+        return decision, x_masked, mask, prior_scale
         
 class Transformer(nn.Module):
 
@@ -162,6 +268,7 @@ class Transformer(nn.Module):
         for layer_idx in range(n_layers):
             layer = nn.ModuleDict(
                 {
+                    # 'gate': FeatureGate(d_token),
                     'attention': MultiheadAttention(
                         d_token, n_heads, attention_dropout, initialization
                     ),
@@ -209,8 +316,10 @@ class Transformer(nn.Module):
             is_last_layer = layer_idx + 1 == len(self.layers)
 
             x_residual = self._start_residual(x, layer, 0)
+
+            # x_residual = layer['gate'](x_residual)
+
             x_residual = layer['attention'](
-                # for the last attention, it is enough to process only [CLS]
                 x_residual,
                 x_residual,
             )

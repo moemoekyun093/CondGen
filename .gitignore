@@ -1,15 +1,43 @@
-**/__pycache__/**
-*.pyc
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
 
-data/*
-!/data/Info/
+# Environments and secrets
+.env
+.env.*
+!.env.example
+venv/
+.venv/
+conda-env/
+*.pem
+*.key
 
-wandb/
-eval/
+# Generated datasets and outputs
+data/
 synthetic/
-impute/
-workspace/
+artifacts/
+logs/
+wandb/
 debug/
-tabdiff/result/
+coverage_diagnostics/
+alpha_staging/
+alpha_staging_results/
 
-**/ckpt/*
+# Model checkpoints and experiment results
+**/ckpt/
+**/ckpt_orig/
+**/result/
+**/result_orig/
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+
+# Generated files
+*.log
+*.tmp
+.DS_Store

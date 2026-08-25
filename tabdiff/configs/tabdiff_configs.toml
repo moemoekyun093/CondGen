@@ -3,13 +3,15 @@ dequant_dist = "none"
 int_dequant_factor = 0
 
 [unimodmlp_params]
-num_layers = 2
-d_token = 4
-n_head = 1
-factor = 32
+num_layers = 4        # was 2 — bump up, this is now full depth not half
+d_token = 64
+n_head = 8
+factor = 4            # was 32 — drop hard, this is FFN expansion now
 bias = true
-dim_t = 1024
-use_mlp = true
+dim_t = 1024          # ignored (dead)
+use_mlp = true        # ignored (dead)
+n_frequencies = 48
+freq_sigma = 0.05
 
 [diffusion_params]
 num_timesteps = 50

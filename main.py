@@ -14,6 +14,18 @@ if __name__ == '__main__':
     parser.add_argument('--no_wandb', action='store_true', help='disable wandb')
     parser.add_argument('--exp_name', type=str, default=None, help='Experiment name, used to name log directories and the wandb run name')
     parser.add_argument('--deterministic', action='store_true', help='Whether to make the entire process deterministic, i.e., fix global random seeds')
+    parser.add_argument('--seed', type=int, default=0, help='Random seed')
+    # Configs for sweeping the TabNet-style denoiser hyperparameters (override the toml when set)
+    parser.add_argument('--d_token', type=int, default=None, help='Override unimodmlp_params.d_token from the toml, if set')
+    parser.add_argument('--n_head', type=int, default=None, help='Override unimodmlp_params.n_head from the toml, if set')
+    parser.add_argument('--n_steps', type=int, default=None, help='Override unimodmlp_params.n_steps from the toml, if set')
+    parser.add_argument('--gamma', type=float, default=None, help='Override unimodmlp_params.gamma from the toml, if set')
+    parser.add_argument('--num_layers', type=int, default=None, help='Override unimodmlp_params.num_layers')
+    parser.add_argument('--factor', type=int, default=None, help='Override unimodmlp_params.factor')
+    parser.add_argument('--denoiser_type', type=str, default=None,
+                    help="Which denoiser: 'original', 'ft_periodic', or 'tabnet'")
+    parser.add_argument('--select_on_val', action='store_true',
+                    help='Also compute c2st_xgb against the validation set (for hyperparameter selection)')
     
     # Configs for tabdiff
     parser.add_argument('--y_only', action='store_true', help='Train guidance model that only model the target column')

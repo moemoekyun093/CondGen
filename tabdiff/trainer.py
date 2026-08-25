@@ -58,7 +58,7 @@ class Trainer:
         self.optimizer = torch.optim.AdamW(self.diffusion.parameters(), lr=lr, weight_decay=weight_decay)
         self.ema_decay = ema_decay
         self.lr_scheduler = lr_scheduler
-        self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', factor=factor, patience=reduce_lr_patience, verbose=True)
+        self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', factor=factor, patience=reduce_lr_patience)
         self.closs_weight_schedule = closs_weight_schedule
         self.c_lambda = c_lambda
         self.d_lambda = d_lambda
@@ -273,13 +273,13 @@ class Trainer:
                 torch.save(state_dicts, os.path.join(self.model_save_path, f'model_{epoch+1}.pt'))
                 
                 print_with_bar(f"Routine Generation Evaluation every {self.check_val_every}, currently at epoch #{epoch+1}, wiht total_loss={total_loss}.")
-                out_metrics, _, _ = self.evaluate_generation(save_metric_details=True, plot_density=True)
+                out_metrics, _, _ = self.evaluate_generation(save_metric_details=True, plot_density=False)
                 log_dict.update(out_metrics)
                 print(f"Eval Resutls of the Non-EMA model:\n {out_metrics}")
 
                 # Evaluate the EMA model
                 torch.save(self.ema_model.state_dict(), os.path.join(self.model_save_path, f'ema_model_{epoch+1}.pt'))
-                ema_out_metrics, _, _ = self.evaluate_generation(ema=True, save_metric_details=True, plot_density=True)
+                ema_out_metrics, _, _ = self.evaluate_generation(ema=True, save_metric_details=True, plot_density=False)
                 log_dict.update({
                     "ema": ema_out_metrics,
                 })
@@ -393,7 +393,7 @@ class Trainer:
         print_with_bar(f"The AVG over {num_runs} runs are: \n{avg_std}")
         
     def test(self):    
-        out_metrics, _, _ = self.evaluate_generation(save_metric_details=True, plot_density=True)
+        out_metrics, _, _ = self.evaluate_generation(save_metric_details=True, plot_density=False)
         print_with_bar(f"Results of the test are: \n{out_metrics}")
         self.logger.log(out_metrics)
         print(out_metrics)

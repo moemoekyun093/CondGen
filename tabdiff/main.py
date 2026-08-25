@@ -6,7 +6,7 @@ import random
 
 import numpy as np
 from tabdiff.metrics import TabMetrics
-from tabdiff.modules.main_modules import UniModMLP
+from tabdiff.modules.main_modules import UniModMLP, UniModMLP_Original, UniModMLP_TabNet, Model
 from tabdiff.modules.main_modules import Model
 from tabdiff.models.unified_ctime_diffusion import UnifiedCtimeDiffusion
 from tabdiff.trainer import Trainer
@@ -53,6 +53,15 @@ def main(args):
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     config_path = f'{curr_dir}/configs/tabdiff_configs.toml'
     raw_config = src.load_config(config_path)
+
+    ## Apply CLI overrides for the TabNet-style denoiser hyperparameters, if provided.
+    ## This lets a SLURM array sweep d_token/n_steps/gamma without needing a separate
+    ## toml file per config -- the toml stays the base, CLI flags override on top of it.
+    for override_key in ("d_token", "n_head", "n_steps", "gamma","num_layers","d_token","denoiser_type"):
+        override_val = getattr(args, override_key, None)
+        if override_val is not None:
+            raw_config['unimodmlp_params'][override_key] = override_val
+            print(f"Overriding unimodmlp_params.{override_key} = {override_val} (from CLI)")
     
     print(f"{args.mode.capitalize()} Mode is Enabled")
     num_samples_to_generate = None
@@ -96,20 +105,22 @@ def main(args):
     
     ## Make everything determinstic if needed
     raw_config['deterministic'] = args.deterministic
+
+    ## Always seed the RNGs from args.seed (so different --seed => different models, reproducibly)
+    torch.manual_seed(args.seed)
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(args.seed)
+        torch.cuda.manual_seed_all(args.seed)
+
+    ## Only under --deterministic: force bitwise-reproducible CUDA (slower, and seed-independent flags)
     if args.deterministic:
         print("DETERMINISTIC MODE is enabled!!!")
-        ## Set global random seeds
-        torch.manual_seed(0)
-        random.seed(0)
-        np.random.seed(0)
-
-        ## Ensure deterministic CUDA operations
-        os.environ['PYTHONHASHSEED'] = '0'
-        os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'  # or ':16:8'
+        os.environ['PYTHONHASHSEED'] = str(args.seed)
+        os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
         torch.use_deterministic_algorithms(True)
         if torch.cuda.is_available():
-            torch.cuda.manual_seed(0)
-            torch.cuda.manual_seed_all(0)
             torch.backends.cudnn.deterministic = True
             torch.backends.cudnn.benchmark = False
     
@@ -148,10 +159,15 @@ def main(args):
             metric_list = ["dcr"]
         else:
             metric_list = [
-                "density", 
-                "mle", 
+                "density",
+                "mle",
                 "c2st",
+                "c2st_xgb",
+                "mi_l1",
+                "quantile_dcr",
             ]
+        if args.select_on_val:
+            metric_list += ["c2st_xgb_val"]
     metrics = TabMetrics(real_data_path, test_data_path, val_data_path, info, device, metric_list=metric_list)
     
     ## Load the module and models
@@ -182,9 +198,17 @@ def main(args):
                 )
                 raw_config['diffusion_params']['noise_schedule_params']['k'] = noise_schedule.k()[0].item()    # the target col is placed at the first position
             
-    backbone = UniModMLP(
-        **raw_config['unimodmlp_params']
-    )
+    dt = raw_config['unimodmlp_params'].get('denoiser_type', 'ft_periodic')
+    if dt == 'original':
+        denoiser_cls = UniModMLP_Original
+    elif dt == 'tabnet':
+        denoiser_cls = UniModMLP_TabNet
+    elif dt == 'ft_periodic':
+        denoiser_cls = UniModMLP
+    else:
+        raise ValueError(f"unknown denoiser_type: {dt}")
+    backbone = denoiser_cls(**raw_config['unimodmlp_params'])
+    print(f"Using denoiser: {denoiser_cls.__name__}  (denoiser_type={dt})")
     model = Model(backbone, **raw_config['diffusion_params']['edm_params'])
     model.to(device)
     
@@ -230,6 +254,7 @@ def main(args):
     print(f"The config of the current run is : \n {printed_configs}")
     
     ## Enable Wandb
+    print(args.no_wandb)
     project_name = f"tabdiff_{dataname}"
     raw_config['project_name'] = project_name
     logger = wandb.init(

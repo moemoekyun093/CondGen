@@ -14,10 +14,12 @@ set -euo pipefail
 cd /scratch/work/agrawaa4/TabDiff
 export WANDB_MODE=offline
 
-DATANAME="${DATANAME:-news}"
+DATANAME="${DATANAME:-shoppers}"
+FT_MODEL="${FT_MODEL:-ft_periodic_seed0}"
+ORIGINAL_MODEL="${ORIGINAL_MODEL:-original_seed0}"
 MODEL_NAMES=(
-    "ft_periodic_L6_d128_seed0"
-    "original_L2_d4_seed0"
+    "${FT_MODEL}"
+    "${ORIGINAL_MODEL}"
 )
 MODEL_NAME="${MODEL_NAMES[$SLURM_ARRAY_TASK_ID]}"
 CKPT_DIR="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}"

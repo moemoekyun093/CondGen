@@ -10,8 +10,8 @@ set -euo pipefail
 
 cd /scratch/work/agrawaa4/TabDiff
 
-DATANAME="${DATANAME:-news}"
-REFERENCE_MODEL="ft_periodic_L6_d128_seed0"
+DATANAME="${DATANAME:-shoppers}"
+REFERENCE_MODEL="${FT_MODEL:-ft_periodic_seed0}"
 CKPT_DIR="tabdiff/ckpt/${DATANAME}/${REFERENCE_MODEL}"
 CKPT_CANDIDATES=("${CKPT_DIR}"/best_ema_model_*.pt)
 if [ ! -e "${CKPT_CANDIDATES[0]}" ] || [ "${#CKPT_CANDIDATES[@]}" -ne 1 ]; then

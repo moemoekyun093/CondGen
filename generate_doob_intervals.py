@@ -25,7 +25,7 @@ from utils_train import TabDiffDataset
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dataname", default="news")
+    parser.add_argument("--dataname", default="shoppers")
     parser.add_argument("--base-ckpt", default=None)
     parser.add_argument("--base-exp-name", default="learnable_schedule")
     parser.add_argument("--target-coverage", type=float, default=0.30)

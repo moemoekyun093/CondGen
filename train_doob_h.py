@@ -10,21 +10,25 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import random
+from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
 import torch
 from torch.nn import functional as F
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader, TensorDataset
 
 from tabdiff.doob_h_runtime import load_doob_runtime, resolve_base_checkpoint
 from tabdiff.models.doob_h_transform import NumericalBoxQuery, NumericalDoobHGuide
+from utils_train import update_ema
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dataname", default="news")
+    parser.add_argument("--dataname", default="shoppers")
     parser.add_argument("--base-ckpt", default=None)
     parser.add_argument("--base-exp-name", default="learnable_schedule")
     parser.add_argument("--output-dir", default=None)
@@ -35,14 +39,17 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--steps", type=int, default=3000)
-    parser.add_argument("--batch-size", type=int, default=512)
+    parser.add_argument("--epochs", type=int, default=8000)
+    parser.add_argument("--batch-size", type=int, default=4096)
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--weight-decay", type=float, default=1e-4)
+    parser.add_argument("--ema-decay", type=float, default=0.997)
+    parser.add_argument("--reduce-lr-patience", type=int, default=50)
+    parser.add_argument("--lr-factor", type=float, default=0.9)
+    parser.add_argument("--checkpoint-warmup", type=int, default=4000)
+    parser.add_argument("--checkpoint-every", type=int, default=2000)
     parser.add_argument("--lower-quantile", type=float, default=0.005)
     parser.add_argument("--upper-quantile", type=float, default=0.995)
-    parser.add_argument("--validation-fraction", type=float, default=0.1)
-    parser.add_argument("--log-every", type=int, default=100)
     parser.add_argument("--d-token", type=int, default=32)
     parser.add_argument("--num-layers", type=int, default=2)
     parser.add_argument("--n-head", type=int, default=4)
@@ -97,23 +104,52 @@ def correction_batch(runtime, guide, x0: torch.Tensor) -> tuple[torch.Tensor, to
 
 
 @torch.no_grad()
-def validation_loss(runtime, guide, validation: torch.Tensor, batch_size: int) -> float:
+def full_training_loss(runtime, guide, loader: DataLoader, device: torch.device) -> float:
+    """Evaluate on all constrained training rows, following TabDiff's trainer."""
     guide.eval()
-    losses = []
-    for start in range(0, len(validation), batch_size):
-        x0 = validation[start : start + batch_size]
+    total_loss = 0.0
+    total_rows = 0
+    for (x0,) in loader:
+        x0 = x0.to(device)
         prediction, target = correction_batch(runtime, guide, x0)
-        losses.append(F.mse_loss(prediction, target).item())
+        total_loss += F.mse_loss(prediction, target).item() * len(x0)
+        total_rows += len(x0)
     guide.train()
-    return float(np.mean(losses))
+    return total_loss / total_rows
+
+
+def save_guide_checkpoint(
+    path: Path,
+    guide: NumericalDoobHGuide,
+    metadata: dict,
+    epoch: int,
+    training_mse: float,
+    ema: bool,
+) -> None:
+    torch.save(
+        {
+            "guide": guide.state_dict(),
+            "metadata": metadata,
+            "epoch": epoch,
+            "training_mse": training_mse,
+            "ema": ema,
+        },
+        path,
+    )
 
 
 def main() -> None:
     args = parse_args()
-    if args.steps <= 0 or args.batch_size <= 0:
-        raise ValueError("steps and batch-size must be positive")
-    if not 0.0 < args.validation_fraction < 0.5:
-        raise ValueError("validation-fraction must be between 0 and 0.5")
+    if args.epochs <= 0 or args.batch_size <= 0:
+        raise ValueError("epochs and batch-size must be positive")
+    if not 0.0 <= args.ema_decay < 1.0:
+        raise ValueError("ema-decay must be in [0, 1)")
+    if args.reduce_lr_patience < 0:
+        raise ValueError("reduce-lr-patience must be non-negative")
+    if not 0.0 < args.lr_factor < 1.0:
+        raise ValueError("lr-factor must be between 0 and 1")
+    if args.checkpoint_warmup < 0 or args.checkpoint_every <= 0:
+        raise ValueError("checkpoint-warmup must be non-negative and checkpoint-every positive")
 
     random.seed(args.seed)
     np.random.seed(args.seed)
@@ -165,17 +201,19 @@ def main() -> None:
         )
 
     generator = torch.Generator().manual_seed(args.seed)
-    permutation = torch.randperm(len(positive), generator=generator)
-    positive = positive[permutation]
-    validation_size = max(1, int(len(positive) * args.validation_fraction))
-    validation = positive[:validation_size].to(device)
-    training = positive[validation_size:]
-    loader = DataLoader(
+    training = positive
+    train_loader = DataLoader(
         TensorDataset(training),
         batch_size=min(args.batch_size, len(training)),
         shuffle=True,
         drop_last=False,
         generator=generator,
+    )
+    loss_loader = DataLoader(
+        TensorDataset(training),
+        batch_size=min(args.batch_size, len(training)),
+        shuffle=False,
+        drop_last=False,
     )
 
     guide_kwargs = {
@@ -194,6 +232,15 @@ def main() -> None:
         lr=args.lr,
         weight_decay=args.weight_decay,
     )
+    scheduler = ReduceLROnPlateau(
+        optimizer,
+        mode="min",
+        factor=args.lr_factor,
+        patience=args.reduce_lr_patience,
+    )
+    ema_guide = deepcopy(guide)
+    for parameter in ema_guide.parameters():
+        parameter.detach_()
 
     output_dir = Path(
         args.output_dir or f"tabdiff/ckpt/{args.dataname}/doob_h_fixed_box"
@@ -214,6 +261,17 @@ def main() -> None:
         },
         "objective": "MSE on sigma^2 * grad_x log h = x0 - D_base(x_t,t)",
         "seed": args.seed,
+        "training": {
+            "epochs": args.epochs,
+            "batch_size": min(args.batch_size, len(training)),
+            "batches_per_epoch": len(train_loader),
+            "optimizer_updates": args.epochs * len(train_loader),
+            "all_constrained_rows": True,
+            "validation_split": False,
+            "ema_decay": args.ema_decay,
+            "checkpoint_warmup": args.checkpoint_warmup,
+            "checkpoint_every": args.checkpoint_every,
+        },
     }
     with open(output_dir / "query.json", "w", encoding="utf-8") as stream:
         json.dump(metadata, stream, indent=2)
@@ -221,43 +279,124 @@ def main() -> None:
     parameter_count = sum(parameter.numel() for parameter in guide.parameters())
     print(f"Fixed query retains {len(positive)}/{len(x_num)} rows ({hit_rate:.2%})")
     print(f"Guide parameters: {parameter_count:,}")
+    print(
+        f"Training for {args.epochs} epochs x {len(train_loader)} batches/epoch "
+        f"= {args.epochs * len(train_loader)} optimizer updates"
+    )
     print(f"Writing checkpoints to {output_dir}")
 
-    best_validation = float("inf")
-    iterator = iter(loader)
+    best_training = float("inf")
+    best_ema_training = float("inf")
+    last_epoch = 0
+    last_training_mse = float("nan")
+    last_ema_training_mse = float("nan")
     guide.train()
-    for step in range(1, args.steps + 1):
-        try:
-            (x0,) = next(iterator)
-        except StopIteration:
-            iterator = iter(loader)
-            (x0,) = next(iterator)
-        x0 = x0.to(device)
+    for epoch in range(1, args.epochs + 1):
+        total_loss = 0.0
+        total_rows = 0
+        for (x0,) in train_loader:
+            x0 = x0.to(device)
+            optimizer.zero_grad(set_to_none=True)
+            prediction, target = correction_batch(runtime, guide, x0)
+            loss = F.mse_loss(prediction, target)
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(guide.parameters(), max_norm=1.0)
+            optimizer.step()
+            total_loss += loss.item() * len(x0)
+            total_rows += len(x0)
 
-        optimizer.zero_grad(set_to_none=True)
-        prediction, target = correction_batch(runtime, guide, x0)
-        loss = F.mse_loss(prediction, target)
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(guide.parameters(), max_norm=1.0)
-        optimizer.step()
+        training_mse = total_loss / total_rows
+        if not math.isfinite(training_mse):
+            print(f"Stopping at epoch {epoch}: non-finite training MSE {training_mse}")
+            break
 
-        if step == 1 or step % args.log_every == 0 or step == args.steps:
-            val_loss = validation_loss(runtime, guide, validation, args.batch_size)
-            print(f"step={step:05d} train_mse={loss.item():.6f} val_mse={val_loss:.6f}")
-            if val_loss < best_validation:
-                best_validation = val_loss
-                torch.save(
-                    {
-                        "guide": guide.state_dict(),
-                        "metadata": metadata,
-                        "step": step,
-                        "validation_mse": val_loss,
-                    },
-                    output_dir / "best_guide.pt",
-                )
+        scheduler.step(training_mse)
+        update_ema(ema_guide.parameters(), guide.parameters(), rate=args.ema_decay)
+        ema_training_mse = full_training_loss(runtime, ema_guide, loss_loader, device)
+        if not math.isfinite(ema_training_mse):
+            print(f"Stopping at epoch {epoch}: non-finite EMA training MSE {ema_training_mse}")
+            break
+        last_epoch = epoch
+        last_training_mse = training_mse
+        last_ema_training_mse = ema_training_mse
+        lr = optimizer.param_groups[0]["lr"]
+        print(
+            f"epoch={epoch:05d}/{args.epochs:05d} train_mse={training_mse:.6f} "
+            f"ema_train_mse={ema_training_mse:.6f} lr={lr:.3e}"
+        )
 
-    print(f"Best validation MSE: {best_validation:.6f}")
-    print(f"Saved {output_dir / 'best_guide.pt'}")
+        if epoch > args.checkpoint_warmup and training_mse < best_training:
+            best_training = training_mse
+            save_guide_checkpoint(
+                output_dir / "best_raw_guide.pt",
+                guide,
+                metadata,
+                epoch,
+                training_mse,
+                ema=False,
+            )
+
+        if epoch > args.checkpoint_warmup and ema_training_mse < best_ema_training:
+            best_ema_training = ema_training_mse
+            save_guide_checkpoint(
+                output_dir / "best_guide.pt",
+                ema_guide,
+                metadata,
+                epoch,
+                ema_training_mse,
+                ema=True,
+            )
+
+        if epoch % args.checkpoint_every == 0:
+            save_guide_checkpoint(
+                output_dir / f"guide_epoch_{epoch}.pt",
+                guide,
+                metadata,
+                epoch,
+                training_mse,
+                ema=False,
+            )
+            save_guide_checkpoint(
+                output_dir / f"ema_guide_epoch_{epoch}.pt",
+                ema_guide,
+                metadata,
+                epoch,
+                ema_training_mse,
+                ema=True,
+            )
+
+    if last_epoch == 0:
+        raise RuntimeError("training stopped before completing one finite epoch")
+
+    save_guide_checkpoint(
+        output_dir / "last_guide.pt",
+        guide,
+        metadata,
+        last_epoch,
+        last_training_mse,
+        ema=False,
+    )
+    save_guide_checkpoint(
+        output_dir / "last_ema_guide.pt",
+        ema_guide,
+        metadata,
+        last_epoch,
+        last_ema_training_mse,
+        ema=True,
+    )
+    if not (output_dir / "best_guide.pt").exists() or last_epoch <= args.checkpoint_warmup:
+        save_guide_checkpoint(
+            output_dir / "best_guide.pt",
+            ema_guide,
+            metadata,
+            last_epoch,
+            last_ema_training_mse,
+            ema=True,
+        )
+        print("Run ended before EMA best-checkpoint selection; using final EMA guide")
+    print(f"Best raw training MSE after warmup: {best_training:.6f}")
+    print(f"Best EMA training MSE after warmup: {best_ema_training:.6f}")
+    print(f"Sampling checkpoint: {output_dir / 'best_guide.pt'}")
 
 
 if __name__ == "__main__":

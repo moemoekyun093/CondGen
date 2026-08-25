@@ -209,12 +209,12 @@ echo "interval job: ${INTERVAL_JOB}"
 After that job finishes, inspect and version the fixed query:
 
 ```bash
-cat constraints/news/fixed_numerical_intervals.json
+cat constraints/shoppers/fixed_numerical_intervals.json
 ```
 
-Then submit the two-task guide-training array.  Task 0 uses
-`ft_periodic_L6_d128_seed0`; task 1 uses `original_L2_d4_seed0`.  Both use the
-same fixed query and train separate guides:
+Then submit the two-task guide-training array. For the default Shoppers
+experiment, task 0 uses `ft_periodic_seed0`; task 1 uses `original_seed0`. Both
+use the same fixed query and train separate guides:
 
 ```bash
 sbatch doob_h_train.sh
@@ -227,8 +227,8 @@ sbatch doob_h_sample.sh
 ```
 
 The sampling array writes model-specific outputs to
-`conditional_samples/news/ft_periodic_L6_d128_seed0.csv` and
-`conditional_samples/news/original_L2_d4_seed0.csv`, with a matching
+`conditional_samples/shoppers/ft_periodic_seed0.csv` and
+`conditional_samples/shoppers/original_seed0.csv`, with a matching
 `.constraints.json` report beside each CSV.
 
 To submit the complete dependency chain:
@@ -239,9 +239,19 @@ TRAIN_JOB=$(sbatch --parsable --dependency="afterok:${INTERVAL_JOB}" doob_h_trai
 sbatch --dependency="afterok:${TRAIN_JOB}" doob_h_sample.sh
 ```
 
+Guide training follows the base TabDiff trainer's data-use and checkpointing
+conventions: all rows satisfying the fixed query are used for training (there is
+no validation split), training runs for 8000 full epochs by default, the learning
+rate uses reduce-on-plateau on full-training MSE, and an EMA guide with decay
+0.997 is updated after every epoch.  Best raw and EMA checkpoint selection starts
+after epoch 4000, and `best_guide.pt` is the selected EMA guide used for sampling.
 Training parameters can be overridden with SLURM exports, for example
-`sbatch --export=ALL,STEPS=5000,BATCH_SIZE=256 doob_h_train.sh`.  Guidance
+`sbatch --export=ALL,EPOCHS=5000,BATCH_SIZE=2048 doob_h_train.sh`. Guidance
 strength is fixed to 1.0 for this experiment.
+
+The dataset and checkpoint-directory names can also be overridden without
+editing the scripts, for example
+`sbatch --export=ALL,DATANAME=shoppers,FT_MODEL=ft_periodic_small_d64_L4_seed0 doob_h_train.sh`.
 
 The sampler uses guidance strength 1.0 and writes both the generated CSV and a
 `.constraints.json` report with joint and per-column hit rates.  A 100% joint

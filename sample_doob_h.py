@@ -11,6 +11,7 @@ import numpy as np
 import torch
 
 from tabdiff.doob_h_runtime import load_doob_runtime, resolve_base_checkpoint
+from tabdiff.doob_h_evaluation import raw_constraint_hits
 from tabdiff.models.doob_h_transform import NumericalBoxQuery, NumericalDoobHGuide
 from tabdiff.trainer import recover_data, split_num_cat_target
 
@@ -35,26 +36,6 @@ def torch_load(path: str, device: torch.device):
         return torch.load(path, map_location=device, weights_only=False)
     except TypeError:
         return torch.load(path, map_location=device)
-
-
-def raw_constraint_hits(frame, column_specs: list[dict]) -> tuple[np.ndarray, np.ndarray]:
-    """Evaluate saved numerical intervals in the final, user-facing raw space."""
-    hits = []
-    for spec in column_specs:
-        name = spec.get("name")
-        lower = spec.get("raw_lower")
-        upper = spec.get("raw_upper")
-        if name not in frame.columns or lower is None or upper is None:
-            raise ValueError(f"raw constraint metadata is incomplete for column {name!r}")
-        values = frame[name].to_numpy(dtype=np.float64)
-        scale = max(1.0, abs(float(lower)), abs(float(upper)))
-        tolerance = 1e-7 * scale
-        hits.append(
-            (values >= float(lower) - tolerance)
-            & (values <= float(upper) + tolerance)
-        )
-    per_value = np.stack(hits, axis=1)
-    return per_value, per_value.all(axis=1)
 
 
 def main() -> None:

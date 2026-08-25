@@ -262,6 +262,20 @@ means every generated numerical row satisfied every saved user-facing interval.
 The default per-coordinate correction clamp is 5 normalized units and can be
 changed with `--max-correction`.
 
+Existing conditional CSVs can be diagnosed and evaluated without sampling
+again. The CPU-only evaluation array recomputes raw-space constraint hit rates,
+then uses TabDiff's SDMetrics Shape and Trend implementation twice: primarily
+against real rows satisfying the same raw constraint, and secondarily against
+the full real training table.
+
+```bash
+sbatch doob_h_evaluate.sh
+```
+
+Results are written under
+`conditional_samples/shoppers/<MODEL_NAME>_evaluation/density_results.json`;
+the detailed per-column Shape and column-pair Trend tables are saved beside it.
+
 ## License
 
 This work is licensed undeer the MIT License.

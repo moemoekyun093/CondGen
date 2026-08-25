@@ -3,6 +3,21 @@ import unittest
 import torch
 
 from tabdiff.models.doob_h_transform import NumericalBoxQuery, NumericalDoobHGuide
+from tabdiff.doob_h_runtime import infer_denoiser_type
+
+
+class CheckpointArchitectureTest(unittest.TestCase):
+    def test_infers_original_architecture(self):
+        state = {"denoise_fn_D.denoise_fn_F.encoder.layers.0.weight": object()}
+        self.assertEqual(infer_denoiser_type(state), "original")
+
+    def test_infers_ft_periodic_architecture(self):
+        state = {"denoise_fn_D.denoise_fn_F.blocks.0.norm1.weight": object()}
+        self.assertEqual(infer_denoiser_type(state), "ft_periodic")
+
+    def test_infers_tabnet_architecture(self):
+        state = {"denoise_fn_D.denoise_fn_F.tabnet_steps.0.weight": object()}
+        self.assertEqual(infer_denoiser_type(state), "tabnet")
 
 
 class NumericalBoxQueryTest(unittest.TestCase):

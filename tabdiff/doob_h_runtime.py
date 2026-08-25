@@ -53,6 +53,18 @@ def _torch_load(path: str, device: torch.device) -> Dict[str, Any]:
         return torch.load(path, map_location=device)
 
 
+def infer_denoiser_type(state_dict: Dict[str, Any]) -> str | None:
+    """Infer legacy/current backbone type from checkpoint parameter names."""
+    keys = state_dict.keys()
+    if any("denoise_fn_F.encoder." in key for key in keys):
+        return "original"
+    if any("denoise_fn_F.tabnet_steps." in key for key in keys):
+        return "tabnet"
+    if any("denoise_fn_F.blocks." in key for key in keys):
+        return "ft_periodic"
+    return None
+
+
 def load_doob_runtime(
     dataname: str,
     checkpoint_path: str,
@@ -90,10 +102,19 @@ def load_doob_runtime(
             "categorical columns (the default is news_nocat)"
         )
 
+    state = _torch_load(checkpoint_path, device)
     model_config = dict(config["unimodmlp_params"])
     model_config["d_numerical"] = d_numerical
     model_config["categories"] = (categories + 1).tolist()
-    denoiser_type = model_config.get("denoiser_type", "ft_periodic")
+    configured_type = model_config.get("denoiser_type")
+    inferred_type = infer_denoiser_type(state["denoise_fn"])
+    denoiser_type = inferred_type or configured_type or "ft_periodic"
+    if inferred_type is not None and configured_type not in (None, inferred_type):
+        print(
+            "Warning: checkpoint architecture "
+            f"({inferred_type}) overrides config denoiser_type ({configured_type})"
+        )
+    model_config["denoiser_type"] = denoiser_type
     denoiser_classes = {
         "original": UniModMLP_Original,
         "ft_periodic": UniModMLP,
@@ -102,9 +123,9 @@ def load_doob_runtime(
     if denoiser_type not in denoiser_classes:
         raise ValueError(f"unknown denoiser_type in base config: {denoiser_type}")
 
+    print(f"Loading base checkpoint as denoiser_type={denoiser_type}")
     backbone = denoiser_classes[denoiser_type](**model_config)
     denoiser = Model(backbone, **config["diffusion_params"]["edm_params"]).to(device)
-    state = _torch_load(checkpoint_path, device)
     denoiser.load_state_dict(state["denoise_fn"])
 
     diffusion = UnifiedCtimeDiffusion(

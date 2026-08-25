@@ -212,7 +212,9 @@ After that job finishes, inspect and version the fixed query:
 cat constraints/news/fixed_numerical_intervals.json
 ```
 
-Then submit guide training for the existing `news` checkpoint:
+Then submit the two-task guide-training array.  Task 0 uses
+`ft_periodic_L6_d128_seed0`; task 1 uses `original_L2_d4_seed0`.  Both use the
+same fixed query and train separate guides:
 
 ```bash
 sbatch doob_h_train.sh
@@ -223,6 +225,11 @@ After training succeeds, submit conditional generation:
 ```bash
 sbatch doob_h_sample.sh
 ```
+
+The sampling array writes model-specific outputs to
+`conditional_samples/news/ft_periodic_L6_d128_seed0.csv` and
+`conditional_samples/news/original_L2_d4_seed0.csv`, with a matching
+`.constraints.json` report beside each CSV.
 
 To submit the complete dependency chain:
 

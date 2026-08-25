@@ -1,12 +1,13 @@
 #!/bin/bash
 #SBATCH --job-name=doob_h_sample
-#SBATCH --output=logs/%x_%j.out
-#SBATCH --error=logs/%x_%j.err
+#SBATCH --output=logs/%x_%A_%a.out
+#SBATCH --error=logs/%x_%A_%a.err
 #SBATCH --gres=min-vram:32g,min-cuda-cc:80
 #SBATCH --gpus=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=24G
 #SBATCH --time=01:00:00
+#SBATCH --array=0-1
 
 set -euo pipefail
 
@@ -14,16 +15,29 @@ cd /scratch/work/agrawaa4/TabDiff
 export WANDB_MODE=offline
 
 DATANAME="${DATANAME:-news}"
-BASE_CKPT="${BASE_CKPT:-tabdiff/ckpt/news/learnable_schedule/best_ema_model_2.215_4619.pt}"
-GUIDE_CKPT="${GUIDE_CKPT:-tabdiff/ckpt/${DATANAME}/doob_h_fixed_box/best_guide.pt}"
+MODEL_NAMES=(
+    "ft_periodic_L6_d128_seed0"
+    "original_L2_d4_seed0"
+)
+MODEL_NAME="${MODEL_NAMES[$SLURM_ARRAY_TASK_ID]}"
+CKPT_DIR="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}"
+CKPT_CANDIDATES=("${CKPT_DIR}"/best_ema_model_*.pt)
+if [ ! -e "${CKPT_CANDIDATES[0]}" ] || [ "${#CKPT_CANDIDATES[@]}" -ne 1 ]; then
+    echo "ERROR: expected exactly one best EMA checkpoint in ${CKPT_DIR}"
+    printf '%s\n' "${CKPT_CANDIDATES[@]}"
+    exit 1
+fi
+BASE_CKPT="${CKPT_CANDIDATES[0]}"
+GUIDE_CKPT="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/doob_h_fixed_box/best_guide.pt"
 NUM_SAMPLES="${NUM_SAMPLES:-1000}"
 BATCH_SIZE="${BATCH_SIZE:-1000}"
-OUTPUT="${OUTPUT:-conditional_samples/${DATANAME}/doob_h_fixed_box.csv}"
+OUTPUT="conditional_samples/${DATANAME}/${MODEL_NAME}.csv"
 
 echo "========================================"
 echo "Job ID            : ${SLURM_JOB_ID}"
 echo "Node              : ${SLURMD_NODENAME}"
 echo "Dataset           : ${DATANAME}"
+echo "Base model        : ${MODEL_NAME}"
 echo "Base checkpoint   : ${BASE_CKPT}"
 echo "Guide checkpoint  : ${GUIDE_CKPT}"
 echo "Guidance strength : 1.0 (fixed)"

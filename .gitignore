@@ -19,6 +19,7 @@ conda-env/
 # Generated datasets and outputs
 data/
 synthetic/
+conditional_samples/
 artifacts/
 logs/
 wandb/

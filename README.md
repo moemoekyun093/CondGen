@@ -176,6 +176,72 @@ You can then evaluate the imputation quality by running
 python eval_impute.py --dataname <NAME_OF_DATASET>
 ```
 
+## Fixed-query numerical generation with a Doob h-transform
+
+This experimental path learns one broad numerical query after the unconditional
+TabDiff model has been trained.  The base model and noise schedules remain frozen.
+For a terminal event `B`, the auxiliary FT-periodic network learns
+
+```
+delta_D(x_t, t) = sigma(t)^2 * grad_x log P(X_0 in B | X_t=x_t).
+```
+
+The stable training target derived from the score-matching objective is
+`x_0 - D_base(x_t, t)`.  At sampling time the conditional denoiser is
+`D_B = D_base + guidance_strength * delta_D`.
+
+The first experiment uses one deterministic fixed box over every normalized
+numerical column.  A preprocessing job chooses a shared symmetric marginal
+quantile level so the joint box contains at least 30% of transformed training
+rows, then saves the normalized and raw-space bounds to JSON.  The query is not
+an input to the guide: the guide is parameterized only by the complete noisy row
+and time.  Categorical values may be observed as context, but they are not part
+of the constraint and their reverse transition rates are not guided.
+
+Generate and inspect the deterministic intervals first:
+
+```bash
+mkdir -p logs
+INTERVAL_JOB=$(sbatch --parsable doob_h_intervals.sh)
+echo "interval job: ${INTERVAL_JOB}"
+```
+
+After that job finishes, inspect and version the fixed query:
+
+```bash
+cat constraints/news/fixed_numerical_intervals.json
+```
+
+Then submit guide training for the existing `news` checkpoint:
+
+```bash
+sbatch doob_h_train.sh
+```
+
+After training succeeds, submit conditional generation:
+
+```bash
+sbatch doob_h_sample.sh
+```
+
+To submit the complete dependency chain:
+
+```bash
+INTERVAL_JOB=$(sbatch --parsable doob_h_intervals.sh)
+TRAIN_JOB=$(sbatch --parsable --dependency="afterok:${INTERVAL_JOB}" doob_h_train.sh)
+sbatch --dependency="afterok:${TRAIN_JOB}" doob_h_sample.sh
+```
+
+Training parameters can be overridden with SLURM exports, for example
+`sbatch --export=ALL,STEPS=5000,BATCH_SIZE=256 doob_h_train.sh`.  Guidance
+strength is fixed to 1.0 for this experiment.
+
+The sampler uses guidance strength 1.0 and writes both the generated CSV and a
+`.constraints.json` report with joint and per-column hit rates.  A 100% joint
+hit rate means every generated numerical row satisfied every saved interval.
+The default per-coordinate correction clamp is 5 normalized units and can be
+changed with `--max-correction`.
+
 ## License
 
 This work is licensed undeer the MIT License.

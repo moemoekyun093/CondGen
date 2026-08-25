@@ -75,6 +75,9 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         self.w_cat = 0.0
         self.num_mask_idx = []
         self.cat_mask_idx = []
+        self.numerical_h_guide = None
+        self.h_guide_strength = 1.0
+        self.h_guide_max_correction = None
         
         self.device = device
         
@@ -211,7 +214,7 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         assert torch.all(z_cat < self.mask_index)
         sample = torch.cat([z_norm, z_cat], dim=1).cpu()
         return sample
-    
+
     def sample_all(self, num_samples, batch_size, keep_nan_samples=False):        
         b = batch_size
 
@@ -390,6 +393,36 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
             raise NotImplementedError(f"The noise distribution--{self.noise_dist}-- is not implemented for CTIME ")
         return sigma
 
+    def set_numerical_h_guide(self, guide, strength=1.0, max_correction=None):
+        """Install a fixed-query guide that predicts ``sigma^2 * grad log h``.
+
+        The guide affects numerical reverse dynamics only.  Categorical transition
+        rates remain unchanged in this first numerical-only experiment.
+        """
+        if strength < 0:
+            raise ValueError("h-guide strength must be non-negative")
+        if max_correction is not None and max_correction <= 0:
+            raise ValueError("max_correction must be positive when provided")
+        self.numerical_h_guide = guide
+        self.h_guide_strength = float(strength)
+        self.h_guide_max_correction = max_correction
+
+    def _apply_numerical_h_guide(self, denoised, x_num_t, x_cat_t, t):
+        if self.numerical_h_guide is None or self.num_numerical_features == 0:
+            return denoised
+        correction = self.numerical_h_guide(x_num_t, x_cat_t, t)
+        if correction.shape != denoised.shape:
+            raise ValueError(
+                "numerical h-guide correction shape "
+                f"{tuple(correction.shape)} does not match denoiser output {tuple(denoised.shape)}"
+            )
+        if self.h_guide_max_correction is not None:
+            correction = correction.clamp(
+                min=-self.h_guide_max_correction,
+                max=self.h_guide_max_correction,
+            )
+        return denoised + self.h_guide_strength * correction
+
     def _edm_loss(self, D_yn, y, sigma):
         weight = (sigma ** 2 + self.edm_params['sigma_data'] ** 2) / (sigma * self.edm_params['sigma_data']) ** 2
     
@@ -453,6 +486,13 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
             
             raw_logits[:, mask_logit_idx] *= 1 + self.w_cat
             raw_logits[:, mask_logit_idx] -= self.w_cat*y_only_raw_logits
+
+        denoised = self._apply_numerical_h_guide(
+            denoised,
+            x_num_hat.float(),
+            x_cat_hat_oh,
+            t_hat.squeeze().repeat(b),
+        )
         
         # Euler step
         d_cur = (x_num_hat - denoised) / sigma_num_hat
@@ -493,6 +533,13 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
                     )
                     denoised[:, self.num_mask_idx] *= 1 + self.w_num
                     denoised[:, self.num_mask_idx] -= self.w_num*y_only_denoised
+
+                denoised = self._apply_numerical_h_guide(
+                    denoised,
+                    x_num_next.float(),
+                    x_cat_hat_oh,
+                    t_next.squeeze().repeat(b),
+                )
                 
                 d_prime = (x_num_next - denoised) / sigma_num_next
                 x_num_next = x_num_hat + (sigma_num_next - sigma_num_hat) * (0.5 * d_cur + 0.5 * d_prime)
@@ -594,4 +641,3 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         
         sample = torch.cat([z_norm, z_cat], dim=1).cpu()
         return sample
-    

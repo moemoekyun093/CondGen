@@ -30,10 +30,14 @@ if [ ! -e "${CKPT_CANDIDATES[0]}" ] || [ "${#CKPT_CANDIDATES[@]}" -ne 1 ]; then
     exit 1
 fi
 BASE_CKPT="${CKPT_CANDIDATES[0]}"
-GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_all_constrained_two_guides}"
+GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_partial_masks_candidate_logh}"
 OUTPUT_DIR="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/${GUIDE_DIR_NAME}"
 QUERY_FILE="${QUERY_FILE:-constraints/${DATANAME}/fixed_numerical_intervals.json}"
 EPOCHS="${EPOCHS:-6000}"
+BATCH_SIZE="${BATCH_SIZE:-1024}"
+COLUMN_ACTIVE_PROBABILITY="${COLUMN_ACTIVE_PROBABILITY:-0.5}"
+ALL_ACTIVE_PROBABILITY="${ALL_ACTIVE_PROBABILITY:-0.1}"
+ALL_INACTIVE_PROBABILITY="${ALL_INACTIVE_PROBABILITY:-0.1}"
 DIAGNOSTIC_BATCH_SIZE="${DIAGNOSTIC_BATCH_SIZE:-1024}"
 DIAGNOSTIC_EVERY="${DIAGNOSTIC_EVERY:-100}"
 H_CANDIDATE_BATCH_SIZE="${H_CANDIDATE_BATCH_SIZE:-16384}"
@@ -50,10 +54,11 @@ echo "Objective       : separate numerical h-score and categorical log-h guides"
 echo "Numerical       : direct sigma(t)^2 * grad_x log h correction"
 echo "Categorical     : candidate log h(child) from a shared whole-state scalar network"
 echo "Categorical loss: conditional Generator Matching via original TabDiff absorbed loss"
-echo "Epoch data      : every constrained row exactly once, no replacement"
-echo "Other rows      : none (no BCE/classification objective)"
-echo "Training        : ${EPOCHS} exact full-subset epochs"
-echo "EMA diagnostic  : every ${DIAGNOSTIC_EVERY} epochs"
+echo "Step mask       : one shared mask; Bernoulli p=${COLUMN_ACTIVE_PROBABILITY}"
+echo "Mask anchors    : all-on=${ALL_ACTIVE_PROBABILITY}, all-off=${ALL_INACTIVE_PROBABILITY}"
+echo "Endpoint batch  : ${BATCH_SIZE} uniform satisfying rows, with replacement"
+echo "Training        : ${EPOCHS} optimizer steps"
+echo "EMA diagnostic  : every ${DIAGNOSTIC_EVERY} optimizer steps"
 echo "========================================"
 nvidia-smi
 
@@ -73,6 +78,10 @@ python -u train_doob_h.py \
     --query-file "${QUERY_FILE}" \
     --output-dir "${OUTPUT_DIR}" \
     --epochs "${EPOCHS}" \
+    --batch-size "${BATCH_SIZE}" \
+    --column-active-probability "${COLUMN_ACTIVE_PROBABILITY}" \
+    --all-active-probability "${ALL_ACTIVE_PROBABILITY}" \
+    --all-inactive-probability "${ALL_INACTIVE_PROBABILITY}" \
     --diagnostic-batch-size "${DIAGNOSTIC_BATCH_SIZE}" \
     --gradient-loss-weight 1.0 \
     --categorical-loss-weight 1.0 \

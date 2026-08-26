@@ -188,11 +188,10 @@ h(t, x, a) = P(X_0 in B_a | X_t=x).
 delta_D(t, x, a) = sigma(t)^2 * grad_x log h(t, x, a).
 ```
 
-The current verification stage fixes `a` to the all-ones vector and uses two
+The mask-conditioned stage uses two
 separately parameterized lightweight FT-periodic guides with identical
 architectures. Both see the complete noisy numerical and categorical state,
-and time. The fixed all-ones mask is implicit and is not a network input in
-this first checkpoint. The numerical guide directly predicts
+time, and the binary active-column vector `a`. The numerical guide directly predicts
 `sigma(t)^2 * grad_x log h` and is regressed against
 `x_0 - D_base(x_t,t)`. The categorical guide predicts scalar `log h`; frozen
 base token probabilities are multiplied by candidate-state `h(child)` values
@@ -200,11 +199,15 @@ and normalized separately over each column's real categories. The unchanged
 current state is not evaluated: its `log h` is the per-column log normalizer
 from the harmonic identity. The resulting generator is passed to TabDiff's
 original `_absorbed_closs` against the same conditional endpoint. The networks
-do not share parameters. No unrestricted rows, negative examples, BCE
-classifier, or validation split are used. Guidance strength is fixed to 1.
+do not share parameters. No negative examples, BCE classifier, or validation
+split are used. Guidance strength is fixed to 1.
 
-Random partial masks are deliberately postponed until the all-constrained case
-has been trained, sampled, and evaluated successfully.
+Each optimizer step samples one mask shared by its complete batch: 80% use
+independent Bernoulli(0.5) entries, 10% force every interval active, and 10%
+force every interval inactive. It finds all training rows satisfying exactly
+the active intervals and draws the endpoint batch uniformly with replacement.
+The all-inactive anchor therefore uses the full dataset and teaches the guides
+to recover the unconditional model.
 
 For optional categorical equality constraints, the sampler also implements the
 Section 4 ordering construction. If categorical columns `C` are fixed, it draws
@@ -235,13 +238,13 @@ After that job finishes, inspect and version the fixed query:
 cat constraints/shoppers/fixed_numerical_intervals.json
 ```
 
-Train the two FT-periodic guides for the initial all-constrained verification:
+Train the two mask-conditioned FT-periodic guides:
 
 ```bash
 TRAIN_JOB=$(sbatch --parsable --array=0 doob_h_train.sh)
 ```
 
-Then sample with every numerical interval active:
+Then sample a random test-time mask:
 
 ```bash
 SAMPLE_JOB=$(sbatch --parsable --array=0 \
@@ -249,8 +252,8 @@ SAMPLE_JOB=$(sbatch --parsable --array=0 \
 ```
 
 Each CSV gets a sibling `.query.json` containing only the active constraints.
-The verification output is
-`conditional_samples/shoppers/ft_periodic_seed0_all_two_guides.csv`.
+The default output is
+`conditional_samples/shoppers/ft_periodic_seed0_partial_masks.csv`.
 
 Evaluate the existing generated table without resampling:
 
@@ -258,13 +261,12 @@ Evaluate the existing generated table without resampling:
 sbatch --array=0 --dependency="afterok:${SAMPLE_JOB}" doob_h_evaluate.sh
 ```
 
-Training runs for 6000 exact epochs over the all-constrained subset. Every epoch
-randomly permutes that subset and uses every constrained row exactly once in one
-full-batch optimizer update, with no replacement sampling. The same
-forward-noised full batch supplies both the Section 5 numerical target and
-TabDiff categorical loss. EMA updates both guides after every epoch; fixed
-diagnostics run every 100 epochs. Override these with, for example,
-`sbatch --array=0 --export=ALL,EPOCHS=2000,DIAGNOSTIC_EVERY=100 doob_h_train.sh`.
+Training runs for 6000 optimizer steps by default, with a batch of 1024
+uniformly sampled conditional endpoints per step. The same forward-noised batch
+supplies both the Section 5 numerical target and TabDiff categorical loss. EMA
+updates both guides after every step; the fixed all-active diagnostic runs every
+100 steps. Override these with, for example,
+`sbatch --array=0 --export=ALL,EPOCHS=2000,BATCH_SIZE=512,DIAGNOSTIC_EVERY=100 doob_h_train.sh`.
 
 The dataset and checkpoint-directory names can also be overridden without
 editing the scripts, for example

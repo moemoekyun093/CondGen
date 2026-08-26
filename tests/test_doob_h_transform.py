@@ -10,7 +10,10 @@ from tabdiff.models.doob_h_transform import (
     NumericalDoobHGuide,
     NumericalHScoreGuide,
     categorical_candidate_log_h,
+    eligible_row_indices,
     guided_categorical_log_probs,
+    sample_conditional_batch,
+    sample_constraint_mask,
 )
 from tabdiff.doob_h_runtime import infer_denoiser_type
 from tabdiff.models.unified_ctime_diffusion import UnifiedCtimeDiffusion
@@ -63,6 +66,46 @@ class NumericalBoxQueryTest(unittest.TestCase):
         restored = NumericalBoxQuery.from_dict(query.to_dict())
         torch.testing.assert_close(restored.lower, query.lower)
         torch.testing.assert_close(restored.upper, query.upper)
+
+
+class PartialConstraintBatchTest(unittest.TestCase):
+    def test_eligible_rows_follow_only_active_constraints(self):
+        row_satisfies = torch.tensor(
+            [
+                [True, True, False],
+                [True, False, True],
+                [False, True, True],
+                [True, True, True],
+            ]
+        )
+        active = torch.tensor([1.0, 0.0, 1.0])
+        self.assertEqual(
+            eligible_row_indices(row_satisfies, active).tolist(),
+            [1, 3],
+        )
+        self.assertEqual(
+            eligible_row_indices(row_satisfies, torch.zeros(3)).tolist(),
+            [0, 1, 2, 3],
+        )
+
+    def test_anchor_masks_are_exact(self):
+        all_active, active_kind = sample_constraint_mask(
+            4, torch.device("cpu"), torch.float32, 0.5, 1.0, 0.0
+        )
+        all_inactive, inactive_kind = sample_constraint_mask(
+            4, torch.device("cpu"), torch.float32, 0.5, 0.0, 1.0
+        )
+        torch.testing.assert_close(all_active, torch.ones(4))
+        torch.testing.assert_close(all_inactive, torch.zeros(4))
+        self.assertEqual(active_kind, "all_active")
+        self.assertEqual(inactive_kind, "all_inactive")
+
+    def test_conditional_batch_uses_only_eligible_rows(self):
+        rows = torch.arange(12, dtype=torch.float32).reshape(6, 2)
+        eligible = torch.tensor([1, 4])
+        batch = sample_conditional_batch(rows, eligible, batch_size=100)
+        allowed_first_values = {rows[1, 0].item(), rows[4, 0].item()}
+        self.assertTrue(set(batch[:, 0].tolist()).issubset(allowed_first_values))
 
 
 class NumericalDoobHGuideTest(unittest.TestCase):

@@ -29,7 +29,12 @@ def raw_constraint_hits(
             column_hits &= values <= float(upper) + tolerance
         hits.append(column_hits)
     if not hits:
-        raise ValueError("query does not contain any numerical column constraints")
+        # The all-inactive mask is the unconditional anchor: its empty
+        # intersection is satisfied by every row.
+        return (
+            np.empty((len(frame), 0), dtype=bool),
+            np.ones(len(frame), dtype=bool),
+        )
     per_value = np.stack(hits, axis=1)
     return per_value, per_value.all(axis=1)
 

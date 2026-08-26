@@ -30,23 +30,42 @@ if [ ! -e "${CKPT_CANDIDATES[0]}" ] || [ "${#CKPT_CANDIDATES[@]}" -ne 1 ]; then
     exit 1
 fi
 BASE_CKPT="${CKPT_CANDIDATES[0]}"
-GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_all_constrained_two_guides}"
+GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_partial_masks_candidate_logh}"
 GUIDE_CKPT="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/${GUIDE_DIR_NAME}/best_guide.pt"
 NUM_SAMPLES="${NUM_SAMPLES:-1000}"
 BATCH_SIZE="${BATCH_SIZE:-1000}"
-SAMPLE_SUFFIX="${SAMPLE_SUFFIX-_all_two_guides}"
+SAMPLE_SUFFIX="${SAMPLE_SUFFIX-_partial_masks}"
 OUTPUT="conditional_samples/${DATANAME}/${MODEL_NAME}${SAMPLE_SUFFIX}.csv"
 COLUMN_ACTIVE_PROBABILITY="${COLUMN_ACTIVE_PROBABILITY:-0.5}"
 ACTIVE_COLUMNS="${ACTIVE_COLUMNS:-}"
-MASK_MODE="${MASK_MODE:-all}"
+MASK_MODE="${MASK_MODE:-random}"
 QUERY_MASK_ARGS=()
-if [ "${MASK_MODE}" = "all" ]; then
-    QUERY_MASK_ARGS+=(--all-columns-active)
-elif [ -n "${ACTIVE_COLUMNS}" ]; then
-    QUERY_MASK_ARGS+=(--active-columns "${ACTIVE_COLUMNS}")
-else
-    QUERY_MASK_ARGS+=(--column-active-probability "${COLUMN_ACTIVE_PROBABILITY}")
-fi
+case "${MASK_MODE}" in
+    all)
+        QUERY_MASK_ARGS+=(--all-columns-active)
+        EFFECTIVE_ACTIVE_COLUMNS="all"
+        ;;
+    none)
+        QUERY_MASK_ARGS+=(--no-columns-active)
+        EFFECTIVE_ACTIVE_COLUMNS="none"
+        ;;
+    explicit)
+        if [ -z "${ACTIVE_COLUMNS}" ]; then
+            echo "ERROR: MASK_MODE=explicit requires ACTIVE_COLUMNS"
+            exit 1
+        fi
+        QUERY_MASK_ARGS+=(--active-columns "${ACTIVE_COLUMNS}")
+        EFFECTIVE_ACTIVE_COLUMNS="${ACTIVE_COLUMNS}"
+        ;;
+    random)
+        QUERY_MASK_ARGS+=(--column-active-probability "${COLUMN_ACTIVE_PROBABILITY}")
+        EFFECTIVE_ACTIVE_COLUMNS="random Bernoulli(${COLUMN_ACTIVE_PROBABILITY})"
+        ;;
+    *)
+        echo "ERROR: MASK_MODE must be all, none, explicit, or random"
+        exit 1
+        ;;
+esac
 CATEGORICAL_START_MODE="${CATEGORICAL_START_MODE:-section4_posterior}"
 FIXED_CATEGORICAL="${FIXED_CATEGORICAL:-}"
 CATEGORICAL_ARGS=()
@@ -65,9 +84,9 @@ echo "Base model        : ${MODEL_NAME}"
 echo "Base checkpoint   : ${BASE_CKPT}"
 echo "Guide checkpoint  : ${GUIDE_CKPT}"
 echo "Guidance strength : 1.0 (fixed)"
-echo "Categorical Doob  : h(child)/h(current) transition reweighting"
+echo "Categorical Doob  : per-column candidate log-h Generator Matching law"
 echo "Numerical mask    : ${MASK_MODE}"
-echo "Active num cols   : ${ACTIVE_COLUMNS:-all columns for verification}"
+echo "Active num cols   : ${EFFECTIVE_ACTIVE_COLUMNS}"
 echo "Categorical start : ${CATEGORICAL_START_MODE}"
 echo "Fixed categories  : ${FIXED_CATEGORICAL:-none (ordinary t=1 start)}"
 echo "Output            : ${OUTPUT}"

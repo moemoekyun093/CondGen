@@ -1,10 +1,8 @@
-"""Train separate numerical h-score and categorical log-h guides.
+"""Train mask-conditioned numerical h-score and categorical log-h guides.
 
-The first verification stage fixes the active vector to all ones. Conditional
-endpoint rows supervise a direct ``sigma^2 grad_x log h`` predictor with the
-Section 5 denoiser-difference target. A separate scalar network supplies
-categorical candidate-state log-h scores to TabDiff's original absorbed loss. Every
-endpoint is drawn uniformly from the rows satisfying the complete box.
+Each optimizer step samples one active-constraint mask, uniformly draws a batch
+from the rows satisfying exactly its active intervals, and uses that same
+conditional endpoint batch for both guide objectives.
 """
 
 from __future__ import annotations
@@ -27,7 +25,10 @@ from tabdiff.models.doob_h_transform import (
     NumericalBoxQuery,
     NumericalHScoreGuide,
     categorical_candidate_log_h,
+    eligible_row_indices,
     guided_categorical_log_probs,
+    sample_conditional_batch,
+    sample_constraint_mask,
 )
 from utils_train import update_ema
 
@@ -42,6 +43,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--epochs", type=int, default=6000)
+    parser.add_argument("--batch-size", type=int, default=1024)
+    parser.add_argument("--column-active-probability", type=float, default=0.5)
+    parser.add_argument("--all-active-probability", type=float, default=0.1)
+    parser.add_argument("--all-inactive-probability", type=float, default=0.1)
     parser.add_argument("--diagnostic-batch-size", type=int, default=1024)
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--weight-decay", type=float, default=1e-4)
@@ -155,6 +160,7 @@ def joint_batch(
     numerical_guide,
     categorical_guide,
     x0: torch.Tensor,
+    active_mask: torch.Tensor,
     candidate_batch_size: int,
 ):
     """Train continuous and categorical guidance on conditional endpoints."""
@@ -169,7 +175,17 @@ def joint_batch(
         sigma_cat,
         dsigma_cat,
     ) = corrupt_mixed_state(runtime, x0, t)
-    active_mask = x0.new_ones((batch_size, d_numerical))
+    active_mask = torch.as_tensor(
+        active_mask,
+        device=x0.device,
+        dtype=x0.dtype,
+    )
+    if active_mask.ndim == 1:
+        active_mask = active_mask[None, :].expand(batch_size, -1)
+    if active_mask.shape != (batch_size, d_numerical):
+        raise ValueError(
+            f"active mask must have shape ({batch_size}, {d_numerical})"
+        )
     with torch.no_grad():
         base_denoised, base_raw_logits = runtime.diffusion._denoise_fn(
             x_num_t,
@@ -206,7 +222,8 @@ def joint_diagnostic(
     runtime,
     numerical_guide,
     categorical_guide,
-    x_positive,
+    x_conditional,
+    active_mask,
     batch_size,
     seed,
     candidate_batch_size,
@@ -215,24 +232,25 @@ def joint_diagnostic(
     categorical_guide.eval()
     cuda_devices = (
         [
-            x_positive.device.index
-            if x_positive.device.index is not None
+            x_conditional.device.index
+            if x_conditional.device.index is not None
             else torch.cuda.current_device()
         ]
-        if x_positive.is_cuda
+        if x_conditional.is_cuda
         else []
     )
     with torch.random.fork_rng(devices=cuda_devices):
         torch.manual_seed(seed)
         indices = torch.arange(
-            min(batch_size, len(x_positive)),
-            device=x_positive.device,
+            min(batch_size, len(x_conditional)),
+            device=x_conditional.device,
         )
         gradient_loss, categorical_loss, prediction, target = joint_batch(
             runtime,
             numerical_guide,
             categorical_guide,
-            x_positive[indices],
+            x_conditional[indices],
+            active_mask=active_mask,
             candidate_batch_size=candidate_batch_size,
         )
     numerical_guide.train()
@@ -273,6 +291,7 @@ def main() -> None:
     args = parse_args()
     if min(
         args.epochs,
+        args.batch_size,
         args.diagnostic_batch_size,
         args.h_candidate_batch_size,
         args.diagnostic_every,
@@ -285,6 +304,12 @@ def main() -> None:
         raise ValueError("ema-decay must be in [0,1)")
     if not 0.0 < args.lr_factor < 1.0:
         raise ValueError("lr-factor must be in (0,1)")
+    if not 0.0 <= args.column_active_probability <= 1.0:
+        raise ValueError("column-active-probability must be in [0,1]")
+    if min(args.all_active_probability, args.all_inactive_probability) < 0.0:
+        raise ValueError("anchor mask probabilities must be nonnegative")
+    if args.all_active_probability + args.all_inactive_probability > 1.0:
+        raise ValueError("all-active and all-inactive probabilities must sum to <= 1")
 
     random.seed(args.seed)
     np.random.seed(args.seed)
@@ -312,8 +337,14 @@ def main() -> None:
     if expected_fingerprint and expected_fingerprint != actual_fingerprint:
         raise ValueError("query file was generated from different transformed data")
     query = NumericalBoxQuery.from_dict(query_spec)
-    all_active = torch.ones(d_numerical)
-    event_all = query.contains(x_num_cpu, all_active)
+    lower = query.lower.to(device=device, dtype=x_all.dtype)
+    upper = query.upper.to(device=device, dtype=x_all.dtype)
+    row_satisfies_column = (
+        (x_all[:, :d_numerical] >= lower)
+        & (x_all[:, :d_numerical] <= upper)
+    )
+    all_active = torch.ones(d_numerical, device=device, dtype=x_all.dtype)
+    event_all = row_satisfies_column.all(dim=1).cpu()
     event_rate = event_all.float().mean().item()
     if not 0.0 < event_rate < 1.0:
         raise ValueError("all-constrained event needs both positive and negative rows")
@@ -328,9 +359,7 @@ def main() -> None:
         "factor": args.factor,
         "n_frequencies": args.n_frequencies,
         "freq_sigma": 0.05,
-        # The all-constrained query is fixed and intentionally implicit in this
-        # first verification checkpoint. Partial-mask conditioning comes later.
-        "query_mask_conditioning": False,
+        "query_mask_conditioning": True,
     }
     numerical_guide = NumericalHScoreGuide(**architecture_kwargs).to(device)
     categorical_guide = CategoricalHTransformGuide(**architecture_kwargs).to(device)
@@ -355,7 +384,7 @@ def main() -> None:
 
     output_dir = Path(
         args.output_dir
-        or "tabdiff/ckpt/shoppers/ft_periodic_seed0/doob_h_all_constrained_two_guides"
+        or "tabdiff/ckpt/shoppers/ft_periodic_seed0/doob_h_partial_masks_candidate_logh"
     )
     output_dir.mkdir(parents=True, exist_ok=True)
     metadata = {
@@ -366,12 +395,12 @@ def main() -> None:
         "query": {
             **query_spec,
             **query.to_dict(),
-            "query_active_mask": [1] * d_numerical,
-            "active_numerical_columns": list(range(d_numerical)),
+            "query_mask_conditioning": True,
+            "training_supports_partial_masks": True,
         },
         "objective": {
             "separate_parameterizations": True,
-            "section_5_conditional_rows_only": True,
+            "conditional_rows_for_sampled_mask_only": True,
             "numerical_sampling": (
                 "separate FT-periodic G_psi predicts sigma(t)^2 grad_x_num log h"
             ),
@@ -386,16 +415,20 @@ def main() -> None:
             ),
         },
         "training": {
-            "mode": "all_constrained",
+            "mode": "random_partial_masks",
+            "steps": args.epochs,
             "epochs": args.epochs,
-            "rows_per_epoch": len(x_positive),
+            "batch_size": args.batch_size,
             "optimizer_updates": args.epochs,
-            "full_conditional_pass_per_epoch": True,
-            "sampling_with_replacement": False,
+            "one_mask_shared_per_optimizer_step": True,
+            "sampling_with_replacement": True,
+            "column_active_probability": args.column_active_probability,
+            "all_active_probability": args.all_active_probability,
+            "all_inactive_probability": args.all_inactive_probability,
             "fixed_conditional_diagnostic_every": args.diagnostic_every,
-            "event_rate": event_rate,
-            "positive_rows": int(event_all.sum()),
-            "negative_rows": int((~event_all).sum()),
+            "all_active_event_rate": event_rate,
+            "all_active_rows": int(event_all.sum()),
+            "categorical_doob_transform": True,
             "ema_decay": args.ema_decay,
             "gradient_loss_weight": args.gradient_loss_weight,
             "categorical_loss_weight": args.categorical_loss_weight,
@@ -420,30 +453,56 @@ def main() -> None:
         f"{sum(p.numel() for p in categorical_guide.parameters()):,}"
     )
     print(
-        f"Epochs: {args.epochs}; every epoch uses all {len(x_positive)} "
-        "all-constrained rows exactly once"
+        f"Optimizer steps: {args.epochs}; conditional batch size: {args.batch_size}"
+    )
+    print(
+        "Mask distribution: "
+        f"Bernoulli({args.column_active_probability})="
+        f"{1.0 - args.all_active_probability - args.all_inactive_probability:.1%}, "
+        f"all-active={args.all_active_probability:.1%}, "
+        f"all-inactive={args.all_inactive_probability:.1%}"
     )
     print(
         "Categorical objective: constrained endpoint Generator Matching with "
         "normalized base-probability times candidate scalar-h scores"
     )
-    print("No unrestricted rows and no BCE/classification objective")
-    print(f"Fixed EMA joint diagnostic every {args.diagnostic_every} epochs")
+    print("All-inactive steps intentionally draw from the unrestricted dataset")
+    print("No BCE/classification objective")
+    print(f"Fixed all-active EMA diagnostic every {args.diagnostic_every} steps")
     print(f"Writing checkpoints to {output_dir}")
 
     best_ema = float("inf")
     last_loss = float("nan")
     last_ema_loss = float("nan")
+    mask_kind_counts = {"bernoulli": 0, "all_active": 0, "all_inactive": 0}
     numerical_guide.train()
     categorical_guide.train()
     for epoch in range(1, args.epochs + 1):
-        positive_indices = torch.randperm(len(x_positive), device=device)
+        active_mask, mask_kind = sample_constraint_mask(
+            d_numerical,
+            device,
+            x_all.dtype,
+            args.column_active_probability,
+            args.all_active_probability,
+            args.all_inactive_probability,
+        )
+        mask_kind_counts[mask_kind] += 1
+        eligible_indices = eligible_row_indices(
+            row_satisfies_column,
+            active_mask,
+        )
+        x_conditional = sample_conditional_batch(
+            x_all,
+            eligible_indices,
+            args.batch_size,
+        )
         optimizer.zero_grad(set_to_none=True)
         gradient_loss, categorical_loss, _, _ = joint_batch(
             runtime,
             numerical_guide,
             categorical_guide,
-            x_positive[positive_indices],
+            x_conditional,
+            active_mask=active_mask,
             candidate_batch_size=args.h_candidate_batch_size,
         )
         loss = (
@@ -479,7 +538,9 @@ def main() -> None:
             print(
                 f"epoch={epoch:05d}/{args.epochs:05d} total={last_loss:.6f} "
                 f"gradient_mse={gradient_loss.item():.6f} "
-                f"categorical_loss={categorical_loss.item():.6f}"
+                f"categorical_loss={categorical_loss.item():.6f} "
+                f"mask={''.join(str(int(v)) for v in active_mask.tolist())} "
+                f"mask_kind={mask_kind} eligible_rows={len(eligible_indices)}"
             )
 
         if epoch % args.diagnostic_every == 0 or epoch == args.epochs:
@@ -488,6 +549,7 @@ def main() -> None:
                 numerical_guide,
                 categorical_guide,
                 x_positive,
+                all_active,
                 min(args.diagnostic_batch_size, len(x_positive)),
                 args.seed + 100_000,
                 args.h_candidate_batch_size,
@@ -497,6 +559,7 @@ def main() -> None:
                 ema_numerical_guide,
                 ema_categorical_guide,
                 x_positive,
+                all_active,
                 min(args.diagnostic_batch_size, len(x_positive)),
                 args.seed + 100_000,
                 args.h_candidate_batch_size,
@@ -513,6 +576,7 @@ def main() -> None:
                 f"raw_categorical_loss={raw_metrics['categorical_loss']:.6f} "
                 f"ema_categorical_loss={ema_metrics['categorical_loss']:.6f} "
                 f"ema_gradient_finite={ema_metrics['finite']} "
+                f"mask_counts={mask_kind_counts} "
                 f"lr={optimizer.param_groups[0]['lr']:.3e}"
             )
             if epoch > args.checkpoint_warmup and last_ema_loss < best_ema:

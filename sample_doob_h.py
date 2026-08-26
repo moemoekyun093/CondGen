@@ -1,4 +1,4 @@
-"""Generate samples with a trained fixed-query numerical Doob h-transform."""
+"""Generate samples with a trained mask-conditioned Doob h-transform."""
 
 from __future__ import annotations
 
@@ -39,7 +39,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--all-columns-active",
         action="store_true",
-        help="Activate every numerical interval (first two-guide verification)",
+        help="Activate every numerical interval",
+    )
+    parser.add_argument(
+        "--no-columns-active",
+        action="store_true",
+        help="Deactivate every numerical interval (unconditional anchor)",
     )
     parser.add_argument("--column-active-probability", type=float, default=0.5)
     parser.add_argument(
@@ -98,14 +103,19 @@ def choose_query_active_mask(
     probability: float,
     device: torch.device,
     all_columns_active: bool = False,
+    no_columns_active: bool = False,
 ) -> torch.Tensor:
     if not 0.0 < probability < 1.0:
         raise ValueError("column-active-probability must be between 0 and 1")
     mask = torch.zeros(d_numerical, dtype=torch.float32, device=device)
+    if sum((all_columns_active, no_columns_active, specification is not None)) > 1:
+        raise ValueError(
+            "choose only one of all-columns-active, no-columns-active, or active-columns"
+        )
     if all_columns_active:
-        if specification is not None:
-            raise ValueError("cannot combine all-columns-active with active-columns")
         mask.fill_(1.0)
+    elif no_columns_active:
+        pass
     elif specification is not None:
         try:
             columns = [
@@ -124,8 +134,6 @@ def choose_query_active_mask(
         mask[columns] = 1.0
     else:
         mask = (torch.rand(d_numerical, device=device) < probability).float()
-        if not mask.any():
-            mask[torch.randint(d_numerical, (1,), device=device)] = 1.0
     return mask
 
 
@@ -178,6 +186,7 @@ def main() -> None:
         args.column_active_probability,
         device,
         all_columns_active=args.all_columns_active,
+        no_columns_active=args.no_columns_active,
     )
     training_mode = metadata.get("training", {}).get("mode")
     if training_mode == "all_constrained" and not bool(query_active_mask.bool().all()):

@@ -17,6 +17,56 @@ from torch import Tensor, nn
 from tabdiff.modules.main_modules import FTBlock, PeriodicTokenizer, PositionalEmbedding
 
 
+def sample_constraint_mask(
+    d_numerical: int,
+    device: torch.device,
+    dtype: torch.dtype,
+    column_active_probability: float,
+    all_active_probability: float,
+    all_inactive_probability: float,
+) -> tuple[Tensor, str]:
+    """Draw one query mask shared by a complete optimizer-step batch."""
+    draw = torch.rand((), device=device).item()
+    if draw < all_active_probability:
+        return torch.ones(d_numerical, device=device, dtype=dtype), "all_active"
+    if draw < all_active_probability + all_inactive_probability:
+        return torch.zeros(d_numerical, device=device, dtype=dtype), "all_inactive"
+    return (
+        torch.rand(d_numerical, device=device) < column_active_probability
+    ).to(dtype), "bernoulli"
+
+
+def eligible_row_indices(
+    row_satisfies_column: Tensor,
+    active_mask: Tensor,
+) -> Tensor:
+    """Indices satisfying every active interval and ignoring inactive ones."""
+    if row_satisfies_column.ndim != 2:
+        raise ValueError("row_satisfies_column must be [rows, numerical_columns]")
+    if active_mask.shape != (row_satisfies_column.shape[1],):
+        raise ValueError("active_mask has the wrong number of numerical columns")
+    eligible = (
+        row_satisfies_column | ~active_mask.bool()[None, :]
+    ).all(dim=1)
+    return torch.nonzero(eligible, as_tuple=False).flatten()
+
+
+def sample_conditional_batch(
+    x_all: Tensor,
+    eligible_indices: Tensor,
+    batch_size: int,
+) -> Tensor:
+    """Uniformly sample conditional endpoints, with replacement."""
+    if eligible_indices.numel() == 0:
+        raise ValueError("sampled constraint mask has no satisfying rows")
+    choices = torch.randint(
+        eligible_indices.numel(),
+        (batch_size,),
+        device=x_all.device,
+    )
+    return x_all[eligible_indices[choices]]
+
+
 def guided_categorical_log_probs(
     base_log_probs: Tensor,
     candidate_log_h: Tensor,

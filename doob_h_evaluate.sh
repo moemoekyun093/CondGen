@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=doob_h_evaluate
-#SBATCH --output=logs/%x_%A_%a.out
-#SBATCH --error=logs/%x_%A_%a.err
+#SBATCH --output=evaluations/slurm/%x_%A_%a.out
+#SBATCH --error=evaluations/slurm/%x_%A_%a.err
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
 #SBATCH --time=01:00:00
@@ -24,8 +24,9 @@ SAMPLE_SUFFIX="${SAMPLE_SUFFIX-_mixed}"
 SAMPLE_NAME="${MODEL_NAME}${SAMPLE_SUFFIX}"
 SAMPLES="conditional_samples/${DATANAME}/${SAMPLE_NAME}.csv"
 QUERY_FILE="${QUERY_FILE:-constraints/${DATANAME}/fixed_numerical_intervals.json}"
-RAW_REPORT="conditional_samples/${DATANAME}/${SAMPLE_NAME}.raw_diagnostic.json"
-OUTPUT_DIR="conditional_samples/${DATANAME}/${SAMPLE_NAME}_evaluation"
+EVALUATION_ROOT="${EVALUATION_ROOT:-evaluations}"
+OUTPUT_DIR="${EVALUATION_ROOT}/${DATANAME}/${SAMPLE_NAME}"
+RAW_REPORT="${OUTPUT_DIR}/raw_diagnostic.json"
 REAL_DATA="synthetic/${DATANAME}/real.csv"
 UNCONDITIONAL_SAMPLES="${UNCONDITIONAL_SAMPLES:-}"
 if [ -z "${UNCONDITIONAL_SAMPLES}" ]; then
@@ -40,6 +41,8 @@ if [ -z "${UNCONDITIONAL_SAMPLES}" ]; then
         fi
     done
 fi
+
+mkdir -p "${OUTPUT_DIR}"
 
 if [ -z "${UNCONDITIONAL_SAMPLES}" ]; then
     echo "ERROR: could not locate unconditional samples for ${MODEL_NAME}"

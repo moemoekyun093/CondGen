@@ -313,7 +313,8 @@ sbatch --export=ALL,UNCONDITIONAL_SAMPLES=/path/to/unconditional_samples.csv \
 ```
 
 Results are written under
-`conditional_samples/shoppers/<MODEL_NAME>_mixed_evaluation/density_results.json`;
+`evaluations/shoppers/<MODEL_NAME>_mixed/density_results.json`, while SLURM
+stdout and stderr are written under `evaluations/slurm/`;
 the detailed per-column Shape and column-pair Trend tables are saved beside it.
 The same evaluation also saves Pearson correlation matrices for the full real
 table, constrained real subset, and generated table, plus summaries of

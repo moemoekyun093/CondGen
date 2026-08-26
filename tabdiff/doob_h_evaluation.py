@@ -59,3 +59,54 @@ def raw_constraint_report(
             }
         )
     return report, rows_satisfied
+
+
+def compare_correlation_matrices(
+    left: pd.DataFrame,
+    right: pd.DataFrame,
+    top_k: int = 10,
+) -> dict:
+    """Compare upper triangles while safely excluding undefined correlations."""
+    if list(left.columns) != list(right.columns):
+        raise ValueError("correlation matrices have different columns")
+    row_idx, col_idx = np.triu_indices(len(left.columns), k=1)
+    left_values = left.to_numpy()[row_idx, col_idx]
+    right_values = right.to_numpy()[row_idx, col_idx]
+    valid = np.isfinite(left_values) & np.isfinite(right_values)
+    differences = right_values - left_values
+    valid_differences = differences[valid]
+    valid_left = left_values[valid]
+    valid_right = right_values[valid]
+    if valid.sum() >= 2 and np.std(valid_left) > 0 and np.std(valid_right) > 0:
+        structure_correlation = float(np.corrcoef(valid_left, valid_right)[0, 1])
+    else:
+        structure_correlation = None
+
+    valid_positions = np.flatnonzero(valid)
+    ranked = valid_positions[np.argsort(np.abs(differences[valid_positions]))[::-1]]
+    top_changes = []
+    for position in ranked[:top_k]:
+        i = row_idx[position]
+        j = col_idx[position]
+        top_changes.append(
+            {
+                "column_1": str(left.columns[i]),
+                "column_2": str(left.columns[j]),
+                "left_correlation": float(left_values[position]),
+                "right_correlation": float(right_values[position]),
+                "difference": float(differences[position]),
+                "absolute_difference": float(abs(differences[position])),
+            }
+        )
+    return {
+        "matrix_upper_triangle_correlation": structure_correlation,
+        "mean_absolute_correlation_change": (
+            float(np.mean(np.abs(valid_differences))) if len(valid_differences) else None
+        ),
+        "max_absolute_correlation_change": (
+            float(np.max(np.abs(valid_differences))) if len(valid_differences) else None
+        ),
+        "compared_pairs": int(valid.sum()),
+        "undefined_pairs_excluded": int(len(valid) - valid.sum()),
+        "top_absolute_changes": top_changes,
+    }

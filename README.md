@@ -275,6 +275,9 @@ sbatch doob_h_evaluate.sh
 Results are written under
 `conditional_samples/shoppers/<MODEL_NAME>_evaluation/density_results.json`;
 the detailed per-column Shape and column-pair Trend tables are saved beside it.
+The same evaluation also saves Pearson correlation matrices for the full real
+table, constrained real subset, and generated table, plus summaries of
+constrained-vs-total and generated-vs-constrained correlation changes.
 
 ## License
 

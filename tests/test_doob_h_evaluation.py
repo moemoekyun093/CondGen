@@ -2,7 +2,10 @@ import unittest
 
 import pandas as pd
 
-from tabdiff.doob_h_evaluation import raw_constraint_report
+from tabdiff.doob_h_evaluation import (
+    compare_correlation_matrices,
+    raw_constraint_report,
+)
 
 
 class RawConstraintEvaluationTest(unittest.TestCase):
@@ -37,6 +40,28 @@ class RawConstraintEvaluationTest(unittest.TestCase):
         }
         report, _ = raw_constraint_report(frame, query)
         self.assertEqual(report["joint_hit_rate"], 1.0)
+
+
+class CorrelationComparisonTest(unittest.TestCase):
+    def test_reports_structure_similarity_and_changed_pairs(self):
+        left = pd.DataFrame(
+            [[1.0, 0.2, -0.1], [0.2, 1.0, 0.4], [-0.1, 0.4, 1.0]],
+            columns=["a", "b", "c"],
+            index=["a", "b", "c"],
+        )
+        right = pd.DataFrame(
+            [[1.0, 0.3, -0.1], [0.3, 1.0, 0.1], [-0.1, 0.1, 1.0]],
+            columns=["a", "b", "c"],
+            index=["a", "b", "c"],
+        )
+        report = compare_correlation_matrices(left, right)
+        self.assertEqual(report["compared_pairs"], 3)
+        self.assertAlmostEqual(report["mean_absolute_correlation_change"], 0.4 / 3)
+        self.assertEqual(
+            {report["top_absolute_changes"][0]["column_1"],
+             report["top_absolute_changes"][0]["column_2"]},
+            {"b", "c"},
+        )
 
 
 if __name__ == "__main__":

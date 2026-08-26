@@ -17,7 +17,36 @@ from torch import Tensor, nn
 from tabdiff.modules.main_modules import FTBlock, PeriodicTokenizer, PositionalEmbedding
 
 
-def categorical_log_h_ratios(
+def guided_categorical_log_probs(
+    base_log_probs: Tensor,
+    candidate_log_h: Tensor,
+) -> Tensor:
+    """Return the normalized conditional endpoint law ``p * h``.
+
+    ``base_log_probs`` is TabDiff's substituted clean-token distribution and
+    ``candidate_log_h`` contains ``log h(child)`` for each real-token child.
+    The current-state ``log h`` is not evaluated: the exact harmonic identity
+    makes it the per-column log normalizer and implements
+
+        p^S(k | x_t) = p(k | x_t) h(x_t^{->k})
+                       / sum_l p(l | x_t) h(x_t^{->l}).
+
+    Mask and padded classes already have ``-inf`` base log-probability under
+    TabDiff's substitution parameterization and therefore remain impossible.
+    """
+    if base_log_probs.shape != candidate_log_h.shape:
+        raise ValueError(
+            f"categorical candidate-score shape {tuple(candidate_log_h.shape)} "
+            f"does not match log-probability shape {tuple(base_log_probs.shape)}"
+        )
+    guided_logits = base_log_probs + candidate_log_h
+    log_normalizer = torch.logsumexp(guided_logits, dim=-1, keepdim=True)
+    if not torch.isfinite(log_normalizer).all():
+        raise ValueError("every categorical column must have a finite candidate")
+    return guided_logits - log_normalizer
+
+
+def categorical_candidate_log_h(
     guide: nn.Module,
     x_num_t: Tensor,
     x_cat_t: Tensor,
@@ -28,22 +57,19 @@ def categorical_log_h_ratios(
     query_active_mask: Tensor | None = None,
     candidate_batch_size: int = 65536,
 ) -> Tensor:
-    """Evaluate ``log h(child) - log h(current)`` for categorical children.
+    """Evaluate ``log h(child)`` for every masked-column real-token child.
 
     The helper is differentiable for guide training and is reused under
-    ``no_grad`` by the sampler, keeping both paths identical.
+    ``no_grad`` by the sampler, keeping both paths identical.  It intentionally
+    never evaluates the unchanged current state because that common term is
+    determined by per-column normalization.
     """
     if candidate_batch_size <= 0:
         raise ValueError("candidate_batch_size must be positive")
     b, n_columns = x_cat_t.shape
     max_classes_with_mask = int(mask_index.max().item()) + 1
-    log_ratios = x_num_t.new_zeros((b, n_columns, max_classes_with_mask))
-    current_one_hot = to_one_hot(x_cat_t).to(x_num_t.dtype)
-    current_log_h = guide.log_h(
-        x_num_t,
-        current_one_hot,
-        t,
-        query_active_mask=query_active_mask,
+    candidate_scores = x_num_t.new_zeros(
+        (b, n_columns, max_classes_with_mask)
     )
 
     for column, class_count_value in enumerate(num_classes):
@@ -82,15 +108,13 @@ def categorical_log_h_ratios(
                 )
             )
         child_log_h = torch.cat(child_log_h_parts)
-        column_ratios = (
-            child_log_h - current_log_h[repeated_rows]
-        ).reshape(masked_rows.numel(), class_count)
-        log_ratios[
+        column_scores = child_log_h.reshape(masked_rows.numel(), class_count)
+        candidate_scores[
             masked_rows[:, None],
             column,
             torch.arange(class_count, device=x_cat_t.device)[None, :],
-        ] = column_ratios
-    return log_ratios
+        ] = column_scores
+    return candidate_scores
 
 
 @dataclass(frozen=True)

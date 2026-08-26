@@ -3,7 +3,7 @@
 The first verification stage fixes the active vector to all ones. Conditional
 endpoint rows supervise a direct ``sigma^2 grad_x log h`` predictor with the
 Section 5 denoiser-difference target. A separate scalar network supplies
-categorical child/current h-ratios to TabDiff's original absorbed loss. Every
+categorical candidate-state log-h scores to TabDiff's original absorbed loss. Every
 endpoint is drawn uniformly from the rows satisfying the complete box.
 """
 
@@ -26,7 +26,8 @@ from tabdiff.models.doob_h_transform import (
     CategoricalHTransformGuide,
     NumericalBoxQuery,
     NumericalHScoreGuide,
-    categorical_log_h_ratios,
+    categorical_candidate_log_h,
+    guided_categorical_log_probs,
 )
 from utils_train import update_ema
 
@@ -113,7 +114,7 @@ def categorical_doob_loss(
     active_mask: torch.Tensor,
     candidate_batch_size: int,
 ):
-    """Reuse TabDiff's absorbed loss after multiplying by the shared h ratio."""
+    """Match constrained endpoints with TabDiff's absorbed categorical loss."""
     if x0_cat.shape[1] == 0:
         return x_num_t.sum() * 0.0
 
@@ -123,7 +124,7 @@ def categorical_doob_loss(
             x_cat_t,
         )
 
-    log_ratios = categorical_log_h_ratios(
+    candidate_log_h = categorical_candidate_log_h(
         categorical_guide,
         x_num_t,
         x_cat_t,
@@ -135,14 +136,11 @@ def categorical_doob_loss(
         candidate_batch_size=candidate_batch_size,
     )
 
-    # Multiplication by h(child)/h(current) in probability space is addition
-    # of the log-ratio here. Renormalization gives the guided token law used by
-    # TabDiff's original categorical diffusion loss.
-    guided_log_probs = base_log_probs + log_ratios
-    guided_log_probs = guided_log_probs - torch.logsumexp(
-        guided_log_probs,
-        dim=-1,
-        keepdim=True,
+    # Conditional Generator Matching: the constrained endpoint target is
+    # matched against p_base(k | x_t) h(child_k), normalized over categories.
+    guided_log_probs = guided_categorical_log_probs(
+        base_log_probs,
+        candidate_log_h,
     )
     return runtime.diffusion._absorbed_closs(
         guided_log_probs,
@@ -379,9 +377,13 @@ def main() -> None:
             ),
             "categorical_training": (
                 "TabDiff absorbed categorical loss after multiplying frozen base "
-                "token probabilities by h(child)/h(current)"
+                "token probabilities by candidate h(child) scores and normalizing "
+                "over real endpoint categories; current h is not evaluated"
             ),
-            "categorical_sampling": "R_h=R*h(child)/h(current)",
+            "categorical_sampling": (
+                "normalize p_base(k|x_t)*h(child_k) before the original MDLM "
+                "update; preserve TabDiff reveal timing"
+            ),
         },
         "training": {
             "mode": "all_constrained",
@@ -421,7 +423,10 @@ def main() -> None:
         f"Epochs: {args.epochs}; every epoch uses all {len(x_positive)} "
         "all-constrained rows exactly once"
     )
-    print("Categorical objective: TabDiff absorbed loss with scalar-h ratios")
+    print(
+        "Categorical objective: constrained endpoint Generator Matching with "
+        "normalized base-probability times candidate scalar-h scores"
+    )
     print("No unrestricted rows and no BCE/classification objective")
     print(f"Fixed EMA joint diagnostic every {args.diagnostic_every} epochs")
     print(f"Writing checkpoints to {output_dir}")

@@ -9,7 +9,8 @@ from tabdiff.models.doob_h_transform import (
     NumericalBoxQuery,
     NumericalDoobHGuide,
     NumericalHScoreGuide,
-    categorical_log_h_ratios,
+    categorical_candidate_log_h,
+    guided_categorical_log_probs,
 )
 from tabdiff.doob_h_runtime import infer_denoiser_type
 from tabdiff.models.unified_ctime_diffusion import UnifiedCtimeDiffusion
@@ -190,7 +191,7 @@ class CategoricalDoobUpdateTest(unittest.TestCase):
         def to_one_hot(values):
             return torch.nn.functional.one_hot(values[:, 0], num_classes=3).float()
 
-        ratios = categorical_log_h_ratios(
+        scores = categorical_candidate_log_h(
             guide,
             x_num_t=torch.zeros(2, 1),
             x_cat_t=x_cat,
@@ -199,10 +200,34 @@ class CategoricalDoobUpdateTest(unittest.TestCase):
             mask_index=torch.tensor([2]),
             to_one_hot=to_one_hot,
         )
-        ratios[:, :, :2].sum().backward()
+        scores[:, :, :2].sum().backward()
 
-        self.assertEqual(ratios.shape, (2, 1, 3))
+        self.assertEqual(scores.shape, (2, 1, 3))
         self.assertIsNotNone(guide.weight.grad)
+
+    def test_candidate_helper_skips_current_state_and_uses_whole_row(self):
+        class WholeRowLogH(torch.nn.Module):
+            def log_h(self, x_num, x_cat, t, query_active_mask=None):
+                # With one categorical column, index 2 is MASK.  Candidate-only
+                # evaluation must never pass the unchanged masked state here.
+                if torch.any(x_cat[:, 2] != 0):
+                    raise AssertionError("current masked state was evaluated")
+                return x_num[:, 0] + 3.0 * x_cat[:, 1] + t
+
+        def to_one_hot(values):
+            return torch.nn.functional.one_hot(values[:, 0], num_classes=3).float()
+
+        scores = categorical_candidate_log_h(
+            WholeRowLogH(),
+            x_num_t=torch.tensor([[2.0]]),
+            x_cat_t=torch.tensor([[2]]),
+            t=torch.tensor([0.5]),
+            num_classes=[2],
+            mask_index=torch.tensor([2]),
+            to_one_hot=to_one_hot,
+        )
+
+        torch.testing.assert_close(scores[0, 0, :2], torch.tensor([2.5, 5.5]))
 
     def make_diffusion(self, num_classes=np.array([2])):
         return UnifiedCtimeDiffusion(
@@ -215,25 +240,87 @@ class CategoricalDoobUpdateTest(unittest.TestCase):
             device=torch.device("cpu"),
         )
 
-    def test_h_ratio_reweights_existing_mdlm_transition(self):
+    def test_candidate_log_h_changes_category_not_reveal_probability(self):
         diffusion = self.make_diffusion()
         log_p_x0 = torch.log(torch.tensor([[[0.5, 0.5, 1e-30]]]))
         x = torch.tensor([[2]])
         alpha_t = torch.tensor([[0.5]])
         alpha_s = torch.tensor([[0.8]])
-        h_log_ratios = torch.zeros((1, 1, 3))
-        h_log_ratios[0, 0, 0] = torch.log(torch.tensor(2.0))
+        h_candidate_log_scores = torch.zeros((1, 1, 3))
+        h_candidate_log_scores[0, 0, 0] = torch.log(torch.tensor(2.0))
 
         _, transition_weights = diffusion._mdlm_update(
             log_p_x0,
             x,
             alpha_t,
             alpha_s,
-            h_log_ratios=h_log_ratios,
+            h_candidate_log_scores=h_candidate_log_scores,
         )
 
-        expected = torch.tensor([[[0.3, 0.15, 0.2]]])
+        # The original real-token mass is (1-alpha_t)-(1-alpha_s)=0.3
+        # and MASK mass is 1-alpha_s=0.2.  h changes only the 2:1 split.
+        expected = torch.tensor([[[0.2, 0.1, 0.2]]])
         torch.testing.assert_close(transition_weights, expected)
+        self.assertAlmostEqual(
+            transition_weights[0, 0, :2].sum().item(),
+            0.3,
+            places=6,
+        )
+        self.assertAlmostEqual(transition_weights[0, 0, 2].item(), 0.2, places=6)
+
+    def test_constant_h_recovers_original_transition(self):
+        diffusion = self.make_diffusion()
+        log_p_x0 = torch.log(torch.tensor([[[0.25, 0.75, 1e-30]]]))
+        x = torch.tensor([[2]])
+        alpha_t = torch.tensor([[0.5]])
+        alpha_s = torch.tensor([[0.8]])
+
+        _, base_weights = diffusion._mdlm_update(
+            log_p_x0,
+            x,
+            alpha_t,
+            alpha_s,
+        )
+        _, guided_weights = diffusion._mdlm_update(
+            log_p_x0,
+            x,
+            alpha_t,
+            alpha_s,
+            h_candidate_log_scores=torch.full_like(log_p_x0, 3.0),
+        )
+        torch.testing.assert_close(guided_weights, base_weights)
+
+    def test_guided_endpoint_law_is_normalized(self):
+        base = torch.log(torch.tensor([[[0.2, 0.8, 1e-30]]]))
+        candidate_scores = torch.tensor([[[math.log(4.0), 0.0, 0.0]]])
+        guided = guided_categorical_log_probs(base, candidate_scores).exp()
+
+        torch.testing.assert_close(guided.sum(dim=-1), torch.ones((1, 1)))
+        torch.testing.assert_close(guided[0, 0, :2], torch.tensor([0.5, 0.5]))
+
+    def test_fixed_rate_generator_matching_equals_weighted_cross_entropy(self):
+        base = torch.log(torch.tensor([[[0.25, 0.75, 1e-30]]]))
+        candidate_scores = torch.tensor([[[0.3, -0.2, 0.0]]])
+        guided = guided_categorical_log_probs(base, candidate_scores).exp()
+        weight = torch.tensor(2.0)
+        endpoint = 1
+
+        predicted_rates = weight * guided[0, 0, :2]
+        target_rates = torch.tensor([0.0, weight.item()])
+        positive = target_rates > 0
+        rate_kl = (
+            predicted_rates.sum()
+            - target_rates.sum()
+            + (
+                target_rates[positive]
+                * torch.log(
+                    target_rates[positive] / predicted_rates[positive]
+                )
+            ).sum()
+        )
+        weighted_cross_entropy = -weight * torch.log(guided[0, 0, endpoint])
+
+        torch.testing.assert_close(rate_kl, weighted_cross_entropy)
 
     def test_scalar_h_gradient_is_scaled_by_sigma_squared(self):
         diffusion = self.make_diffusion()

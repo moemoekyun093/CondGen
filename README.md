@@ -195,11 +195,13 @@ and time. The fixed all-ones mask is implicit and is not a network input in
 this first checkpoint. The numerical guide directly predicts
 `sigma(t)^2 * grad_x log h` and is regressed against
 `x_0 - D_base(x_t,t)`. The categorical guide predicts scalar `log h`; frozen
-base token probabilities are multiplied by `h(child)/h(current)`, renormalized,
-and passed to TabDiff's original `_absorbed_closs` against the same conditional
-endpoint. The networks do not share parameters. No unrestricted rows, negative
-examples, BCE classifier, or validation split are used. Guidance strength is
-fixed to 1.
+base token probabilities are multiplied by candidate-state `h(child)` values
+and normalized separately over each column's real categories. The unchanged
+current state is not evaluated: its `log h` is the per-column log normalizer
+from the harmonic identity. The resulting generator is passed to TabDiff's
+original `_absorbed_closs` against the same conditional endpoint. The networks
+do not share parameters. No unrestricted rows, negative examples, BCE
+classifier, or validation split are used. Guidance strength is fixed to 1.
 
 Random partial masks are deliberately postponed until the all-constrained case
 has been trained, sampled, and evaluated successfully.
@@ -213,8 +215,11 @@ masked. The guide is still trained on the original forward-corruption law
 `q(x_t | x_0)`: `q_C(t)` changes sampling initialization and is not a new
 guide-training distribution. With the present numerical-only query there are no
 fixed categorical entries, so `q_C` is undefined and the sampler correctly
-falls back to the original `t=1` start; categorical `h(child)/h(current)`
-reweighting remains active.
+falls back to the original `t=1` start. During each categorical reverse step,
+the sampler normalizes `p_base(k|x_t) * h(child_k)` across real categories
+before calling TabDiff's original MDLM update. Thus the guide changes which
+category is revealed while the original mask-persistence and reveal timing are
+left unchanged.
 
 Generate and inspect the deterministic intervals first:
 

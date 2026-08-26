@@ -3,7 +3,10 @@ import torch
 import math
 import numpy as np
 from tabdiff.models.noise_schedule import *
-from tabdiff.models.doob_h_transform import categorical_log_h_ratios
+from tabdiff.models.doob_h_transform import (
+    categorical_candidate_log_h,
+    guided_categorical_log_probs,
+)
 from tqdm import tqdm
 from itertools import chain
 
@@ -462,7 +465,14 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         return self.mask_index[None,:] * torch.ones(    
         * batch_dims, dtype=torch.int64, device=self.mask_index.device)
         
-    def _mdlm_update(self, log_p_x0, x, alpha_t, alpha_s, h_log_ratios=None):
+    def _mdlm_update(
+        self,
+        log_p_x0,
+        x,
+        alpha_t,
+        alpha_s,
+        h_candidate_log_scores=None,
+    ):
         """
             # t: (bs,)
             log_p_x0: (bs, K, K_max)
@@ -471,6 +481,16 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
             alpha_t: (bs, 1/K_cat)
             alpha_s: (bs,1/K_cat)
         """
+        # Conditional Generator Matching changes the endpoint-category law,
+        # not TabDiff's analytic reveal clock.  Normalize p_base * h before
+        # constructing the finite reverse transition, so real-token mass and
+        # MASK persistence retain their original schedule-controlled values.
+        if h_candidate_log_scores is not None:
+            log_p_x0 = guided_categorical_log_probs(
+                log_p_x0,
+                h_candidate_log_scores,
+            )
+
         move_chance_t = 1 - alpha_t
         move_chance_s = 1 - alpha_s     
         move_chance_t = move_chance_t.unsqueeze(-1)
@@ -490,16 +510,6 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         dummy_mask = torch.ones_like(q_xs) * dummy_mask
         q_xs *= dummy_mask
 
-        # Exact jump-side Doob form: each candidate transition is multiplied by
-        # h(t, u, c^{i->k}) / h(t, u, c).  The MASK/no-jump entry has ratio 1.
-        if h_log_ratios is not None:
-            if h_log_ratios.shape != q_xs.shape:
-                raise ValueError(
-                    f"categorical h-ratio shape {tuple(h_log_ratios.shape)} "
-                    f"does not match transition shape {tuple(q_xs.shape)}"
-                )
-            q_xs *= h_log_ratios.exp()
-        
         _x = self._sample_categorical(q_xs)
 
         copy_flag = (x != self.mask_index).to(x.dtype)
@@ -620,8 +630,8 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         return denoised + self.h_guide_strength * correction
 
     @torch.no_grad()
-    def _categorical_h_log_ratios(self, x_num_t, x_cat_t, t):
-        """Evaluate log h(child)-log h(current) for every masked-token child."""
+    def _categorical_h_candidate_scores(self, x_num_t, x_cat_t, t):
+        """Evaluate log h(child) for every masked-column real-token child."""
         guide = self.categorical_h_guide
         if guide is None or not hasattr(guide, "log_h") or len(self.num_classes) == 0:
             return None
@@ -630,7 +640,7 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         current_query_mask = self._guide_query_mask(
             b, x_num_t.device, x_num_t.dtype
         )
-        log_ratios = categorical_log_h_ratios(
+        candidate_scores = categorical_candidate_log_h(
             guide,
             x_num_t,
             x_cat_t,
@@ -641,10 +651,7 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
             query_active_mask=current_query_mask,
             candidate_batch_size=self.h_guide_candidate_batch_size,
         )
-        return self.h_guide_strength * log_ratios.clamp(
-            min=-self.h_guide_max_log_ratio,
-            max=self.h_guide_max_log_ratio,
-        )
+        return self.h_guide_strength * candidate_scores
 
     def _edm_loss(self, D_yn, y, sigma):
         weight = (sigma ** 2 + self.edm_params['sigma_data'] ** 2) / (sigma * self.edm_params['sigma_data']) ** 2
@@ -732,7 +739,7 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
             logits = self._subs_parameterization(raw_logits, x_cat_hat)
             alpha_t = torch.exp(-sigma_cat_hat).unsqueeze(0).repeat(b,1)
             alpha_s = torch.exp(-sigma_cat_next).unsqueeze(0).repeat(b,1)
-            h_log_ratios = self._categorical_h_log_ratios(
+            h_candidate_log_scores = self._categorical_h_candidate_scores(
                 x_num_hat.float(),
                 x_cat_hat,
                 t_hat.squeeze().repeat(b),
@@ -742,7 +749,7 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
                 x_cat_hat,
                 alpha_t,
                 alpha_s,
-                h_log_ratios=h_log_ratios,
+                h_candidate_log_scores=h_candidate_log_scores,
             )
         
         # Apply 2nd order correction.

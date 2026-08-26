@@ -1,4 +1,4 @@
-"""Lightweight numerical Doob h-transform guide for a fixed terminal event.
+"""Lightweight mixed Doob h-transform guide for a fixed terminal event.
 
 The guide predicts the denoiser-space correction
 
@@ -7,6 +7,10 @@ The guide predicts the denoiser-space correction
 where h(t, x_t) = P(X_0 in B | X_t=x_t).  Predicting ``delta_D`` instead of
 the raw score is a numerically stable reparameterization of the score-matching
 objective in Section 5 of the project note.
+
+The same network also predicts the scalar logit of h(t, x).  Its values at
+counterfactual categorical children provide the exact jump-side ratio
+h(t,u,c_child) / h(t,u,c_current).
 """
 
 from __future__ import annotations
@@ -134,12 +138,15 @@ class NumericalDoobHGuide(nn.Module):
         )
         self.final_norm = nn.LayerNorm(d_token)
         self.correction_head = nn.Linear(d_token, 1)
+        self.h_logit_head = nn.Linear(d_token, 1)
 
         # With a fresh guide, sampling is exactly the unconditional sampler.
         nn.init.zeros_(self.correction_head.weight)
         nn.init.zeros_(self.correction_head.bias)
+        nn.init.zeros_(self.h_logit_head.weight)
+        nn.init.zeros_(self.h_logit_head.bias)
 
-    def forward(self, x_num_t: Tensor, x_cat_t: Tensor | None, t: Tensor) -> Tensor:
+    def _encode(self, x_num_t: Tensor, x_cat_t: Tensor | None, t: Tensor) -> Tensor:
         if x_num_t.ndim != 2 or x_num_t.shape[1] != self.d_numerical:
             raise ValueError(
                 f"expected [batch, {self.d_numerical}] numerical input, got {tuple(x_num_t.shape)}"
@@ -168,8 +175,29 @@ class NumericalDoobHGuide(nn.Module):
         t_emb = self.time_embed(t_emb)
         for block in self.blocks:
             tokens = block(tokens, t_emb)
-        numeric_tokens = self.final_norm(tokens)[:, : self.d_numerical]
-        return self.correction_head(numeric_tokens).squeeze(-1)
+        return self.final_norm(tokens)
+
+    def forward_with_log_h(
+        self,
+        x_num_t: Tensor,
+        x_cat_t: Tensor | None,
+        t: Tensor,
+    ) -> tuple[Tensor, Tensor]:
+        """Return numerical denoiser correction and scalar logit for ``h``."""
+        tokens = self._encode(x_num_t, x_cat_t, t)
+        numeric_tokens = tokens[:, : self.d_numerical]
+        correction = self.correction_head(numeric_tokens).squeeze(-1)
+        h_logit = self.h_logit_head(tokens.mean(dim=1)).squeeze(-1)
+        return correction, h_logit
+
+    def forward(self, x_num_t: Tensor, x_cat_t: Tensor | None, t: Tensor) -> Tensor:
+        correction, _ = self.forward_with_log_h(x_num_t, x_cat_t, t)
+        return correction
+
+    def log_h(self, x_num_t: Tensor, x_cat_t: Tensor | None, t: Tensor) -> Tensor:
+        """Return ``log P(X_0 in B | X_t)`` for categorical Doob ratios."""
+        _, h_logit = self.forward_with_log_h(x_num_t, x_cat_t, t)
+        return torch.nn.functional.logsigmoid(h_logit)
 
     def config_dict(self) -> Dict[str, Any]:
         return dict(self._config)

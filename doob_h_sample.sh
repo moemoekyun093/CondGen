@@ -6,7 +6,7 @@
 #SBATCH --gpus=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=24G
-#SBATCH --time=01:00:00
+#SBATCH --time=04:00:00
 #SBATCH --array=0-1
 
 set -euo pipefail
@@ -30,10 +30,21 @@ if [ ! -e "${CKPT_CANDIDATES[0]}" ] || [ "${#CKPT_CANDIDATES[@]}" -ne 1 ]; then
     exit 1
 fi
 BASE_CKPT="${CKPT_CANDIDATES[0]}"
-GUIDE_CKPT="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/doob_h_fixed_box/best_guide.pt"
+GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_mixed_fixed_box}"
+GUIDE_CKPT="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/${GUIDE_DIR_NAME}/best_guide.pt"
 NUM_SAMPLES="${NUM_SAMPLES:-1000}"
 BATCH_SIZE="${BATCH_SIZE:-1000}"
-OUTPUT="conditional_samples/${DATANAME}/${MODEL_NAME}.csv"
+SAMPLE_SUFFIX="${SAMPLE_SUFFIX-_mixed}"
+OUTPUT="conditional_samples/${DATANAME}/${MODEL_NAME}${SAMPLE_SUFFIX}.csv"
+CATEGORICAL_START_MODE="${CATEGORICAL_START_MODE:-section4_posterior}"
+FIXED_CATEGORICAL="${FIXED_CATEGORICAL:-}"
+CATEGORICAL_ARGS=()
+if [ -n "${FIXED_CATEGORICAL}" ]; then
+    IFS=',' read -r -a FIXED_CATEGORICAL_ITEMS <<< "${FIXED_CATEGORICAL}"
+    for ITEM in "${FIXED_CATEGORICAL_ITEMS[@]}"; do
+        CATEGORICAL_ARGS+=(--fixed-categorical "${ITEM}")
+    done
+fi
 
 echo "========================================"
 echo "Job ID            : ${SLURM_JOB_ID}"
@@ -43,6 +54,9 @@ echo "Base model        : ${MODEL_NAME}"
 echo "Base checkpoint   : ${BASE_CKPT}"
 echo "Guide checkpoint  : ${GUIDE_CKPT}"
 echo "Guidance strength : 1.0 (fixed)"
+echo "Categorical Doob  : h(child)/h(current) transition reweighting"
+echo "Categorical start : ${CATEGORICAL_START_MODE}"
+echo "Fixed categories  : ${FIXED_CATEGORICAL:-none (ordinary t=1 start)}"
 echo "Output            : ${OUTPUT}"
 echo "========================================"
 nvidia-smi
@@ -62,6 +76,10 @@ python sample_doob_h.py \
     --num-samples "${NUM_SAMPLES}" \
     --batch-size "${BATCH_SIZE}" \
     --max-correction 5.0 \
+    --max-log-h-ratio 10.0 \
+    --h-candidate-batch-size 65536 \
+    --categorical-start-mode "${CATEGORICAL_START_MODE}" \
+    "${CATEGORICAL_ARGS[@]}" \
     --output "${OUTPUT}" \
     --device cuda
 

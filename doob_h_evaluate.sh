@@ -20,10 +20,12 @@ MODEL_NAMES=(
     "${ORIGINAL_MODEL}"
 )
 MODEL_NAME="${MODEL_NAMES[$SLURM_ARRAY_TASK_ID]}"
-SAMPLES="conditional_samples/${DATANAME}/${MODEL_NAME}.csv"
+SAMPLE_SUFFIX="${SAMPLE_SUFFIX-_mixed}"
+SAMPLE_NAME="${MODEL_NAME}${SAMPLE_SUFFIX}"
+SAMPLES="conditional_samples/${DATANAME}/${SAMPLE_NAME}.csv"
 QUERY_FILE="${QUERY_FILE:-constraints/${DATANAME}/fixed_numerical_intervals.json}"
-RAW_REPORT="conditional_samples/${DATANAME}/${MODEL_NAME}.raw_diagnostic.json"
-OUTPUT_DIR="conditional_samples/${DATANAME}/${MODEL_NAME}_evaluation"
+RAW_REPORT="conditional_samples/${DATANAME}/${SAMPLE_NAME}.raw_diagnostic.json"
+OUTPUT_DIR="conditional_samples/${DATANAME}/${SAMPLE_NAME}_evaluation"
 REAL_DATA="synthetic/${DATANAME}/real.csv"
 
 for path in "${SAMPLES}" "${QUERY_FILE}" "${REAL_DATA}"; do

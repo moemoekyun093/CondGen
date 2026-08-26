@@ -24,6 +24,27 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--num-samples", type=int, default=1000)
     parser.add_argument("--batch-size", type=int, default=1000)
     parser.add_argument("--max-correction", type=float, default=5.0)
+    parser.add_argument("--max-log-h-ratio", type=float, default=10.0)
+    parser.add_argument("--h-candidate-batch-size", type=int, default=65536)
+    parser.add_argument(
+        "--categorical-start-mode",
+        choices=("full", "section4_posterior"),
+        default="section4_posterior",
+        help=(
+            "Use Section 4's posterior reverse start time when fixed categorical "
+            "equalities are supplied; otherwise the sampler falls back to full time"
+        ),
+    )
+    parser.add_argument(
+        "--fixed-categorical",
+        action="append",
+        default=[],
+        metavar="COLUMN=CLASS",
+        help=(
+            "Fix a model-space categorical column to a model-space class index; "
+            "repeat for multiple equalities (example: --fixed-categorical 0=2)"
+        ),
+    )
     parser.add_argument("--num-timesteps", type=int, default=None)
     parser.add_argument("--output", default=None)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
@@ -36,6 +57,23 @@ def torch_load(path: str, device: torch.device):
         return torch.load(path, map_location=device, weights_only=False)
     except TypeError:
         return torch.load(path, map_location=device)
+
+
+def parse_fixed_categorical(specs: list[str]) -> dict[int, int]:
+    fixed = {}
+    for spec in specs:
+        try:
+            column_text, class_text = spec.split("=", maxsplit=1)
+            column = int(column_text)
+            class_index = int(class_text)
+        except (TypeError, ValueError) as error:
+            raise ValueError(
+                f"invalid fixed categorical equality {spec!r}; expected COLUMN=CLASS"
+            ) from error
+        if column in fixed and fixed[column] != class_index:
+            raise ValueError(f"categorical column {column} was fixed to two values")
+        fixed[column] = class_index
+    return fixed
 
 
 def main() -> None:
@@ -70,7 +108,15 @@ def main() -> None:
         guide,
         strength=1.0,
         max_correction=args.max_correction,
+        max_log_ratio=args.max_log_h_ratio,
+        candidate_batch_size=args.h_candidate_batch_size,
     )
+    fixed_categorical = parse_fixed_categorical(args.fixed_categorical)
+    if args.categorical_start_mode == "section4_posterior" and not fixed_categorical:
+        print(
+            "No fixed categorical equalities were supplied; Section 4 q_C(t) is "
+            "undefined, so sampling starts from t=1 as usual"
+        )
     if args.num_timesteps is not None:
         if args.num_timesteps < 2:
             raise ValueError("num-timesteps must be at least 2")
@@ -79,6 +125,8 @@ def main() -> None:
     samples = runtime.diffusion.sample_all(
         args.num_samples,
         min(args.batch_size, args.num_samples),
+        fixed_categorical=fixed_categorical,
+        categorical_start_mode=args.categorical_start_mode,
     )
     query = NumericalBoxQuery.from_dict(metadata["query"])
     d_numerical = runtime.dataset.d_numerical
@@ -134,6 +182,17 @@ def main() -> None:
         "raw_joint_hit_rate": float(raw_joint_hit_rate),
         "normalized_joint_hit_rate": normalized_joint_hit_rate,
         "all_rows_satisfy": bool(raw_rows_satisfied.all()),
+        "categorical_doob_transform": bool(
+            metadata.get("training", {}).get("categorical_doob_transform", False)
+        ),
+        "categorical_start_mode": args.categorical_start_mode,
+        "fixed_categorical_model_indices": {
+            str(column): value for column, value in fixed_categorical.items()
+        },
+        "section4_posterior_start_used": bool(
+            args.categorical_start_mode == "section4_posterior"
+            and fixed_categorical
+        ),
         "per_column": [],
     }
     for index, normalized_column_hit_rate in enumerate(per_column_hit_rate.tolist()):

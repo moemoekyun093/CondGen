@@ -43,6 +43,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=4096)
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--weight-decay", type=float, default=1e-4)
+    parser.add_argument("--h-loss-weight", type=float, default=1.0)
     parser.add_argument("--ema-decay", type=float, default=0.997)
     parser.add_argument("--reduce-lr-patience", type=int, default=50)
     parser.add_argument("--lr-factor", type=float, default=0.9)
@@ -58,8 +59,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def correction_batch(runtime, guide, x0: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-    """Return prediction and Section-5 denoiser-space target for one endpoint batch."""
+def guide_batch(runtime, guide, query, x0: torch.Tensor):
+    """Return numerical correction and scalar h-value supervision."""
     batch_size = x0.shape[0]
     device = x0.device
     t = torch.rand(batch_size, device=device, dtype=x0.dtype)
@@ -99,23 +100,40 @@ def correction_batch(runtime, guide, x0: torch.Tensor) -> tuple[torch.Tensor, to
     # We learn sigma^2 grad log h, which has the same pointwise minimizer and
     # remains well scaled as sigma approaches sigma_min.
     target_correction = x0_num - base_denoised
-    predicted_correction = guide(x_t, x_cat_t_soft, t)
-    return predicted_correction, target_correction
+    predicted_correction, h_logit = guide.forward_with_log_h(x_t, x_cat_t_soft, t)
+    event = query.contains(x0_num)
+    return predicted_correction, target_correction, h_logit, event
 
 
 @torch.no_grad()
-def full_training_loss(runtime, guide, loader: DataLoader, device: torch.device) -> float:
+def full_training_loss(runtime, guide, query, loader, device, h_loss_weight) -> dict:
     """Evaluate on all constrained training rows, following TabDiff's trainer."""
     guide.eval()
-    total_loss = 0.0
+    correction_sum = 0.0
+    positive_rows = 0
+    h_sum = 0.0
     total_rows = 0
     for (x0,) in loader:
         x0 = x0.to(device)
-        prediction, target = correction_batch(runtime, guide, x0)
-        total_loss += F.mse_loss(prediction, target).item() * len(x0)
+        prediction, target, h_logit, event = guide_batch(runtime, guide, query, x0)
+        if event.any():
+            correction_sum += F.mse_loss(
+                prediction[event], target[event]
+            ).item() * int(event.sum())
+            positive_rows += int(event.sum())
+        h_sum += F.binary_cross_entropy_with_logits(
+            h_logit,
+            event.to(h_logit.dtype),
+        ).item() * len(x0)
         total_rows += len(x0)
     guide.train()
-    return total_loss / total_rows
+    correction_mse = correction_sum / positive_rows
+    h_bce = h_sum / total_rows
+    return {
+        "correction_mse": correction_mse,
+        "h_bce": h_bce,
+        "total": correction_mse + h_loss_weight * h_bce,
+    }
 
 
 def save_guide_checkpoint(
@@ -142,6 +160,8 @@ def main() -> None:
     args = parse_args()
     if args.epochs <= 0 or args.batch_size <= 0:
         raise ValueError("epochs and batch-size must be positive")
+    if args.h_loss_weight <= 0:
+        raise ValueError("h-loss-weight must be positive")
     if not 0.0 <= args.ema_decay < 1.0:
         raise ValueError("ema-decay must be in [0, 1)")
     if args.reduce_lr_patience < 0:
@@ -201,7 +221,9 @@ def main() -> None:
         )
 
     generator = torch.Generator().manual_seed(args.seed)
-    training = positive
+    # The numerical score-matching term uses positive rows only.  The scalar
+    # h-value term needs both positive and negative rows to learn P(B | X_t).
+    training = x_all
     train_loader = DataLoader(
         TensorDataset(training),
         batch_size=min(args.batch_size, len(training)),
@@ -227,6 +249,9 @@ def main() -> None:
         "freq_sigma": 0.05,
     }
     guide = NumericalDoobHGuide(**guide_kwargs).to(device)
+    with torch.no_grad():
+        prior_logit = math.log(hit_rate / (1.0 - hit_rate))
+        guide.h_logit_head.bias.fill_(prior_logit)
     optimizer = torch.optim.AdamW(
         guide.parameters(),
         lr=args.lr,
@@ -243,7 +268,7 @@ def main() -> None:
         parameter.detach_()
 
     output_dir = Path(
-        args.output_dir or f"tabdiff/ckpt/{args.dataname}/doob_h_fixed_box"
+        args.output_dir or f"tabdiff/ckpt/{args.dataname}/doob_h_mixed_fixed_box"
     )
     output_dir.mkdir(parents=True, exist_ok=True)
     metadata = {
@@ -259,15 +284,26 @@ def main() -> None:
             "training_hit_rate": hit_rate,
             "positive_rows": len(positive),
         },
-        "objective": "MSE on sigma^2 * grad_x log h = x0 - D_base(x_t,t)",
+        "objective": {
+            "numerical": "MSE on sigma^2 * grad_x log h = x0 - D_base(x_t,t)",
+            "h_value": "BCE for h(t,x)=P(X_0 in B | X_t=x)",
+            "categorical_sampling": "R_h(c->k)=R(c->k)*h(child)/h(current)",
+            "state_distribution": (
+                "base forward q(x_t|x_0) with uniform t; Section 4 q_C(t) is a "
+                "sampling-time ordering posterior, not a guide-training replacement"
+            ),
+        },
         "seed": args.seed,
         "training": {
             "epochs": args.epochs,
             "batch_size": min(args.batch_size, len(training)),
             "batches_per_epoch": len(train_loader),
             "optimizer_updates": args.epochs * len(train_loader),
-            "all_constrained_rows": True,
+            "all_rows_for_h_value": True,
+            "positive_rows_for_numerical_score": len(positive),
             "validation_split": False,
+            "h_loss_weight": args.h_loss_weight,
+            "categorical_doob_transform": True,
             "ema_decay": args.ema_decay,
             "checkpoint_warmup": args.checkpoint_warmup,
             "checkpoint_every": args.checkpoint_every,
@@ -278,6 +314,7 @@ def main() -> None:
 
     parameter_count = sum(parameter.numel() for parameter in guide.parameters())
     print(f"Fixed query retains {len(positive)}/{len(x_num)} rows ({hit_rate:.2%})")
+    print("Training scalar h on all rows; numerical correction on positive rows")
     print(f"Guide parameters: {parameter_count:,}")
     print(
         f"Training for {args.epochs} epochs x {len(train_loader)} batches/epoch "
@@ -292,27 +329,52 @@ def main() -> None:
     last_ema_training_mse = float("nan")
     guide.train()
     for epoch in range(1, args.epochs + 1):
-        total_loss = 0.0
+        correction_sum = 0.0
+        positive_rows = 0
+        h_sum = 0.0
         total_rows = 0
         for (x0,) in train_loader:
             x0 = x0.to(device)
             optimizer.zero_grad(set_to_none=True)
-            prediction, target = correction_batch(runtime, guide, x0)
-            loss = F.mse_loss(prediction, target)
+            prediction, target, h_logit, event = guide_batch(
+                runtime, guide, query, x0
+            )
+            if event.any():
+                correction_loss = F.mse_loss(prediction[event], target[event])
+            else:
+                correction_loss = prediction.sum() * 0.0
+            h_loss = F.binary_cross_entropy_with_logits(
+                h_logit,
+                event.to(h_logit.dtype),
+            )
+            loss = correction_loss + args.h_loss_weight * h_loss
             loss.backward()
             torch.nn.utils.clip_grad_norm_(guide.parameters(), max_norm=1.0)
             optimizer.step()
-            total_loss += loss.item() * len(x0)
+            if event.any():
+                correction_sum += correction_loss.item() * int(event.sum())
+                positive_rows += int(event.sum())
+            h_sum += h_loss.item() * len(x0)
             total_rows += len(x0)
 
-        training_mse = total_loss / total_rows
+        correction_mse = correction_sum / positive_rows
+        h_bce = h_sum / total_rows
+        training_mse = correction_mse + args.h_loss_weight * h_bce
         if not math.isfinite(training_mse):
             print(f"Stopping at epoch {epoch}: non-finite training MSE {training_mse}")
             break
 
         scheduler.step(training_mse)
         update_ema(ema_guide.parameters(), guide.parameters(), rate=args.ema_decay)
-        ema_training_mse = full_training_loss(runtime, ema_guide, loss_loader, device)
+        ema_losses = full_training_loss(
+            runtime,
+            ema_guide,
+            query,
+            loss_loader,
+            device,
+            args.h_loss_weight,
+        )
+        ema_training_mse = ema_losses["total"]
         if not math.isfinite(ema_training_mse):
             print(f"Stopping at epoch {epoch}: non-finite EMA training MSE {ema_training_mse}")
             break
@@ -321,8 +383,11 @@ def main() -> None:
         last_ema_training_mse = ema_training_mse
         lr = optimizer.param_groups[0]["lr"]
         print(
-            f"epoch={epoch:05d}/{args.epochs:05d} train_mse={training_mse:.6f} "
-            f"ema_train_mse={ema_training_mse:.6f} lr={lr:.3e}"
+            f"epoch={epoch:05d}/{args.epochs:05d} total={training_mse:.6f} "
+            f"correction_mse={correction_mse:.6f} h_bce={h_bce:.6f} "
+            f"ema_total={ema_training_mse:.6f} "
+            f"ema_correction_mse={ema_losses['correction_mse']:.6f} "
+            f"ema_h_bce={ema_losses['h_bce']:.6f} lr={lr:.3e}"
         )
 
         if epoch > args.checkpoint_warmup and training_mse < best_training:

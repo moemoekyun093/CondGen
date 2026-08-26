@@ -195,8 +195,23 @@ numerical column.  A preprocessing job chooses a shared symmetric marginal
 quantile level so the joint box contains at least 30% of transformed training
 rows, then saves the normalized and raw-space bounds to JSON.  The query is not
 an input to the guide: the guide is parameterized only by the complete noisy row
-and time.  Categorical values may be observed as context, but they are not part
-of the constraint and their reverse transition rates are not guided.
+and time. Categorical values are not part of the constraint, but the guide also
+learns the scalar value `h(t,x) = P(X_0 in B | X_t=x)`. During sampling,
+categorical reverse transitions are reweighted by the mixed Doob ratio
+`h(t,u,c_child) / h(t,u,c_current)` while the original TabDiff logits and mask
+schedule remain frozen.
+
+For optional categorical equality constraints, the sampler also implements the
+Section 4 ordering construction. If categorical columns `C` are fixed, it draws
+each trajectory's reverse start time from the discretized posterior
+`q_C(t)` for paths on which every column in `C` is revealed before every free
+categorical column. It starts with `C` fixed and all other categorical entries
+masked. The guide is still trained on the original forward-corruption law
+`q(x_t | x_0)`: `q_C(t)` changes sampling initialization and is not a new
+guide-training distribution. With the present numerical-only query there are no
+fixed categorical entries, so `q_C` is undefined and the sampler correctly
+falls back to the original `t=1` start; categorical `h(child)/h(current)`
+reweighting remains active.
 
 Generate and inspect the deterministic intervals first:
 
@@ -226,9 +241,22 @@ After training succeeds, submit conditional generation:
 sbatch doob_h_sample.sh
 ```
 
-The sampling array writes model-specific outputs to
-`conditional_samples/shoppers/ft_periodic_seed0.csv` and
-`conditional_samples/shoppers/original_seed0.csv`, with a matching
+To add categorical equalities, pass comma-separated model-space
+`COLUMN=CLASS` indices. For example, this fixes categorical model column 0 to
+class 1 and column 3 to class 2, then uses the Section 4 posterior start:
+
+```bash
+export FIXED_CATEGORICAL="0=1,3=2"
+sbatch --export=ALL,DATANAME=adult,SAMPLE_SUFFIX=_mixed_cat doob_h_sample.sh
+```
+
+These are encoded model indices, not raw CSV labels. The job prints the sampled
+start-time mean/min/max. Use a distinct `SAMPLE_SUFFIX` for each categorical
+query so results are not overwritten.
+
+The mixed-guidance sampling array writes model-specific outputs to
+`conditional_samples/shoppers/ft_periodic_seed0_mixed.csv` and
+`conditional_samples/shoppers/original_seed0_mixed.csv`, with a matching
 `.constraints.json` report beside each CSV.
 
 To submit the complete dependency chain:
@@ -240,9 +268,11 @@ sbatch --dependency="afterok:${TRAIN_JOB}" doob_h_sample.sh
 ```
 
 Guide training follows the base TabDiff trainer's data-use and checkpointing
-conventions: all rows satisfying the fixed query are used for training (there is
-no validation split), training runs for 8000 full epochs by default, the learning
-rate uses reduce-on-plateau on full-training MSE, and an EMA guide with decay
+conventions: all rows train the scalar `h` value while rows satisfying the fixed
+query train the numerical score correction (there is no validation split).
+Training runs for 8000 full epochs by default, and the learning
+rate uses reduce-on-plateau on the combined numerical-correction MSE and scalar
+`h` binary cross-entropy, and an EMA guide with decay
 0.997 is updated after every epoch.  Best raw and EMA checkpoint selection starts
 after epoch 4000, and `best_guide.pt` is the selected EMA guide used for sampling.
 Training parameters can be overridden with SLURM exports, for example
@@ -273,7 +303,7 @@ sbatch doob_h_evaluate.sh
 ```
 
 Results are written under
-`conditional_samples/shoppers/<MODEL_NAME>_evaluation/density_results.json`;
+`conditional_samples/shoppers/<MODEL_NAME>_mixed_evaluation/density_results.json`;
 the detailed per-column Shape and column-pair Trend tables are saved beside it.
 The same evaluation also saves Pearson correlation matrices for the full real
 table, constrained real subset, and generated table, plus summaries of

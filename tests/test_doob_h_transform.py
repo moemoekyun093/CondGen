@@ -1,9 +1,12 @@
 import unittest
+import math
 
+import numpy as np
 import torch
 
 from tabdiff.models.doob_h_transform import NumericalBoxQuery, NumericalDoobHGuide
 from tabdiff.doob_h_runtime import infer_denoiser_type
+from tabdiff.models.unified_ctime_diffusion import UnifiedCtimeDiffusion
 
 
 class CheckpointArchitectureTest(unittest.TestCase):
@@ -56,6 +59,10 @@ class NumericalDoobHGuideTest(unittest.TestCase):
         output = guide(x_num, x_cat, torch.linspace(0, 1, 5))
         self.assertEqual(output.shape, (5, 3))
         torch.testing.assert_close(output, torch.zeros_like(output))
+        torch.testing.assert_close(
+            guide.log_h(x_num, x_cat, torch.linspace(0, 1, 5)),
+            torch.full((5,), -math.log(2.0)),
+        )
 
     def test_numerical_only_forward_and_config_round_trip(self):
         guide = NumericalDoobHGuide(
@@ -68,6 +75,56 @@ class NumericalDoobHGuideTest(unittest.TestCase):
         restored = NumericalDoobHGuide(**guide.config_dict())
         output = restored(torch.randn(2, 4), None, torch.tensor(0.5))
         self.assertEqual(output.shape, (2, 4))
+
+
+class CategoricalDoobUpdateTest(unittest.TestCase):
+    def make_diffusion(self, num_classes=np.array([2])):
+        return UnifiedCtimeDiffusion(
+            num_classes=num_classes,
+            num_numerical_features=1,
+            denoise_fn=torch.nn.Identity(),
+            y_only_model=None,
+            noise_schedule_params={},
+            sampler_params={},
+            device=torch.device("cpu"),
+        )
+
+    def test_h_ratio_reweights_existing_mdlm_transition(self):
+        diffusion = self.make_diffusion()
+        log_p_x0 = torch.log(torch.tensor([[[0.5, 0.5, 1e-30]]]))
+        x = torch.tensor([[2]])
+        alpha_t = torch.tensor([[0.5]])
+        alpha_s = torch.tensor([[0.8]])
+        h_log_ratios = torch.zeros((1, 1, 3))
+        h_log_ratios[0, 0, 0] = torch.log(torch.tensor(2.0))
+
+        _, transition_weights = diffusion._mdlm_update(
+            log_p_x0,
+            x,
+            alpha_t,
+            alpha_s,
+            h_log_ratios=h_log_ratios,
+        )
+
+        expected = torch.tensor([[[0.3, 0.15, 0.2]]])
+        torch.testing.assert_close(transition_weights, expected)
+
+    def test_section4_posterior_prefers_middle_times(self):
+        diffusion = self.make_diffusion(np.array([2, 3]))
+        t = torch.linspace(0, 1, 1001)[:, None]
+        weights = diffusion._section4_start_time_weights([0], t)
+
+        self.assertAlmostEqual(weights.sum().item(), 1.0, places=6)
+        mode = t[weights.argmax()].item()
+        self.assertGreater(mode, 0.2)
+        self.assertLess(mode, 0.8)
+
+    def test_section4_posterior_requires_fixed_column(self):
+        diffusion = self.make_diffusion(np.array([2, 3]))
+        with self.assertRaisesRegex(ValueError, "at least one fixed"):
+            diffusion._section4_start_time_weights(
+                [], torch.linspace(0, 1, 11)[:, None]
+            )
 
 
 if __name__ == "__main__":

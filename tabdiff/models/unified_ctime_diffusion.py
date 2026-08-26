@@ -78,6 +78,8 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         self.numerical_h_guide = None
         self.h_guide_strength = 1.0
         self.h_guide_max_correction = None
+        self.h_guide_max_log_ratio = 10.0
+        self.h_guide_candidate_batch_size = 65536
         
         self.device = device
         
@@ -154,8 +156,63 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
             
         return d_loss.mean(), c_loss.mean()
 
+    def _section4_start_time_weights(self, fixed_columns, t):
+        """Discretized Section 4 posterior q_C(t) over reverse start times.
+
+        A categorical column's reverse reveal time X_i has survival function
+        P(X_i > t) = alpha_i(t).  Conditioning on every fixed column in C
+        being revealed before every free column in reverse time is equivalent
+        to max_{j not in C} X_j < min_{i in C} X_i.  The (unnormalized)
+        density of min_{i in C} X_i is therefore
+
+          prod_{j not in C}(1-alpha_j(t))
+          * prod_{i in C} alpha_i(t)
+          * sum_{i in C} rate_i(t).
+
+        ``t`` is the same evenly spaced grid used by the original sampler, so
+        normalizing these density values gives its discrete approximation.
+        """
+        n_columns = len(self.num_classes)
+        fixed_columns = sorted(set(int(column) for column in fixed_columns))
+        if not fixed_columns:
+            raise ValueError("Section 4 posterior requires at least one fixed categorical column")
+        if fixed_columns[0] < 0 or fixed_columns[-1] >= n_columns:
+            raise ValueError(
+                f"fixed categorical columns must lie in [0, {n_columns - 1}]"
+            )
+
+        sigma = self.cat_schedule.total_noise(t)
+        rate = self.cat_schedule.rate_noise(t)
+        if sigma.shape[-1] == 1 and n_columns > 1:
+            sigma = sigma.expand(-1, n_columns)
+        if rate.shape[-1] == 1 and n_columns > 1:
+            rate = rate.expand(-1, n_columns)
+        alpha = torch.exp(-sigma).clamp(min=1e-12, max=1.0 - 1e-12)
+        rate = rate.clamp_min(1e-12)
+
+        fixed_mask = torch.zeros(n_columns, dtype=torch.bool, device=t.device)
+        fixed_mask[fixed_columns] = True
+        log_weights = torch.log(alpha[:, fixed_mask]).sum(dim=1)
+        log_weights += torch.log(rate[:, fixed_mask].sum(dim=1))
+        if (~fixed_mask).any():
+            log_weights += torch.log1p(-alpha[:, ~fixed_mask]).sum(dim=1)
+        weights = torch.exp(log_weights - log_weights.max())
+        if not torch.isfinite(weights).all() or weights.sum() <= 0:
+            raise RuntimeError("Section 4 categorical start-time posterior is not finite")
+        return weights / weights.sum()
+
+    def sample_section4_start_indices(self, num_samples, fixed_columns, t):
+        """Draw one posterior reverse-start grid index for each trajectory."""
+        weights = self._section4_start_time_weights(fixed_columns, t)
+        return torch.multinomial(weights, num_samples, replacement=True)
+
     @torch.no_grad()
-    def sample(self, num_samples):
+    def sample(
+        self,
+        num_samples,
+        fixed_categorical=None,
+        categorical_start_mode="full",
+    ):
         b = num_samples
         device = self.device
         dtype = torch.float32
@@ -189,8 +246,44 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
             sigma_num_hat = sigma_num_cur
             sigma_cat_hat = sigma_cat_cur
                 
-        # Sample priors for the continuous dimensions
-        z_norm = torch.randn((b, self.num_numerical_features), device=device) * sigma_num_cur[-1] 
+        fixed_categorical = dict(fixed_categorical or {})
+        if categorical_start_mode not in {"full", "section4_posterior"}:
+            raise ValueError(
+                "categorical_start_mode must be 'full' or 'section4_posterior'"
+            )
+        for column, value in fixed_categorical.items():
+            if column < 0 or column >= len(self.num_classes):
+                raise ValueError(f"categorical column index out of range: {column}")
+            if value < 0 or value >= int(self.num_classes[column]):
+                raise ValueError(
+                    f"category {value} is invalid for column {column}; "
+                    f"expected [0, {int(self.num_classes[column]) - 1}]"
+                )
+
+        start_indices = torch.full(
+            (b,), self.num_timesteps - 1, dtype=torch.long, device=device
+        )
+        if categorical_start_mode == "section4_posterior" and fixed_categorical:
+            start_indices = self.sample_section4_start_indices(
+                b,
+                fixed_categorical.keys(),
+                t,
+            )
+            sampled_t = t[start_indices, 0]
+            print(
+                "Section 4 categorical start times: "
+                f"mean={sampled_t.mean().item():.4f}, "
+                f"min={sampled_t.min().item():.4f}, "
+                f"max={sampled_t.max().item():.4f}"
+            )
+
+        # At the posterior start time, initialize the continuous part at that
+        # time's prior scale.  This is the practical mixed-data approximation;
+        # Section 4's exact ordering argument itself concerns categorical data.
+        start_sigma_num = sigma_num_cur[start_indices]
+        z_norm = torch.randn(
+            (b, self.num_numerical_features), device=device
+        ) * start_sigma_num
             
         # Sample priors for the discrete dimensions
         has_cat = len(self.num_classes) > 0
@@ -200,29 +293,51 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
                 b,
                 len(self.num_classes),
             )
+            for column, value in fixed_categorical.items():
+                z_cat[:, column] = value
         
-        pbar = tqdm(reversed(range(0, self.num_timesteps)), total=self.num_timesteps)
+        largest_start = int(start_indices.max().item())
+        pbar = tqdm(reversed(range(0, largest_start + 1)), total=largest_start + 1)
         pbar.set_description(f"Sampling Progress")
-        for i in pbar:                  
-            z_norm, z_cat, q_xs = self.edm_update(
+        for i in pbar:
+            updated_norm, updated_cat, q_xs = self.edm_update(
                 z_norm, z_cat, i, 
                 t[i], t[i-1] if i > 0 else None, t_hat[i],
                 sigma_num_cur[i], sigma_num_next[i], sigma_num_hat[i], 
                 sigma_cat_cur[i], sigma_cat_next[i], sigma_cat_hat[i],
+                fixed_categorical=fixed_categorical,
             )
+            # Churn can remask an already fixed entry before the MDLM update;
+            # restore C_0 so fixed values remain observed for the whole path.
+            for column, value in fixed_categorical.items():
+                updated_cat[:, column] = value
+            active = start_indices >= i
+            z_norm = torch.where(active[:, None], updated_norm, z_norm)
+            z_cat = torch.where(active[:, None], updated_cat, z_cat)
         
         assert torch.all(z_cat < self.mask_index)
         sample = torch.cat([z_norm, z_cat], dim=1).cpu()
         return sample
 
-    def sample_all(self, num_samples, batch_size, keep_nan_samples=False):        
+    def sample_all(
+        self,
+        num_samples,
+        batch_size,
+        keep_nan_samples=False,
+        fixed_categorical=None,
+        categorical_start_mode="full",
+    ):
         b = batch_size
 
         all_samples = []
         num_generated = 0
         while num_generated < num_samples:
             print(f"Samples left to generate: {num_samples-num_generated}")
-            sample = self.sample(b)
+            sample = self.sample(
+                b,
+                fixed_categorical=fixed_categorical,
+                categorical_start_mode=categorical_start_mode,
+            )
             mask_nan = torch.any(sample.isnan(), dim=1)
             if keep_nan_samples:
                 # If the sample instances that contains Nan are decided to be kept, the row with Nan will be foreced to all zeros
@@ -344,7 +459,7 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         return self.mask_index[None,:] * torch.ones(    
         * batch_dims, dtype=torch.int64, device=self.mask_index.device)
         
-    def _mdlm_update(self, log_p_x0, x, alpha_t, alpha_s):
+    def _mdlm_update(self, log_p_x0, x, alpha_t, alpha_s, h_log_ratios=None):
         """
             # t: (bs,)
             log_p_x0: (bs, K, K_max)
@@ -371,6 +486,16 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         dummy_mask = torch.tensor([[(1 if i <= mask_idx else 0) for i in range(max(self.mask_index+1))] for mask_idx in self.mask_index], device=q_xs.device)
         dummy_mask = torch.ones_like(q_xs) * dummy_mask
         q_xs *= dummy_mask
+
+        # Exact jump-side Doob form: each candidate transition is multiplied by
+        # h(t, u, c^{i->k}) / h(t, u, c).  The MASK/no-jump entry has ratio 1.
+        if h_log_ratios is not None:
+            if h_log_ratios.shape != q_xs.shape:
+                raise ValueError(
+                    f"categorical h-ratio shape {tuple(h_log_ratios.shape)} "
+                    f"does not match transition shape {tuple(q_xs.shape)}"
+                )
+            q_xs *= h_log_ratios.exp()
         
         _x = self._sample_categorical(q_xs)
 
@@ -393,19 +518,26 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
             raise NotImplementedError(f"The noise distribution--{self.noise_dist}-- is not implemented for CTIME ")
         return sigma
 
-    def set_numerical_h_guide(self, guide, strength=1.0, max_correction=None):
-        """Install a fixed-query guide that predicts ``sigma^2 * grad log h``.
-
-        The guide affects numerical reverse dynamics only.  Categorical transition
-        rates remain unchanged in this first numerical-only experiment.
-        """
+    def set_numerical_h_guide(
+        self,
+        guide,
+        strength=1.0,
+        max_correction=None,
+        max_log_ratio=10.0,
+        candidate_batch_size=65536,
+    ):
+        """Install numerical score and categorical jump-side Doob guidance."""
         if strength < 0:
             raise ValueError("h-guide strength must be non-negative")
         if max_correction is not None and max_correction <= 0:
             raise ValueError("max_correction must be positive when provided")
+        if max_log_ratio <= 0 or candidate_batch_size <= 0:
+            raise ValueError("max_log_ratio and candidate_batch_size must be positive")
         self.numerical_h_guide = guide
         self.h_guide_strength = float(strength)
         self.h_guide_max_correction = max_correction
+        self.h_guide_max_log_ratio = float(max_log_ratio)
+        self.h_guide_candidate_batch_size = int(candidate_batch_size)
 
     def _apply_numerical_h_guide(self, denoised, x_num_t, x_cat_t, t):
         if self.numerical_h_guide is None or self.num_numerical_features == 0:
@@ -423,6 +555,65 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
             )
         return denoised + self.h_guide_strength * correction
 
+    @torch.no_grad()
+    def _categorical_h_log_ratios(self, x_num_t, x_cat_t, t):
+        """Evaluate log h(child)-log h(current) for every masked-token child."""
+        guide = self.numerical_h_guide
+        if guide is None or not hasattr(guide, "log_h") or len(self.num_classes) == 0:
+            return None
+
+        b, n_columns = x_cat_t.shape
+        max_classes_with_mask = int(self.mask_index.max().item()) + 1
+        log_ratios = x_num_t.new_zeros((b, n_columns, max_classes_with_mask))
+        current_one_hot = self.to_one_hot(x_cat_t).to(x_num_t.dtype)
+        current_log_h = guide.log_h(x_num_t, current_one_hot, t)
+
+        for column, class_count_value in enumerate(self.num_classes):
+            class_count = int(class_count_value)
+            masked_rows = torch.nonzero(
+                x_cat_t[:, column] == self.mask_index[column],
+                as_tuple=False,
+            ).flatten()
+            if masked_rows.numel() == 0:
+                continue
+
+            repeated_rows = masked_rows.repeat_interleave(class_count)
+            candidate_categories = x_cat_t[repeated_rows].clone()
+            candidate_categories[:, column] = torch.arange(
+                class_count,
+                device=x_cat_t.device,
+            ).repeat(masked_rows.numel())
+            candidate_num = x_num_t[repeated_rows]
+            candidate_t = t[repeated_rows]
+
+            child_log_h_parts = []
+            for start in range(0, len(repeated_rows), self.h_guide_candidate_batch_size):
+                stop = start + self.h_guide_candidate_batch_size
+                child_one_hot = self.to_one_hot(
+                    candidate_categories[start:stop]
+                ).to(x_num_t.dtype)
+                child_log_h_parts.append(
+                    guide.log_h(
+                        candidate_num[start:stop],
+                        child_one_hot,
+                        candidate_t[start:stop],
+                    )
+                )
+            child_log_h = torch.cat(child_log_h_parts)
+            ratio = child_log_h - current_log_h[repeated_rows]
+            ratio = ratio.reshape(masked_rows.numel(), class_count)
+            ratio = ratio.clamp(
+                min=-self.h_guide_max_log_ratio,
+                max=self.h_guide_max_log_ratio,
+            )
+            ratio = self.h_guide_strength * ratio
+            log_ratios[
+                masked_rows[:, None],
+                column,
+                torch.arange(class_count, device=x_cat_t.device)[None, :],
+            ] = ratio
+        return log_ratios
+
     def _edm_loss(self, D_yn, y, sigma):
         weight = (sigma ** 2 + self.edm_params['sigma_data'] ** 2) / (sigma * self.edm_params['sigma_data']) ** 2
     
@@ -435,7 +626,8 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
             self, x_num_cur, x_cat_cur, i, 
             t_cur, t_next, t_hat,
             sigma_num_cur, sigma_num_next, sigma_num_hat, 
-            sigma_cat_cur, sigma_cat_next, sigma_cat_hat, 
+            sigma_cat_cur, sigma_cat_next, sigma_cat_hat,
+            fixed_categorical=None,
         ):
         """
         i = T-1,...,0
@@ -450,6 +642,8 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         # Get x_cat_hat
         move_chance = -torch.expm1(sigma_cat_cur - sigma_cat_hat)    # the incremental move change is 1 - alpha_t/alpha_s = 1 - exp(sigma_s - sigma_t)
         x_cat_hat, _ = self.q_xt(x_cat_cur, move_chance) if has_cat else (x_cat_cur, x_cat_cur)
+        for column, value in dict(fixed_categorical or {}).items():
+            x_cat_hat[:, column] = value
 
         # Get predictions
         x_cat_hat_oh = self.to_one_hot(x_cat_hat).to(x_num_hat.dtype) if has_cat else x_cat_hat
@@ -505,7 +699,18 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
             logits = self._subs_parameterization(raw_logits, x_cat_hat)
             alpha_t = torch.exp(-sigma_cat_hat).unsqueeze(0).repeat(b,1)
             alpha_s = torch.exp(-sigma_cat_next).unsqueeze(0).repeat(b,1)
-            x_cat_next, q_xs = self._mdlm_update(logits, x_cat_hat, alpha_t, alpha_s)
+            h_log_ratios = self._categorical_h_log_ratios(
+                x_num_hat.float(),
+                x_cat_hat,
+                t_hat.squeeze().repeat(b),
+            )
+            x_cat_next, q_xs = self._mdlm_update(
+                logits,
+                x_cat_hat,
+                alpha_t,
+                alpha_s,
+                h_log_ratios=h_log_ratios,
+            )
         
         # Apply 2nd order correction.
         if self.sampler_params['second_order_correction']:

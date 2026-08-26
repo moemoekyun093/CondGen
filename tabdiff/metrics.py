@@ -15,7 +15,10 @@ from tqdm import tqdm
 
 
 class TabMetrics(object):
-    def __init__(self, real_data_path, test_data_path, val_data_path, info, device, metric_list) -> None:
+    def __init__(
+            self, real_data_path, test_data_path, val_data_path, info, device,
+            metric_list, include_density_diagnostic=True
+        ) -> None:
         self.real_data_path = real_data_path
         self.test_data_path = test_data_path
         self.val_data_path = val_data_path
@@ -23,6 +26,7 @@ class TabMetrics(object):
         self.device = device
         self.real_data_size = len(pd.read_csv(real_data_path))
         self.metric_list = metric_list
+        self.include_density_diagnostic = include_density_diagnostic
 
     def evaluate(self, syn_data):
         metrics, extras = {}, {}
@@ -56,11 +60,10 @@ class TabMetrics(object):
         qual_report = QualityReport()
         qual_report.generate(new_real_data, new_syn_data, metadata)
 
-        diag_report = DiagnosticReport()
-        diag_report.generate(new_real_data, new_syn_data, metadata)
-
         quality =  qual_report.get_properties()
-        diag = diag_report.get_properties()
+        if self.include_density_diagnostic:
+            diag_report = DiagnosticReport()
+            diag_report.generate(new_real_data, new_syn_data, metadata)
 
         Shape = quality['Score'][0]
         Trend = quality['Score'][1]

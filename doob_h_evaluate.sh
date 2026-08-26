@@ -27,8 +27,27 @@ QUERY_FILE="${QUERY_FILE:-constraints/${DATANAME}/fixed_numerical_intervals.json
 RAW_REPORT="conditional_samples/${DATANAME}/${SAMPLE_NAME}.raw_diagnostic.json"
 OUTPUT_DIR="conditional_samples/${DATANAME}/${SAMPLE_NAME}_evaluation"
 REAL_DATA="synthetic/${DATANAME}/real.csv"
+UNCONDITIONAL_SAMPLES="${UNCONDITIONAL_SAMPLES:-}"
+if [ -z "${UNCONDITIONAL_SAMPLES}" ]; then
+    UNCONDITIONAL_CANDIDATES=(
+        "tabdiff/result/${DATANAME}/${MODEL_NAME}/all_samples/samples_0.csv"
+        "eval/report_runs/${MODEL_NAME}/${DATANAME}/all_samples/samples_0.csv"
+    )
+    for CANDIDATE in "${UNCONDITIONAL_CANDIDATES[@]}"; do
+        if [ -f "${CANDIDATE}" ]; then
+            UNCONDITIONAL_SAMPLES="${CANDIDATE}"
+            break
+        fi
+    done
+fi
 
-for path in "${SAMPLES}" "${QUERY_FILE}" "${REAL_DATA}"; do
+if [ -z "${UNCONDITIONAL_SAMPLES}" ]; then
+    echo "ERROR: could not locate unconditional samples for ${MODEL_NAME}"
+    echo "Set UNCONDITIONAL_SAMPLES to the matching unconditional samples.csv"
+    exit 1
+fi
+
+for path in "${SAMPLES}" "${UNCONDITIONAL_SAMPLES}" "${QUERY_FILE}" "${REAL_DATA}"; do
     if [ ! -f "${path}" ]; then
         echo "ERROR: required file not found: ${path}"
         exit 1
@@ -39,6 +58,7 @@ echo "========================================"
 echo "Dataset        : ${DATANAME}"
 echo "Model          : ${MODEL_NAME}"
 echo "Existing CSV   : ${SAMPLES}"
+echo "Unconditional  : ${UNCONDITIONAL_SAMPLES}"
 echo "Query          : ${QUERY_FILE}"
 echo "Real reference : ${REAL_DATA}"
 echo "Output         : ${OUTPUT_DIR}"
@@ -53,6 +73,7 @@ python -u diagnose_doob_samples.py \
 python -u evaluate_doob_density.py \
     --dataname "${DATANAME}" \
     --samples "${SAMPLES}" \
+    --unconditional-samples "${UNCONDITIONAL_SAMPLES}" \
     --query-file "${QUERY_FILE}" \
     --real-data "${REAL_DATA}" \
     --output-dir "${OUTPUT_DIR}"

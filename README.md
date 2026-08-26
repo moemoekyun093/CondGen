@@ -294,12 +294,22 @@ changed with `--max-correction`.
 
 Existing conditional CSVs can be diagnosed and evaluated without sampling
 again. The CPU-only evaluation array recomputes raw-space constraint hit rates,
-then uses TabDiff's SDMetrics Shape and Trend implementation twice: primarily
-against real rows satisfying the same raw constraint, and secondarily against
-the full real training table.
+then uses TabDiff's SDMetrics Shape and Trend implementation for an
+apples-to-apples comparison: conditional generation and matching unconditional
+generation are each evaluated against the same real rows satisfying the raw
+constraint. The auxiliary SDMetrics validity/structure report is disabled for
+this path.
 
 ```bash
 sbatch doob_h_evaluate.sh
+```
+
+The script searches the two standard TabDiff result locations for
+`all_samples/samples_0.csv`. To use a different matching unconditional table:
+
+```bash
+sbatch --export=ALL,UNCONDITIONAL_SAMPLES=/path/to/unconditional_samples.csv \
+  doob_h_evaluate.sh
 ```
 
 Results are written under

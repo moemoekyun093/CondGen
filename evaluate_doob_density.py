@@ -20,6 +20,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataname", default="shoppers")
     parser.add_argument("--samples", required=True)
+    parser.add_argument(
+        "--unconditional-samples",
+        required=True,
+        help="Existing unconditional samples from the matching frozen base model",
+    )
     parser.add_argument("--query-file", required=True)
     parser.add_argument("--real-data", default=None)
     parser.add_argument("--info-file", default=None)
@@ -35,6 +40,7 @@ def density_evaluation(real_path: Path, samples: pd.DataFrame, info: dict):
         info,
         torch.device("cpu"),
         metric_list=["density"],
+        include_density_diagnostic=False,
     )
     return evaluator.evaluate(samples.copy())
 
@@ -58,6 +64,7 @@ def float_metrics(metrics: dict) -> dict:
 def main() -> None:
     args = parse_args()
     samples_path = Path(args.samples)
+    unconditional_samples_path = Path(args.unconditional_samples)
     real_path = Path(args.real_data or f"synthetic/{args.dataname}/real.csv")
     info_path = Path(args.info_file or f"data/{args.dataname}/info.json")
     output_dir = Path(
@@ -65,11 +72,18 @@ def main() -> None:
         or samples_path.parent / f"{samples_path.stem}_evaluation"
     )
 
-    for path in (samples_path, real_path, info_path, Path(args.query_file)):
+    for path in (
+        samples_path,
+        unconditional_samples_path,
+        real_path,
+        info_path,
+        Path(args.query_file),
+    ):
         if not path.is_file():
             raise FileNotFoundError(path)
 
     samples = pd.read_csv(samples_path)
+    unconditional_samples = pd.read_csv(unconditional_samples_path)
     real = pd.read_csv(real_path)
     with open(info_path, "r", encoding="utf-8") as stream:
         info = json.load(stream)
@@ -78,6 +92,10 @@ def main() -> None:
 
     if list(samples.columns) != list(real.columns):
         raise ValueError("sample and real-table columns differ or are in a different order")
+    if list(unconditional_samples.columns) != list(real.columns):
+        raise ValueError(
+            "unconditional-sample and real-table columns differ or are in a different order"
+        )
 
     generated_constraint_report, _ = raw_constraint_report(samples, query)
     real_constraint_report, real_condition_mask = raw_constraint_report(real, query)
@@ -119,9 +137,9 @@ def main() -> None:
         samples,
         info,
     )
-    unconditional_metrics, unconditional_extras = density_evaluation(
-        real_path,
-        samples,
+    unconditional_generation_metrics, unconditional_generation_extras = density_evaluation(
+        conditional_real_path,
+        unconditional_samples,
         info,
     )
 
@@ -129,12 +147,18 @@ def main() -> None:
         "dataname": args.dataname,
         "constraint_id": query.get("constraint_id"),
         "generated_rows": len(samples),
+        "unconditional_generated_rows": len(unconditional_samples),
+        "unconditional_samples": str(unconditional_samples_path),
         "real_rows": len(real),
         "real_conditional_rows": len(conditional_real),
         "generated_raw_joint_hit_rate": generated_constraint_report["joint_hit_rate"],
         "real_raw_joint_hit_rate": real_constraint_report["joint_hit_rate"],
-        "conditional_reference": float_metrics(conditional_metrics),
-        "unconditional_reference": float_metrics(unconditional_metrics),
+        "conditional_generation_vs_conditional_real": float_metrics(
+            conditional_metrics
+        ),
+        "unconditional_generation_vs_conditional_real": float_metrics(
+            unconditional_generation_metrics
+        ),
         "numerical_correlation": {
             "method": "Pearson correlation over numerical columns",
             "constrained_real_vs_total_real": constrained_vs_total_correlation,
@@ -143,18 +167,22 @@ def main() -> None:
     }
     with open(output_dir / "density_results.json", "w", encoding="utf-8") as stream:
         json.dump(results, stream, indent=2)
-    save_extras(output_dir, "conditional", conditional_extras)
-    save_extras(output_dir, "unconditional", unconditional_extras)
+    save_extras(output_dir, "conditional_generation", conditional_extras)
+    save_extras(
+        output_dir,
+        "unconditional_generation",
+        unconditional_generation_extras,
+    )
 
     print(f"Generated raw joint hit rate: {results['generated_raw_joint_hit_rate']:.2%}")
     print(
         f"Conditional real reference: {len(conditional_real)}/{len(real)} rows "
         f"({results['real_raw_joint_hit_rate']:.2%})"
     )
-    print("Generated vs conditional real:")
-    print(json.dumps(results["conditional_reference"], indent=2))
-    print("Generated vs full real (secondary baseline):")
-    print(json.dumps(results["unconditional_reference"], indent=2))
+    print("Conditional generation vs conditional real:")
+    print(json.dumps(results["conditional_generation_vs_conditional_real"], indent=2))
+    print("Unconditional generation vs the same conditional real:")
+    print(json.dumps(results["unconditional_generation_vs_conditional_real"], indent=2))
     print("Numerical correlation: constrained real vs total real:")
     print(json.dumps(constrained_vs_total_correlation, indent=2))
     print("Numerical correlation: generated vs constrained real:")

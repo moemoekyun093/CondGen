@@ -304,8 +304,10 @@ this path.
 sbatch doob_h_evaluate.sh
 ```
 
-The script searches the two standard TabDiff result locations for
-`all_samples/samples_0.csv`. To use a different matching unconditional table:
+The script first checks the standard training-result path
+`tabdiff/result/<dataset>/<model>/8000/samples.csv`, then the two report paths
+for `all_samples/samples_0.csv`. Override the epoch with
+`UNCONDITIONAL_EPOCH`, or provide a different matching unconditional table:
 
 ```bash
 sbatch --export=ALL,UNCONDITIONAL_SAMPLES=/path/to/unconditional_samples.csv \

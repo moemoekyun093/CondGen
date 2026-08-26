@@ -30,12 +30,18 @@ if [ ! -e "${CKPT_CANDIDATES[0]}" ] || [ "${#CKPT_CANDIDATES[@]}" -ne 1 ]; then
     exit 1
 fi
 BASE_CKPT="${CKPT_CANDIDATES[0]}"
-GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_mixed_fixed_box}"
+GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_partial_fixed_box}"
 GUIDE_CKPT="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/${GUIDE_DIR_NAME}/best_guide.pt"
 NUM_SAMPLES="${NUM_SAMPLES:-1000}"
 BATCH_SIZE="${BATCH_SIZE:-1000}"
-SAMPLE_SUFFIX="${SAMPLE_SUFFIX-_mixed}"
+SAMPLE_SUFFIX="${SAMPLE_SUFFIX-_partial}"
 OUTPUT="conditional_samples/${DATANAME}/${MODEL_NAME}${SAMPLE_SUFFIX}.csv"
+COLUMN_ACTIVE_PROBABILITY="${COLUMN_ACTIVE_PROBABILITY:-0.5}"
+ACTIVE_COLUMNS="${ACTIVE_COLUMNS:-}"
+QUERY_MASK_ARGS=(--column-active-probability "${COLUMN_ACTIVE_PROBABILITY}")
+if [ -n "${ACTIVE_COLUMNS}" ]; then
+    QUERY_MASK_ARGS+=(--active-columns "${ACTIVE_COLUMNS}")
+fi
 CATEGORICAL_START_MODE="${CATEGORICAL_START_MODE:-section4_posterior}"
 FIXED_CATEGORICAL="${FIXED_CATEGORICAL:-}"
 CATEGORICAL_ARGS=()
@@ -55,6 +61,7 @@ echo "Base checkpoint   : ${BASE_CKPT}"
 echo "Guide checkpoint  : ${GUIDE_CKPT}"
 echo "Guidance strength : 1.0 (fixed)"
 echo "Categorical Doob  : h(child)/h(current) transition reweighting"
+echo "Active num cols   : ${ACTIVE_COLUMNS:-random Bernoulli(${COLUMN_ACTIVE_PROBABILITY}) mask}"
 echo "Categorical start : ${CATEGORICAL_START_MODE}"
 echo "Fixed categories  : ${FIXED_CATEGORICAL:-none (ordinary t=1 start)}"
 echo "Output            : ${OUTPUT}"
@@ -78,6 +85,7 @@ python sample_doob_h.py \
     --max-correction 5.0 \
     --max-log-h-ratio 10.0 \
     --h-candidate-batch-size 65536 \
+    "${QUERY_MASK_ARGS[@]}" \
     --categorical-start-mode "${CATEGORICAL_START_MODE}" \
     "${CATEGORICAL_ARGS[@]}" \
     --output "${OUTPUT}" \

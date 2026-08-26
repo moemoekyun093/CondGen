@@ -22,6 +22,8 @@ synthetic/
 conditional_samples/
 artifacts/
 logs/
+harpoon_logs/
+evaluations/
 wandb/
 debug/
 coverage_diagnostics/

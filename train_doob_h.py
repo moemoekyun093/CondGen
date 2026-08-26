@@ -1,8 +1,8 @@
-"""Train one fixed-query numerical Doob h-transform guide off-policy.
+"""Train a partial fixed-box numerical Doob h-transform guide off-policy.
 
 The base TabDiff model and its noise schedules are frozen.  Training endpoints
-are the rows satisfying one broad box over all normalized numerical columns.
-The guide is not parameterized by query bounds: its only inputs are x_t and t.
+use one fixed broad box, while a random binary query vector selects which
+numerical columns are constrained for each training row.
 """
 
 from __future__ import annotations
@@ -44,6 +44,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--weight-decay", type=float, default=1e-4)
     parser.add_argument("--h-loss-weight", type=float, default=1.0)
+    parser.add_argument("--column-active-probability", type=float, default=0.5)
     parser.add_argument("--ema-decay", type=float, default=0.997)
     parser.add_argument("--reduce-lr-patience", type=int, default=50)
     parser.add_argument("--lr-factor", type=float, default=0.9)
@@ -59,7 +60,19 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def guide_batch(runtime, guide, query, x0: torch.Tensor):
+def sample_query_active_mask(
+    batch_size: int,
+    d_numerical: int,
+    probability: float,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> torch.Tensor:
+    return (
+        torch.rand((batch_size, d_numerical), device=device) < probability
+    ).to(dtype)
+
+
+def guide_batch(runtime, guide, query, x0: torch.Tensor, active_probability: float):
     """Return numerical correction and scalar h-value supervision."""
     batch_size = x0.shape[0]
     device = x0.device
@@ -67,6 +80,13 @@ def guide_batch(runtime, guide, query, x0: torch.Tensor):
     d_numerical = runtime.dataset.d_numerical
     x0_num = x0[:, :d_numerical]
     x0_cat = x0[:, d_numerical:].long()
+    query_active_mask = sample_query_active_mask(
+        batch_size,
+        d_numerical,
+        active_probability,
+        device,
+        x0.dtype,
+    )
     sigma = runtime.diffusion.num_schedule.total_noise(t[:, None])
     x_t = x0_num + sigma * torch.randn_like(x0_num)
 
@@ -100,13 +120,26 @@ def guide_batch(runtime, guide, query, x0: torch.Tensor):
     # We learn sigma^2 grad log h, which has the same pointwise minimizer and
     # remains well scaled as sigma approaches sigma_min.
     target_correction = x0_num - base_denoised
-    predicted_correction, h_logit = guide.forward_with_log_h(x_t, x_cat_t_soft, t)
-    event = query.contains(x0_num)
+    predicted_correction, h_logit = guide.forward_with_log_h(
+        x_t,
+        x_cat_t_soft,
+        t,
+        query_active_mask=query_active_mask,
+    )
+    event = query.contains(x0_num, query_active_mask)
     return predicted_correction, target_correction, h_logit, event
 
 
 @torch.no_grad()
-def full_training_loss(runtime, guide, query, loader, device, h_loss_weight) -> dict:
+def full_training_loss(
+    runtime,
+    guide,
+    query,
+    loader,
+    device,
+    h_loss_weight,
+    active_probability,
+) -> dict:
     """Evaluate on all constrained training rows, following TabDiff's trainer."""
     guide.eval()
     correction_sum = 0.0
@@ -115,7 +148,13 @@ def full_training_loss(runtime, guide, query, loader, device, h_loss_weight) -> 
     total_rows = 0
     for (x0,) in loader:
         x0 = x0.to(device)
-        prediction, target, h_logit, event = guide_batch(runtime, guide, query, x0)
+        prediction, target, h_logit, event = guide_batch(
+            runtime,
+            guide,
+            query,
+            x0,
+            active_probability,
+        )
         if event.any():
             correction_sum += F.mse_loss(
                 prediction[event], target[event]
@@ -162,6 +201,8 @@ def main() -> None:
         raise ValueError("epochs and batch-size must be positive")
     if args.h_loss_weight <= 0:
         raise ValueError("h-loss-weight must be positive")
+    if not 0.0 < args.column_active_probability < 1.0:
+        raise ValueError("column-active-probability must be between 0 and 1")
     if not 0.0 <= args.ema_decay < 1.0:
         raise ValueError("ema-decay must be in [0, 1)")
     if args.reduce_lr_patience < 0:
@@ -247,10 +288,23 @@ def main() -> None:
         "factor": args.factor,
         "n_frequencies": args.n_frequencies,
         "freq_sigma": 0.05,
+        "query_mask_conditioning": True,
     }
     guide = NumericalDoobHGuide(**guide_kwargs).to(device)
     with torch.no_grad():
-        prior_logit = math.log(hit_rate / (1.0 - hit_rate))
+        lower = query.lower.to(x_num)
+        upper = query.upper.to(x_num)
+        violated_columns = ((x_num < lower) | (x_num > upper)).sum(dim=1)
+        marginal_event_probability = (
+            (1.0 - args.column_active_probability) ** violated_columns
+        ).mean().item()
+        marginal_event_probability = min(
+            max(marginal_event_probability, 1e-6),
+            1.0 - 1e-6,
+        )
+        prior_logit = math.log(
+            marginal_event_probability / (1.0 - marginal_event_probability)
+        )
         guide.h_logit_head.bias.fill_(prior_logit)
     optimizer = torch.optim.AdamW(
         guide.parameters(),
@@ -268,7 +322,7 @@ def main() -> None:
         parameter.detach_()
 
     output_dir = Path(
-        args.output_dir or f"tabdiff/ckpt/{args.dataname}/doob_h_mixed_fixed_box"
+        args.output_dir or f"tabdiff/ckpt/{args.dataname}/doob_h_partial_fixed_box"
     )
     output_dir.mkdir(parents=True, exist_ok=True)
     metadata = {
@@ -280,6 +334,7 @@ def main() -> None:
             **query.to_dict(),
             "space": "TabDiff quantile-normalized numerical coordinates",
             "all_numerical_columns": True,
+            "partial_column_masks": True,
             "source_file": args.query_file,
             "training_hit_rate": hit_rate,
             "positive_rows": len(positive),
@@ -292,6 +347,9 @@ def main() -> None:
                 "base forward q(x_t|x_0) with uniform t; Section 4 q_C(t) is a "
                 "sampling-time ordering posterior, not a guide-training replacement"
             ),
+            "query_parameterization": (
+                "fixed lower/upper bounds plus one binary active flag per numerical column"
+            ),
         },
         "seed": args.seed,
         "training": {
@@ -303,6 +361,8 @@ def main() -> None:
             "positive_rows_for_numerical_score": len(positive),
             "validation_split": False,
             "h_loss_weight": args.h_loss_weight,
+            "column_active_probability": args.column_active_probability,
+            "marginal_training_event_probability": marginal_event_probability,
             "categorical_doob_transform": True,
             "ema_decay": args.ema_decay,
             "checkpoint_warmup": args.checkpoint_warmup,
@@ -314,7 +374,14 @@ def main() -> None:
 
     parameter_count = sum(parameter.numel() for parameter in guide.parameters())
     print(f"Fixed query retains {len(positive)}/{len(x_num)} rows ({hit_rate:.2%})")
-    print("Training scalar h on all rows; numerical correction on positive rows")
+    print(
+        "Training scalar h on all rows; numerical correction on rows satisfying "
+        "their sampled partial query"
+    )
+    print(
+        f"Each numerical column is active independently with probability "
+        f"{args.column_active_probability:.2f}"
+    )
     print(f"Guide parameters: {parameter_count:,}")
     print(
         f"Training for {args.epochs} epochs x {len(train_loader)} batches/epoch "
@@ -337,7 +404,11 @@ def main() -> None:
             x0 = x0.to(device)
             optimizer.zero_grad(set_to_none=True)
             prediction, target, h_logit, event = guide_batch(
-                runtime, guide, query, x0
+                runtime,
+                guide,
+                query,
+                x0,
+                args.column_active_probability,
             )
             if event.any():
                 correction_loss = F.mse_loss(prediction[event], target[event])
@@ -373,6 +444,7 @@ def main() -> None:
             loss_loader,
             device,
             args.h_loss_weight,
+            args.column_active_probability,
         )
         ema_training_mse = ema_losses["total"]
         if not math.isfinite(ema_training_mse):

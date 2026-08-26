@@ -27,6 +27,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-log-h-ratio", type=float, default=10.0)
     parser.add_argument("--h-candidate-batch-size", type=int, default=65536)
     parser.add_argument(
+        "--active-columns",
+        default=None,
+        help="Comma-separated active numerical model indices; random when omitted",
+    )
+    parser.add_argument("--column-active-probability", type=float, default=0.5)
+    parser.add_argument(
         "--categorical-start-mode",
         choices=("full", "section4_posterior"),
         default="section4_posterior",
@@ -76,6 +82,38 @@ def parse_fixed_categorical(specs: list[str]) -> dict[int, int]:
     return fixed
 
 
+def choose_query_active_mask(
+    specification: str | None,
+    d_numerical: int,
+    probability: float,
+    device: torch.device,
+) -> torch.Tensor:
+    if not 0.0 < probability < 1.0:
+        raise ValueError("column-active-probability must be between 0 and 1")
+    mask = torch.zeros(d_numerical, dtype=torch.float32, device=device)
+    if specification is not None:
+        try:
+            columns = [
+                int(value.strip())
+                for value in specification.split(",")
+                if value.strip()
+            ]
+        except ValueError as error:
+            raise ValueError("active-columns must be comma-separated integers") from error
+        if not columns:
+            raise ValueError("active-columns must select at least one column")
+        if min(columns) < 0 or max(columns) >= d_numerical:
+            raise ValueError(
+                f"active numerical columns must lie in [0, {d_numerical - 1}]"
+            )
+        mask[columns] = 1.0
+    else:
+        mask = (torch.rand(d_numerical, device=device) < probability).float()
+        if not mask.any():
+            mask[torch.randint(d_numerical, (1,), device=device)] = 1.0
+    return mask
+
+
 def main() -> None:
     args = parse_args()
     if args.num_samples <= 0 or args.batch_size <= 0:
@@ -104,12 +142,24 @@ def main() -> None:
     guide = NumericalDoobHGuide(**metadata["guide"]).to(device)
     guide.load_state_dict(guide_state["guide"])
     guide.eval()
+    d_numerical = runtime.dataset.d_numerical
+    query_active_mask = choose_query_active_mask(
+        args.active_columns,
+        d_numerical,
+        args.column_active_probability,
+        device,
+    )
+    active_columns = torch.nonzero(
+        query_active_mask,
+        as_tuple=False,
+    ).flatten().tolist()
     runtime.diffusion.set_numerical_h_guide(
         guide,
         strength=1.0,
         max_correction=args.max_correction,
         max_log_ratio=args.max_log_h_ratio,
         candidate_batch_size=args.h_candidate_batch_size,
+        query_active_mask=query_active_mask,
     )
     fixed_categorical = parse_fixed_categorical(args.fixed_categorical)
     if args.categorical_start_mode == "section4_posterior" and not fixed_categorical:
@@ -129,17 +179,19 @@ def main() -> None:
         categorical_start_mode=args.categorical_start_mode,
     )
     query = NumericalBoxQuery.from_dict(metadata["query"])
-    d_numerical = runtime.dataset.d_numerical
     normalized_joint_hit_rate = (
-        query.contains(samples[:, :d_numerical]).float().mean().item()
+        query.contains(
+            samples[:, :d_numerical],
+            query_active_mask.cpu(),
+        ).float().mean().item()
     )
     lower = query.lower[None, :]
     upper = query.upper[None, :]
-    per_value_satisfied = (
+    per_value_satisfied_all = (
         (samples[:, :d_numerical] >= lower)
         & (samples[:, :d_numerical] <= upper)
     )
-    per_column_hit_rate = per_value_satisfied.float().mean(dim=0)
+    per_column_hit_rate = per_value_satisfied_all.float().mean(dim=0)
 
     syn_num, syn_cat, syn_target = split_num_cat_target(
         samples,
@@ -160,19 +212,34 @@ def main() -> None:
             "saved query does not contain raw bounds for every numerical column: "
             f"expected {d_numerical}, found {len(column_specs)}"
         )
+    active_column_specs = [column_specs[index] for index in active_columns]
     raw_per_value_satisfied, raw_rows_satisfied = raw_constraint_hits(
         frame,
-        column_specs,
+        active_column_specs,
     )
     raw_per_column_hit_rate = raw_per_value_satisfied.mean(axis=0)
     raw_joint_hit_rate = raw_rows_satisfied.mean()
 
     output = Path(
         args.output
-        or f"conditional_samples/{dataname}/doob_h_fixed_box.csv"
+        or f"conditional_samples/{dataname}/doob_h_partial_fixed_box.csv"
     )
     output.parent.mkdir(parents=True, exist_ok=True)
     frame.to_csv(output, index=False)
+
+    active_query = {
+        **metadata["query"],
+        "constraint_id": (
+            f"{metadata['query'].get('constraint_id', 'fixed_box')}"
+            f"_active_{'_'.join(str(index) for index in active_columns)}"
+        ),
+        "columns": active_column_specs,
+        "query_active_mask": query_active_mask.int().cpu().tolist(),
+        "active_numerical_columns": active_columns,
+    }
+    active_query_output = output.with_suffix(".query.json")
+    with open(active_query_output, "w", encoding="utf-8") as stream:
+        json.dump(active_query, stream, indent=2)
 
     constraint_report = {
         "constraint_id": metadata["query"].get("constraint_id"),
@@ -182,6 +249,8 @@ def main() -> None:
         "raw_joint_hit_rate": float(raw_joint_hit_rate),
         "normalized_joint_hit_rate": normalized_joint_hit_rate,
         "all_rows_satisfy": bool(raw_rows_satisfied.all()),
+        "query_active_mask": query_active_mask.int().cpu().tolist(),
+        "active_numerical_columns": active_columns,
         "categorical_doob_transform": bool(
             metadata.get("training", {}).get("categorical_doob_transform", False)
         ),
@@ -195,14 +264,16 @@ def main() -> None:
         ),
         "per_column": [],
     }
-    for index, normalized_column_hit_rate in enumerate(per_column_hit_rate.tolist()):
-        saved_column = column_specs[index] if index < len(column_specs) else {}
+    for active_position, index in enumerate(active_columns):
+        normalized_column_hit_rate = per_column_hit_rate[index].item()
+        saved_column = column_specs[index]
         constraint_report["per_column"].append(
             {
                 "model_index": index,
                 "name": saved_column.get("name", f"numerical_{index}"),
-                "hit_rate": float(raw_per_column_hit_rate[index]),
-                "raw_hit_rate": float(raw_per_column_hit_rate[index]),
+                "active": True,
+                "hit_rate": float(raw_per_column_hit_rate[active_position]),
+                "raw_hit_rate": float(raw_per_column_hit_rate[active_position]),
                 "normalized_hit_rate": normalized_column_hit_rate,
                 "normalized_lower": float(query.lower[index]),
                 "normalized_upper": float(query.upper[index]),
@@ -214,11 +285,17 @@ def main() -> None:
     with open(report_output, "w", encoding="utf-8") as stream:
         json.dump(constraint_report, stream, indent=2)
 
+    training_partial_hit_rate = query.contains(
+        runtime.dataset.X[:, :d_numerical].float(),
+        query_active_mask.cpu(),
+    ).float().mean().item()
     print(f"Generated {len(frame)} conditional rows")
+    print(f"Active numerical model columns: {active_columns}")
     print(f"Raw-space numerical query hit rate: {raw_joint_hit_rate:.2%}")
     print(f"Normalized-space diagnostic hit rate: {normalized_joint_hit_rate:.2%}")
-    print(f"Training-data query hit rate: {metadata['query']['training_hit_rate']:.2%}")
+    print(f"Training-data partial-query hit rate: {training_partial_hit_rate:.2%}")
     print(f"Saved {output}")
+    print(f"Saved active query {active_query_output}")
     print(f"Saved constraint report {report_output}")
 
 

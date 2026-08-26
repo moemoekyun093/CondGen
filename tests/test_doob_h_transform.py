@@ -32,6 +32,22 @@ class NumericalBoxQueryTest(unittest.TestCase):
         rows = torch.tensor([[0.0, 1.0], [2.0, 1.0], [0.0, 3.0]])
         self.assertEqual(query.contains(rows).tolist(), [True, False, False])
 
+    def test_contains_ignores_inactive_columns(self):
+        query = NumericalBoxQuery(
+            lower=torch.tensor([-1.0, 0.0]),
+            upper=torch.tensor([1.0, 2.0]),
+        )
+        rows = torch.tensor([[5.0, 1.0], [0.0, 3.0], [5.0, 3.0]])
+        active = torch.tensor([0, 1])
+        self.assertEqual(
+            query.contains(rows, active).tolist(),
+            [True, False, False],
+        )
+        self.assertEqual(
+            query.contains(rows, torch.zeros(2)).tolist(),
+            [True, True, True],
+        )
+
     def test_round_trip(self):
         query = NumericalBoxQuery(
             lower=torch.tensor([-1.0, 0.0]),
@@ -43,6 +59,27 @@ class NumericalBoxQueryTest(unittest.TestCase):
 
 
 class NumericalDoobHGuideTest(unittest.TestCase):
+    def test_partial_query_mask_is_an_explicit_input(self):
+        guide = NumericalDoobHGuide(
+            d_numerical=3,
+            d_token=16,
+            num_layers=1,
+            n_head=4,
+            n_frequencies=4,
+            query_mask_conditioning=True,
+        )
+        x_num = torch.randn(2, 3)
+        t = torch.tensor([0.2, 0.7])
+        full_tokens = guide._encode(x_num, None, t, torch.ones(2, 3))
+        partial_tokens = guide._encode(
+            x_num,
+            None,
+            t,
+            torch.tensor([[1, 0, 1], [1, 0, 1]]),
+        )
+        self.assertFalse(torch.allclose(full_tokens, partial_tokens))
+        self.assertTrue(guide.config_dict()["query_mask_conditioning"])
+
     def test_mixed_context_produces_numeric_correction_only(self):
         guide = NumericalDoobHGuide(
             d_numerical=3,

@@ -30,11 +30,12 @@ if [ ! -e "${CKPT_CANDIDATES[0]}" ] || [ "${#CKPT_CANDIDATES[@]}" -ne 1 ]; then
     exit 1
 fi
 BASE_CKPT="${CKPT_CANDIDATES[0]}"
-GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_mixed_fixed_box}"
+GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_partial_fixed_box}"
 OUTPUT_DIR="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/${GUIDE_DIR_NAME}"
 QUERY_FILE="${QUERY_FILE:-constraints/${DATANAME}/fixed_numerical_intervals.json}"
 EPOCHS="${EPOCHS:-8000}"
 BATCH_SIZE="${BATCH_SIZE:-4096}"
+COLUMN_ACTIVE_PROBABILITY="${COLUMN_ACTIVE_PROBABILITY:-0.5}"
 
 echo "========================================"
 echo "Job ID          : ${SLURM_JOB_ID}"
@@ -45,6 +46,7 @@ echo "Base checkpoint : ${BASE_CKPT}"
 echo "Output          : ${OUTPUT_DIR}"
 echo "Fixed query     : ${QUERY_FILE}"
 echo "Objective       : numerical h-score matching + scalar h-value BCE"
+echo "Partial queries : fixed bounds, per-row Bernoulli(${COLUMN_ACTIVE_PROBABILITY}) active mask"
 echo "Categorical     : exact h(child)/h(current) reverse-rate form"
 echo "Training        : ${EPOCHS} epochs, batch size ${BATCH_SIZE}, EMA decay 0.997"
 echo "========================================"
@@ -68,6 +70,7 @@ python train_doob_h.py \
     --epochs "${EPOCHS}" \
     --batch-size "${BATCH_SIZE}" \
     --h-loss-weight 1.0 \
+    --column-active-probability "${COLUMN_ACTIVE_PROBABILITY}" \
     --ema-decay 0.997 \
     --reduce-lr-patience 50 \
     --lr-factor 0.9 \

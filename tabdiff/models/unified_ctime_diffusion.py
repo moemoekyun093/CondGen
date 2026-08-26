@@ -80,6 +80,7 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         self.h_guide_max_correction = None
         self.h_guide_max_log_ratio = 10.0
         self.h_guide_candidate_batch_size = 65536
+        self.h_guide_query_active_mask = None
         
         self.device = device
         
@@ -525,6 +526,7 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         max_correction=None,
         max_log_ratio=10.0,
         candidate_batch_size=65536,
+        query_active_mask=None,
     ):
         """Install numerical score and categorical jump-side Doob guidance."""
         if strength < 0:
@@ -538,11 +540,40 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         self.h_guide_max_correction = max_correction
         self.h_guide_max_log_ratio = float(max_log_ratio)
         self.h_guide_candidate_batch_size = int(candidate_batch_size)
+        if query_active_mask is None:
+            self.h_guide_query_active_mask = None
+        else:
+            query_active_mask = torch.as_tensor(
+                query_active_mask,
+                device=self.device,
+                dtype=torch.float32,
+            ).reshape(-1)
+            if query_active_mask.numel() != self.num_numerical_features:
+                raise ValueError(
+                    "query_active_mask must contain one entry per numerical column"
+                )
+            self.h_guide_query_active_mask = query_active_mask
+
+    def _guide_query_mask(self, batch_size, device, dtype):
+        if self.h_guide_query_active_mask is None:
+            return None
+        return self.h_guide_query_active_mask.to(
+            device=device,
+            dtype=dtype,
+        )[None, :].expand(batch_size, -1)
 
     def _apply_numerical_h_guide(self, denoised, x_num_t, x_cat_t, t):
         if self.numerical_h_guide is None or self.num_numerical_features == 0:
             return denoised
-        correction = self.numerical_h_guide(x_num_t, x_cat_t, t)
+        query_mask = self._guide_query_mask(
+            x_num_t.shape[0], x_num_t.device, x_num_t.dtype
+        )
+        correction = self.numerical_h_guide(
+            x_num_t,
+            x_cat_t,
+            t,
+            query_active_mask=query_mask,
+        )
         if correction.shape != denoised.shape:
             raise ValueError(
                 "numerical h-guide correction shape "
@@ -566,7 +597,15 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         max_classes_with_mask = int(self.mask_index.max().item()) + 1
         log_ratios = x_num_t.new_zeros((b, n_columns, max_classes_with_mask))
         current_one_hot = self.to_one_hot(x_cat_t).to(x_num_t.dtype)
-        current_log_h = guide.log_h(x_num_t, current_one_hot, t)
+        current_query_mask = self._guide_query_mask(
+            b, x_num_t.device, x_num_t.dtype
+        )
+        current_log_h = guide.log_h(
+            x_num_t,
+            current_one_hot,
+            t,
+            query_active_mask=current_query_mask,
+        )
 
         for column, class_count_value in enumerate(self.num_classes):
             class_count = int(class_count_value)
@@ -597,6 +636,11 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
                         candidate_num[start:stop],
                         child_one_hot,
                         candidate_t[start:stop],
+                        query_active_mask=(
+                            None
+                            if current_query_mask is None
+                            else current_query_mask[repeated_rows[start:stop]]
+                        ),
                     )
                 )
             child_log_h = torch.cat(child_log_h_parts)

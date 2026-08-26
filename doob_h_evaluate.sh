@@ -20,10 +20,15 @@ MODEL_NAMES=(
     "${ORIGINAL_MODEL}"
 )
 MODEL_NAME="${MODEL_NAMES[$SLURM_ARRAY_TASK_ID]}"
-SAMPLE_SUFFIX="${SAMPLE_SUFFIX-_mixed}"
+SAMPLE_SUFFIX="${SAMPLE_SUFFIX-_partial}"
 SAMPLE_NAME="${MODEL_NAME}${SAMPLE_SUFFIX}"
 SAMPLES="conditional_samples/${DATANAME}/${SAMPLE_NAME}.csv"
-QUERY_FILE="${QUERY_FILE:-constraints/${DATANAME}/fixed_numerical_intervals.json}"
+SAVED_ACTIVE_QUERY="conditional_samples/${DATANAME}/${SAMPLE_NAME}.query.json"
+if [ -z "${QUERY_FILE:-}" ] && [ -f "${SAVED_ACTIVE_QUERY}" ]; then
+    QUERY_FILE="${SAVED_ACTIVE_QUERY}"
+else
+    QUERY_FILE="${QUERY_FILE:-constraints/${DATANAME}/fixed_numerical_intervals.json}"
+fi
 EVALUATION_ROOT="${EVALUATION_ROOT:-evaluations}"
 OUTPUT_DIR="${EVALUATION_ROOT}/${DATANAME}/${SAMPLE_NAME}"
 RAW_REPORT="${OUTPUT_DIR}/raw_diagnostic.json"

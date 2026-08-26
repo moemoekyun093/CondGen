@@ -254,15 +254,21 @@ class CategoricalDoobUpdateTest(unittest.TestCase):
         )
         torch.testing.assert_close(corrected, torch.tensor([[4.0], [9.0]]))
 
-    def test_section4_posterior_prefers_middle_times(self):
+    def test_section4_posterior_matches_ordering_density(self):
         diffusion = self.make_diffusion(np.array([2, 3]))
         t = torch.linspace(0, 1, 1001)[:, None]
         weights = diffusion._section4_start_time_weights([0], t)
 
+        sigma = diffusion.cat_schedule.total_noise(t)
+        rate = diffusion.cat_schedule.rate_noise(t)
+        alpha = torch.exp(-sigma)
+        expected = alpha[:, 0] * rate[:, 0] * (1.0 - alpha[:, 0])
+        expected = expected / expected.sum()
+
         self.assertAlmostEqual(weights.sum().item(), 1.0, places=6)
-        mode = t[weights.argmax()].item()
-        self.assertGreater(mode, 0.2)
-        self.assertLess(mode, 0.8)
+        self.assertTrue(torch.isfinite(weights).all())
+        self.assertTrue((weights >= 0).all())
+        torch.testing.assert_close(weights, expected)
 
     def test_section4_posterior_requires_fixed_column(self):
         diffusion = self.make_diffusion(np.array([2, 3]))

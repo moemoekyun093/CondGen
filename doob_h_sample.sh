@@ -30,17 +30,22 @@ if [ ! -e "${CKPT_CANDIDATES[0]}" ] || [ "${#CKPT_CANDIDATES[@]}" -ne 1 ]; then
     exit 1
 fi
 BASE_CKPT="${CKPT_CANDIDATES[0]}"
-GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_partial_fixed_box}"
+GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_all_constrained_two_guides}"
 GUIDE_CKPT="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/${GUIDE_DIR_NAME}/best_guide.pt"
 NUM_SAMPLES="${NUM_SAMPLES:-1000}"
 BATCH_SIZE="${BATCH_SIZE:-1000}"
-SAMPLE_SUFFIX="${SAMPLE_SUFFIX-_partial}"
+SAMPLE_SUFFIX="${SAMPLE_SUFFIX-_all_two_guides}"
 OUTPUT="conditional_samples/${DATANAME}/${MODEL_NAME}${SAMPLE_SUFFIX}.csv"
 COLUMN_ACTIVE_PROBABILITY="${COLUMN_ACTIVE_PROBABILITY:-0.5}"
 ACTIVE_COLUMNS="${ACTIVE_COLUMNS:-}"
-QUERY_MASK_ARGS=(--column-active-probability "${COLUMN_ACTIVE_PROBABILITY}")
-if [ -n "${ACTIVE_COLUMNS}" ]; then
+MASK_MODE="${MASK_MODE:-all}"
+QUERY_MASK_ARGS=()
+if [ "${MASK_MODE}" = "all" ]; then
+    QUERY_MASK_ARGS+=(--all-columns-active)
+elif [ -n "${ACTIVE_COLUMNS}" ]; then
     QUERY_MASK_ARGS+=(--active-columns "${ACTIVE_COLUMNS}")
+else
+    QUERY_MASK_ARGS+=(--column-active-probability "${COLUMN_ACTIVE_PROBABILITY}")
 fi
 CATEGORICAL_START_MODE="${CATEGORICAL_START_MODE:-section4_posterior}"
 FIXED_CATEGORICAL="${FIXED_CATEGORICAL:-}"
@@ -61,7 +66,8 @@ echo "Base checkpoint   : ${BASE_CKPT}"
 echo "Guide checkpoint  : ${GUIDE_CKPT}"
 echo "Guidance strength : 1.0 (fixed)"
 echo "Categorical Doob  : h(child)/h(current) transition reweighting"
-echo "Active num cols   : ${ACTIVE_COLUMNS:-random Bernoulli(${COLUMN_ACTIVE_PROBABILITY}) mask}"
+echo "Numerical mask    : ${MASK_MODE}"
+echo "Active num cols   : ${ACTIVE_COLUMNS:-all columns for verification}"
 echo "Categorical start : ${CATEGORICAL_START_MODE}"
 echo "Fixed categories  : ${FIXED_CATEGORICAL:-none (ordinary t=1 start)}"
 echo "Output            : ${OUTPUT}"

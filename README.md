@@ -176,11 +176,11 @@ You can then evaluate the imputation quality by running
 python eval_impute.py --dataname <NAME_OF_DATASET>
 ```
 
-## Partial fixed-box generation with a Doob h-transform
+## Separate numerical-score and categorical-h verification
 
-This experimental path freezes a trained TabDiff model and learns one broad,
-fixed numerical box together with every partial version of that box. For binary
-active-column vector `a`, the terminal event is
+This experimental path freezes a trained TabDiff model and starts with one
+broad fixed numerical box. For binary active-column vector `a`, the eventual
+partial-query terminal event is
 
 ```
 B_a = intersection over j with a_j=1 of {lower_j <= X_0j <= upper_j}.
@@ -188,16 +188,21 @@ h(t, x, a) = P(X_0 in B_a | X_t=x).
 delta_D(t, x, a) = sigma(t)^2 * grad_x log h(t, x, a).
 ```
 
-The interval endpoints stay fixed and are not network inputs. Each training row
-gets an independent Bernoulli active mask; its `a_j` value is embedded into
-numerical token `j` in the lightweight FT-periodic guide. This lets one guide
-serve arbitrary column subsets without learning arbitrary interval endpoints.
-The stable numerical target is `x_0 - D_base(x_t,t)`, and sampling uses
-`D_cond = D_base + delta_D` with guidance strength fixed to 1.
+The current verification stage fixes `a` to the all-ones vector and uses two
+separately parameterized lightweight FT-periodic guides with identical
+architectures. Both see the complete noisy numerical and categorical state,
+and time. The fixed all-ones mask is implicit and is not a network input in
+this first checkpoint. The numerical guide directly predicts
+`sigma(t)^2 * grad_x log h` and is regressed against
+`x_0 - D_base(x_t,t)`. The categorical guide predicts scalar `log h`; frozen
+base token probabilities are multiplied by `h(child)/h(current)`, renormalized,
+and passed to TabDiff's original `_absorbed_closs` against the same conditional
+endpoint. The networks do not share parameters. No unrestricted rows, negative
+examples, BCE classifier, or validation split are used. Guidance strength is
+fixed to 1.
 
-The same guide predicts scalar `h(t,x,a)`. Categorical reverse transitions are
-reweighted by `h(t,u,c_child,a) / h(t,u,c_current,a)` while TabDiff's original
-categorical logits and mask schedule stay frozen.
+Random partial masks are deliberately postponed until the all-constrained case
+has been trained, sampled, and evaluated successfully.
 
 For optional categorical equality constraints, the sampler also implements the
 Section 4 ordering construction. If categorical columns `C` are fixed, it draws
@@ -225,67 +230,36 @@ After that job finishes, inspect and version the fixed query:
 cat constraints/shoppers/fixed_numerical_intervals.json
 ```
 
-Then submit the two-task guide-training array. Task 0 uses
-`ft_periodic_seed0`; task 1 uses `original_seed0`. Both use the same interval
-endpoints, sample new active masks during training, and train separate guides:
+Train the two FT-periodic guides for the initial all-constrained verification:
 
 ```bash
-sbatch doob_h_train.sh
+TRAIN_JOB=$(sbatch --parsable --array=0 doob_h_train.sh)
 ```
 
-After training succeeds, submit conditional generation. With no override, each
-array task deterministically draws one random nonempty mask using seed 0:
+Then sample with every numerical interval active:
 
 ```bash
-sbatch doob_h_sample.sh
-```
-
-To test a chosen subset instead, pass comma-separated numerical model indices:
-
-```bash
-export ACTIVE_COLUMNS="0,2,4"
-sbatch --export=ALL doob_h_sample.sh
+SAMPLE_JOB=$(sbatch --parsable --array=0 \
+  --dependency="afterok:${TRAIN_JOB}" doob_h_sample.sh)
 ```
 
 Each CSV gets a sibling `.query.json` containing only the active constraints.
-Use that file for diagnostics and for a fair HARPOON comparison.
+The verification output is
+`conditional_samples/shoppers/ft_periodic_seed0_all_two_guides.csv`.
 
-To add categorical equalities, pass comma-separated model-space
-`COLUMN=CLASS` indices. For example, this fixes categorical model column 0 to
-class 1 and column 3 to class 2, then uses the Section 4 posterior start:
-
-```bash
-export FIXED_CATEGORICAL="0=1,3=2"
-sbatch --export=ALL,DATANAME=adult,SAMPLE_SUFFIX=_partial_cat doob_h_sample.sh
-```
-
-These are encoded model indices, not raw CSV labels. The job prints the sampled
-start-time mean/min/max. Use a distinct `SAMPLE_SUFFIX` for each categorical
-query so results are not overwritten.
-
-The sampling array writes `conditional_samples/shoppers/ft_periodic_seed0_partial.csv`
-and `conditional_samples/shoppers/original_seed0_partial.csv`, with matching
-`.query.json` and `.constraints.json` files.
-
-To submit the complete dependency chain:
+Evaluate the existing generated table without resampling:
 
 ```bash
-INTERVAL_JOB=$(sbatch --parsable doob_h_intervals.sh)
-TRAIN_JOB=$(sbatch --parsable --dependency="afterok:${INTERVAL_JOB}" doob_h_train.sh)
-sbatch --dependency="afterok:${TRAIN_JOB}" doob_h_sample.sh
+sbatch --array=0 --dependency="afterok:${SAMPLE_JOB}" doob_h_evaluate.sh
 ```
 
-Guide training follows the base TabDiff trainer's data-use and checkpointing
-conventions: all rows train scalar `h`, while rows satisfying their sampled
-partial query train the numerical correction (there is no validation split).
-Training runs for 8000 full epochs by default, and the learning
-rate uses reduce-on-plateau on the combined numerical-correction MSE and scalar
-`h` binary cross-entropy, and an EMA guide with decay
-0.997 is updated after every epoch.  Best raw and EMA checkpoint selection starts
-after epoch 4000, and `best_guide.pt` is the selected EMA guide used for sampling.
-Training parameters can be overridden with SLURM exports, for example
-`sbatch --export=ALL,EPOCHS=5000,BATCH_SIZE=2048 doob_h_train.sh`. Guidance
-strength is fixed to 1.0 for this experiment.
+Training runs for 8000 optimizer steps, not 8000 full-data epochs. Each step
+samples 4096 rows uniformly with replacement from the all-constrained subset
+and uses the same forward-noised batch for both the Section 5 numerical target
+and TabDiff categorical loss. It never draws endpoints outside that conditional
+subset. EMA updates both guides after every step; fixed diagnostics run only
+every 100 steps. Override these with, for example,
+`sbatch --array=0 --export=ALL,STEPS=2000,BATCH_SIZE=2048,DIAGNOSTIC_EVERY=100 doob_h_train.sh`.
 
 The dataset and checkpoint-directory names can also be overridden without
 editing the scripts, for example
@@ -308,10 +282,6 @@ generation are each evaluated against the same real rows satisfying the raw
 constraint. The auxiliary SDMetrics validity/structure report is disabled for
 this path.
 
-```bash
-sbatch doob_h_evaluate.sh
-```
-
 The script first checks the standard training-result path
 `tabdiff/result/<dataset>/<model>/8000/samples.csv`, then the two report paths
 for `all_samples/samples_0.csv`. Override the epoch with
@@ -323,7 +293,7 @@ sbatch --export=ALL,UNCONDITIONAL_SAMPLES=/path/to/unconditional_samples.csv \
 ```
 
 Results are written under
-`evaluations/shoppers/<MODEL_NAME>_partial/density_results.json`, while SLURM
+`evaluations/shoppers/<MODEL_NAME>_all_two_guides/density_results.json`, while SLURM
 stdout and stderr are written under `evaluations/slurm/`; the detailed
 per-column Shape and column-pair Trend tables are saved beside it.
 
@@ -331,10 +301,25 @@ per-column Shape and column-pair Trend tables are saved beside it.
 
 The official [HARPOON repository](https://github.com/adis98/Harpoon) is pinned
 as `baselines/harpoon` at commit `40dc8cee26e215e86523045fdafb7c1ad89c3fd7`.
-Our adapter keeps its released OHE-DDPM backbone and general-constraint
-squared-hinge sampling update, but exposes the processed TabDiff Adult/Shoppers
-tables, our active query JSON, and the same density evaluation. The integration
-code lives outside the upstream submodule.
+This is a Shoppers-only, paper-aligned baseline. It does not use the learned
+Doob guide, active-mask parameterization, categorical `h` ratios, or posterior
+start logic. It trains HARPOON's unconditional OHE DDPM and applies Algorithm 1
+only at test time.
+
+For dirty estimate `x0_hat = Q_t(x_t)`, Appendix D Eq. 9 and Appendix G.2 give
+
+```
+L_inf = ||ReLU(lower - x0_hat)||_2 + ||ReLU(x0_hat - upper)||_2.
+g_t = grad_x_t L_inf(Q_t(x_t), c).
+x_{t-1} = DDPM_step(x_t) - eta * g_t.
+```
+
+The default exactly uses the paper's Shoppers range task,
+`Administrative >= 4`, with `T=200`, `eta=0.2`, batch size 1024, 1000 epochs,
+and the paper's linear beta schedule. The stochastic reverse term uses the
+standard DDPM posterior standard deviation. By default, the generated sample
+count equals the number of Shoppers test rows satisfying the inequality, as in
+the paper; set `NUM_SAMPLES=1000` to override this for a fixed-size comparison.
 
 After cloning this repository, fetch the pinned baseline once:
 
@@ -343,36 +328,37 @@ git submodule update --init --recursive
 mkdir -p harpoon_logs evaluations/slurm
 ```
 
-Train Adult and Shoppers as separate GPU jobs:
+Train the Shoppers unconditional HARPOON backbone:
 
 ```bash
-ADULT_HARPOON=$(sbatch --parsable --export=ALL,DATANAME=adult harpoon_train.sh)
-SHOPPERS_HARPOON=$(sbatch --parsable --export=ALL,DATANAME=shoppers harpoon_train.sh)
-echo "adult=${ADULT_HARPOON} shoppers=${SHOPPERS_HARPOON}"
+HARPOON_TRAIN=$(sbatch --parsable harpoon_train.sh)
 ```
 
-For a fair partial-query comparison, point HARPOON at the `.query.json` emitted
-by the Doob sampler. Generate both conditional and unconditional HARPOON tables:
+Generate the paper's guided range samples and a matching unconditional table:
 
 ```bash
-DATASET=adult
-QUERY_FILE=conditional_samples/adult/ft_periodic_seed0_partial.query.json
-TRAIN_JOB="${ADULT_HARPOON}"
-
-HARPOON_COND=$(sbatch --parsable --dependency="afterok:${TRAIN_JOB}" \
-  --export=ALL,DATANAME="${DATASET}",QUERY_FILE="${QUERY_FILE}",OUTPUT=conditional_samples/adult/harpoon_partial.csv \
+HARPOON_COND=$(sbatch --parsable --dependency="afterok:${HARPOON_TRAIN}" \
   harpoon_sample.sh)
-HARPOON_UNCOND=$(sbatch --parsable --dependency="afterok:${TRAIN_JOB}" \
-  --export=ALL,DATANAME="${DATASET}",QUERY_FILE="${QUERY_FILE}",GUIDANCE_SCALE=0,OUTPUT=conditional_samples/adult/harpoon_unconditional.csv \
+HARPOON_UNCOND=$(sbatch --parsable --dependency="afterok:${HARPOON_TRAIN}" \
+  --export=ALL,GUIDANCE_SCALE=0,OUTPUT=conditional_samples/shoppers/harpoon_unconditional.csv \
   harpoon_sample.sh)
 ```
 
-Evaluate after both sampling jobs finish. Both generated tables are compared to
-the same real rows selected by the active partial query:
+Constraints are supplied only at inference and can change without retraining.
+For example, this is a new conjunction:
+
+```bash
+export LOWER_BOUNDS="Administrative=5,PageValues=10"
+export UPPER_BOUNDS="BounceRates=0.04"
+sbatch --export=ALL,OUTPUT=conditional_samples/shoppers/harpoon_new_query.csv \
+  harpoon_sample.sh
+```
+
+Evaluate the paper task against Shoppers test rows satisfying
+`Administrative >= 4`:
 
 ```bash
 sbatch --dependency="afterok:${HARPOON_COND}:${HARPOON_UNCOND}" \
-  --export=ALL,DATANAME="${DATASET}",QUERY_FILE="${QUERY_FILE}" \
   harpoon_evaluate.sh
 ```
 

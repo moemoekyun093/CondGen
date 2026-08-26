@@ -11,12 +11,16 @@ set -euo pipefail
 cd /scratch/work/agrawaa4/TabDiff
 export PYTHONUNBUFFERED=1
 
-DATANAME="${DATANAME:-adult}"
-CONDITIONAL_SAMPLES="${CONDITIONAL_SAMPLES:-conditional_samples/${DATANAME}/harpoon_partial.csv}"
-UNCONDITIONAL_SAMPLES="${UNCONDITIONAL_SAMPLES:-conditional_samples/${DATANAME}/harpoon_unconditional.csv}"
-QUERY_FILE="${QUERY_FILE:-constraints/${DATANAME}/fixed_numerical_intervals.json}"
-REAL_DATA="synthetic/${DATANAME}/real.csv"
-OUTPUT_DIR="${OUTPUT_DIR:-evaluations/${DATANAME}/harpoon_partial}"
+DATANAME="${DATANAME:-shoppers}"
+if [ "${DATANAME}" != "shoppers" ]; then
+    echo "ERROR: the paper-aligned HARPOON baseline is currently Shoppers-only"
+    exit 1
+fi
+CONDITIONAL_SAMPLES="${CONDITIONAL_SAMPLES:-conditional_samples/shoppers/harpoon_paper_range.csv}"
+UNCONDITIONAL_SAMPLES="${UNCONDITIONAL_SAMPLES:-conditional_samples/shoppers/harpoon_unconditional.csv}"
+QUERY_FILE="${QUERY_FILE:-conditional_samples/shoppers/harpoon_paper_range.query.json}"
+REAL_DATA="${REAL_DATA:-data/shoppers/test.csv}"
+OUTPUT_DIR="${OUTPUT_DIR:-evaluations/shoppers/harpoon_paper_range}"
 
 mkdir -p "${OUTPUT_DIR}"
 for path in "${CONDITIONAL_SAMPLES}" "${UNCONDITIONAL_SAMPLES}" "${QUERY_FILE}" "${REAL_DATA}"; do

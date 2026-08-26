@@ -30,12 +30,13 @@ if [ ! -e "${CKPT_CANDIDATES[0]}" ] || [ "${#CKPT_CANDIDATES[@]}" -ne 1 ]; then
     exit 1
 fi
 BASE_CKPT="${CKPT_CANDIDATES[0]}"
-GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_partial_fixed_box}"
+GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_all_constrained_two_guides}"
 OUTPUT_DIR="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/${GUIDE_DIR_NAME}"
 QUERY_FILE="${QUERY_FILE:-constraints/${DATANAME}/fixed_numerical_intervals.json}"
-EPOCHS="${EPOCHS:-8000}"
+STEPS="${STEPS:-8000}"
 BATCH_SIZE="${BATCH_SIZE:-4096}"
-COLUMN_ACTIVE_PROBABILITY="${COLUMN_ACTIVE_PROBABILITY:-0.5}"
+DIAGNOSTIC_EVERY="${DIAGNOSTIC_EVERY:-100}"
+H_CANDIDATE_BATCH_SIZE="${H_CANDIDATE_BATCH_SIZE:-16384}"
 
 echo "========================================"
 echo "Job ID          : ${SLURM_JOB_ID}"
@@ -45,10 +46,14 @@ echo "Base model      : ${MODEL_NAME}"
 echo "Base checkpoint : ${BASE_CKPT}"
 echo "Output          : ${OUTPUT_DIR}"
 echo "Fixed query     : ${QUERY_FILE}"
-echo "Objective       : numerical h-score matching + scalar h-value BCE"
-echo "Partial queries : fixed bounds, per-row Bernoulli(${COLUMN_ACTIVE_PROBABILITY}) active mask"
-echo "Categorical     : exact h(child)/h(current) reverse-rate form"
-echo "Training        : ${EPOCHS} epochs, batch size ${BATCH_SIZE}, EMA decay 0.997"
+echo "Objective       : separate numerical h-score and categorical log-h guides"
+echo "Numerical       : direct sigma(t)^2 * grad_x log h correction"
+echo "Categorical     : h(child)/h(current) from a separate scalar network"
+echo "Categorical loss: original TabDiff absorbed categorical loss"
+echo "Gradient batch  : ${BATCH_SIZE} uniformly sampled constrained rows"
+echo "Other rows      : none (no BCE/classification objective)"
+echo "Training        : ${STEPS} optimizer steps"
+echo "EMA diagnostic  : every ${DIAGNOSTIC_EVERY} steps"
 echo "========================================"
 nvidia-smi
 
@@ -62,17 +67,19 @@ if [ ! -f "${QUERY_FILE}" ]; then
     exit 1
 fi
 
-python train_doob_h.py \
+python -u train_doob_h.py \
     --dataname "${DATANAME}" \
     --base-ckpt "${BASE_CKPT}" \
     --query-file "${QUERY_FILE}" \
     --output-dir "${OUTPUT_DIR}" \
-    --epochs "${EPOCHS}" \
+    --steps "${STEPS}" \
     --batch-size "${BATCH_SIZE}" \
-    --h-loss-weight 1.0 \
-    --column-active-probability "${COLUMN_ACTIVE_PROBABILITY}" \
+    --gradient-loss-weight 1.0 \
+    --categorical-loss-weight 1.0 \
+    --h-candidate-batch-size "${H_CANDIDATE_BATCH_SIZE}" \
     --ema-decay 0.997 \
-    --reduce-lr-patience 50 \
+    --diagnostic-every "${DIAGNOSTIC_EVERY}" \
+    --reduce-lr-patience 20 \
     --lr-factor 0.9 \
     --checkpoint-warmup 4000 \
     --checkpoint-every 2000 \

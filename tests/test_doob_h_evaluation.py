@@ -41,6 +41,21 @@ class RawConstraintEvaluationTest(unittest.TestCase):
         report, _ = raw_constraint_report(frame, query)
         self.assertEqual(report["joint_hit_rate"], 1.0)
 
+    def test_one_sided_paper_inequality(self):
+        frame = pd.DataFrame({"Administrative": [3.0, 4.0, 5.0]})
+        query = {
+            "columns": [
+                {
+                    "name": "Administrative",
+                    "raw_lower": 4.0,
+                    "raw_upper": None,
+                }
+            ]
+        }
+        report, mask = raw_constraint_report(frame, query)
+        self.assertEqual(mask.tolist(), [False, True, True])
+        self.assertAlmostEqual(report["joint_hit_rate"], 2 / 3)
+
 
 class CorrelationComparisonTest(unittest.TestCase):
     def test_reports_structure_similarity_and_changed_pairs(self):

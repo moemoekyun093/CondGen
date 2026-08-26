@@ -1,4 +1,4 @@
-"""Sample the official HARPOON OHE diffusion under our saved interval query."""
+"""Run HARPOON Algorithm 1 with test-time inequality guidance on Shoppers."""
 
 from __future__ import annotations
 
@@ -19,13 +19,31 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dataname", required=True)
-    parser.add_argument("--query-file", required=True)
+    parser.add_argument("--dataname", choices=("shoppers",), default="shoppers")
+    parser.add_argument(
+        "--lower-bound",
+        action="append",
+        default=[],
+        metavar="COLUMN=VALUE",
+        help="Test-time lower-bound inequality; repeat for multiple columns",
+    )
+    parser.add_argument(
+        "--upper-bound",
+        action="append",
+        default=[],
+        metavar="COLUMN=VALUE",
+        help="Test-time upper-bound inequality; repeat for multiple columns",
+    )
     parser.add_argument("--harpoon-root", default="baselines/harpoon")
     parser.add_argument("--checkpoint", default=None)
     parser.add_argument("--output", default=None)
-    parser.add_argument("--num-samples", type=int, default=1000)
-    parser.add_argument("--batch-size", type=int, default=1000)
+    parser.add_argument(
+        "--num-samples",
+        type=int,
+        default=None,
+        help="Defaults to the number of Shoppers test rows satisfying the constraint",
+    )
+    parser.add_argument("--batch-size", type=int, default=1024)
     parser.add_argument("--hid-dim", type=int, default=1024)
     parser.add_argument("--timesteps", type=int, default=200)
     parser.add_argument("--beta-0", type=float, default=0.0001)
@@ -34,6 +52,42 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     return parser.parse_args()
+
+
+def parse_bound_specs(
+    lower_specs: list[str],
+    upper_specs: list[str],
+) -> list[dict]:
+    """Parse paper-style one-sided or two-sided test-time inequalities."""
+    constraints: dict[str, dict] = {}
+    if not lower_specs and not upper_specs:
+        # Exact Shoppers range task from Appendix E.2 / Table 9.
+        lower_specs = ["Administrative=4"]
+    for side, specs in (("raw_lower", lower_specs), ("raw_upper", upper_specs)):
+        for specification in specs:
+            try:
+                name, value_text = specification.rsplit("=", maxsplit=1)
+                name = name.strip()
+                value = float(value_text)
+            except (AttributeError, ValueError) as error:
+                raise ValueError(
+                    f"invalid inequality {specification!r}; expected COLUMN=VALUE"
+                ) from error
+            if not name or not np.isfinite(value):
+                raise ValueError(f"invalid inequality {specification!r}")
+            constraint = constraints.setdefault(
+                name,
+                {"name": name, "raw_lower": None, "raw_upper": None},
+            )
+            if constraint[side] is not None and constraint[side] != value:
+                raise ValueError(f"{name!r} has two different {side} values")
+            constraint[side] = value
+    for constraint in constraints.values():
+        lower = constraint["raw_lower"]
+        upper = constraint["raw_upper"]
+        if lower is not None and upper is not None and lower > upper:
+            raise ValueError(f"lower bound exceeds upper bound for {constraint['name']!r}")
+    return list(constraints.values())
 
 
 def torch_load(path: Path, device: torch.device):
@@ -45,22 +99,17 @@ def torch_load(path: Path, device: torch.device):
 
 def main() -> None:
     args = parse_args()
-    if args.num_samples <= 0 or args.batch_size <= 0 or args.timesteps < 2:
-        raise ValueError("num-samples, batch-size, and timesteps must be positive")
+    if args.num_samples is not None and args.num_samples <= 0:
+        raise ValueError("num-samples must be positive when provided")
+    if args.batch_size <= 0 or args.timesteps < 2:
+        raise ValueError("batch-size must be positive and timesteps at least 2")
     if args.guidance_scale < 0:
         raise ValueError("guidance-scale must be non-negative")
 
     harpoon_root = (PROJECT_ROOT / args.harpoon_root).resolve()
     if not harpoon_root.is_dir():
         raise FileNotFoundError(harpoon_root)
-    query_path = (PROJECT_ROOT / args.query_file).resolve()
-    with open(query_path, "r", encoding="utf-8") as stream:
-        query = json.load(stream)
-    if query.get("dataname") not in (None, args.dataname):
-        raise ValueError("query file belongs to a different dataset")
-    column_specs = query.get("columns", [])
-    if not column_specs:
-        raise ValueError("query contains no active numerical columns")
+    column_specs = parse_bound_specs(args.lower_bound, args.upper_bound)
 
     previous_cwd = Path.cwd()
     os.chdir(harpoon_root)
@@ -93,6 +142,21 @@ def main() -> None:
         name_to_numeric_index = {
             str(name): index for index, name in enumerate(numeric_names)
         }
+        reference_satisfied = np.ones(len(prepper.df_test), dtype=bool)
+        for spec in column_specs:
+            if spec["name"] not in prepper.df_test.columns:
+                raise ValueError(f"constraint column {spec['name']!r} is missing")
+            values = pd.to_numeric(prepper.df_test[spec["name"]], errors="coerce")
+            column_satisfied = values.notna()
+            if spec["raw_lower"] is not None:
+                column_satisfied &= values >= float(spec["raw_lower"])
+            if spec["raw_upper"] is not None:
+                column_satisfied &= values <= float(spec["raw_upper"])
+            reference_satisfied &= column_satisfied.to_numpy()
+        reference_rows = int(reference_satisfied.sum())
+        num_samples = args.num_samples or reference_rows
+        if num_samples <= 0:
+            raise ValueError("no Shoppers test rows satisfy the test-time constraint")
         constraint_indices = []
         standardized_lower = []
         standardized_upper = []
@@ -103,18 +167,30 @@ def main() -> None:
             index = name_to_numeric_index[name]
             constraint_indices.append(index)
             standardized_lower.append(
-                (float(spec["raw_lower"]) - numerical_mean[index])
+                None
+                if spec["raw_lower"] is None
+                else (float(spec["raw_lower"]) - numerical_mean[index])
                 / numerical_std[index]
             )
             standardized_upper.append(
-                (float(spec["raw_upper"]) - numerical_mean[index])
+                None
+                if spec["raw_upper"] is None
+                else (float(spec["raw_upper"]) - numerical_mean[index])
                 / numerical_std[index]
             )
         constraint_indices = torch.tensor(
             constraint_indices, device=device, dtype=torch.long
         )
-        lower = torch.tensor(standardized_lower, device=device, dtype=torch.float32)
-        upper = torch.tensor(standardized_upper, device=device, dtype=torch.float32)
+        lower = torch.tensor(
+            [float("-inf") if value is None else value for value in standardized_lower],
+            device=device,
+            dtype=torch.float32,
+        )
+        upper = torch.tensor(
+            [float("inf") if value is None else value for value in standardized_upper],
+            device=device,
+            dtype=torch.float32,
+        )
 
         checkpoint = Path(
             args.checkpoint
@@ -132,7 +208,7 @@ def main() -> None:
         )
 
         generated_parts = []
-        remaining = args.num_samples
+        remaining = num_samples
         while remaining > 0:
             batch_size = min(args.batch_size, remaining)
             x_t = torch.randn(
@@ -146,11 +222,6 @@ def main() -> None:
                 )
                 alpha_t = diffusion["Alpha"][step].to(device)
                 alpha_bar_t = diffusion["Alpha_bar"][step].to(device)
-                alpha_bar_previous = (
-                    diffusion["Alpha_bar"][step - 1].to(device)
-                    if step >= 1
-                    else torch.tensor(1.0, device=device)
-                )
                 if args.guidance_scale > 0:
                     with torch.enable_grad():
                         x_t = x_t.detach().requires_grad_(True)
@@ -159,12 +230,22 @@ def main() -> None:
                             x_t - torch.sqrt(1 - alpha_bar_t) * predicted_noise
                         ) / torch.sqrt(alpha_bar_t)
                         constrained = x0_hat[:, constraint_indices]
-                        condition_loss = (
-                            torch.relu(lower - constrained).square()
-                            + torch.relu(constrained - upper).square()
-                        ).sum(dim=1)
+                        # Appendix D, Eq. 9 and Appendix G.2: ReLU constraint
+                        # violations with the 2-norm (lambda_g=1), evaluated on
+                        # the dirty estimate Q_t(x_t).
+                        lower_violation = torch.relu(lower - constrained)
+                        upper_violation = torch.relu(constrained - upper)
+                        inference_loss = torch.linalg.vector_norm(
+                            lower_violation,
+                            ord=2,
+                            dim=1,
+                        ) + torch.linalg.vector_norm(
+                            upper_violation,
+                            ord=2,
+                            dim=1,
+                        )
                         gradient = torch.autograd.grad(
-                            condition_loss.sum(),
+                            inference_loss.sum(),
                             x_t,
                         )[0]
                 else:
@@ -177,15 +258,16 @@ def main() -> None:
                         / (torch.sqrt(alpha_t) * torch.sqrt(1 - alpha_bar_t))
                     ) * predicted_noise
                     if step > 0:
-                        posterior_variance = (1 - alpha_t) * (
-                            (1 - alpha_bar_previous) / (1 - alpha_bar_t)
-                        )
-                        x_t += posterior_variance * torch.randn_like(x_t)
+                        # Algorithm 1 uses the standard DDPM posterior standard
+                        # deviation sigma_t, exposed by the upstream helper.
+                        sigma_t = diffusion["Sigma"][step].to(device)
+                        x_t += sigma_t * torch.randn_like(x_t)
+                    # Algorithm 1, line 11: tangential test-time correction.
                     x_t -= args.guidance_scale * gradient
             generated_parts.append(x_t.cpu().numpy())
             remaining -= batch_size
 
-        encoded = np.concatenate(generated_parts, axis=0)[: args.num_samples]
+        encoded = np.concatenate(generated_parts, axis=0)[:num_samples]
         encoded = encoded * std + mean
         decoded = prepper.decodeNp("OHE", encoded)
         numerical_names = [
@@ -204,7 +286,7 @@ def main() -> None:
 
     output = Path(
         args.output
-        or f"conditional_samples/{args.dataname}/harpoon_partial.csv"
+        or "conditional_samples/shoppers/harpoon_paper_range.csv"
     )
     if not output.is_absolute():
         output = PROJECT_ROOT / output
@@ -214,27 +296,44 @@ def main() -> None:
     satisfied = np.ones(len(generated), dtype=bool)
     for spec in column_specs:
         values = pd.to_numeric(generated[spec["name"]], errors="coerce")
-        satisfied &= values.between(
-            float(spec["raw_lower"]),
-            float(spec["raw_upper"]),
-            inclusive="both",
-        ).fillna(False).to_numpy()
+        column_satisfied = values.notna()
+        if spec["raw_lower"] is not None:
+            column_satisfied &= values >= float(spec["raw_lower"])
+        if spec["raw_upper"] is not None:
+            column_satisfied &= values <= float(spec["raw_upper"])
+        satisfied &= column_satisfied.to_numpy()
+    query = {
+        "constraint_id": "harpoon_test_time_inequality",
+        "dataname": "shoppers",
+        "source": "HARPOON Appendix D Eq. 9 and Appendix E.2",
+        "columns": column_specs,
+    }
+    query_output = output.with_suffix(".query.json")
+    with open(query_output, "w", encoding="utf-8") as stream:
+        json.dump(query, stream, indent=2)
     report = {
-        "method": "HARPOON official OHE DDPM with squared-hinge inference guidance",
+        "method": "HARPOON Algorithm 1 test-time manifold guidance",
         "source_commit": "40dc8cee26e215e86523045fdafb7c1ad89c3fd7",
-        "dataname": args.dataname,
-        "query_file": str(query_path),
-        "active_columns": [spec["name"] for spec in column_specs],
+        "paper": "arXiv:2602.07875v3",
+        "dataname": "shoppers",
+        "constraints": column_specs,
+        "inference_loss": "||ReLU(lower-x0_hat)||_2 + ||ReLU(x0_hat-upper)||_2",
+        "gradient": "grad_x_t L_inf(Q_t(x_t), c)",
+        "update_order": "unconditional DDPM step, then -eta*gradient",
         "num_samples": len(generated),
+        "paper_protocol_reference_rows": reference_rows,
+        "sample_count_overridden": args.num_samples is not None,
         "raw_joint_hit_rate": float(satisfied.mean()),
-        "guidance_scale": args.guidance_scale,
+        "eta": args.guidance_scale,
         "timesteps": args.timesteps,
     }
     with open(output.with_suffix(".constraints.json"), "w", encoding="utf-8") as stream:
         json.dump(report, stream, indent=2)
     print(f"Generated {len(generated)} HARPOON rows")
-    print(f"Raw-space partial-query hit rate: {satisfied.mean():.2%}")
+    print(f"Constraint-matching Shoppers test rows: {reference_rows}")
+    print(f"Raw-space inequality hit rate: {satisfied.mean():.2%}")
     print(f"Saved {output}")
+    print(f"Saved test-time constraint {query_output}")
 
 
 if __name__ == "__main__":

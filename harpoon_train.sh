@@ -12,7 +12,11 @@ set -euo pipefail
 
 cd /scratch/work/agrawaa4/TabDiff
 
-DATANAME="${DATANAME:-adult}"
+DATANAME="${DATANAME:-shoppers}"
+if [ "${DATANAME}" != "shoppers" ]; then
+    echo "ERROR: the paper-aligned HARPOON baseline is currently Shoppers-only"
+    exit 1
+fi
 EPOCHS="${EPOCHS:-1000}"
 BATCH_SIZE="${BATCH_SIZE:-1024}"
 HID_DIM="${HID_DIM:-1024}"

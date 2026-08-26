@@ -3,6 +3,7 @@ import torch
 import math
 import numpy as np
 from tabdiff.models.noise_schedule import *
+from tabdiff.models.doob_h_transform import categorical_log_h_ratios
 from tqdm import tqdm
 from itertools import chain
 
@@ -76,6 +77,7 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         self.num_mask_idx = []
         self.cat_mask_idx = []
         self.numerical_h_guide = None
+        self.categorical_h_guide = None
         self.h_guide_strength = 1.0
         self.h_guide_max_correction = None
         self.h_guide_max_log_ratio = 10.0
@@ -528,14 +530,36 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         candidate_batch_size=65536,
         query_active_mask=None,
     ):
-        """Install numerical score and categorical jump-side Doob guidance."""
+        """Backward-compatible installer for earlier single-guide checkpoints."""
+        self.set_doob_h_guides(
+            guide,
+            guide,
+            strength=strength,
+            max_correction=max_correction,
+            max_log_ratio=max_log_ratio,
+            candidate_batch_size=candidate_batch_size,
+            query_active_mask=query_active_mask,
+        )
+
+    def set_doob_h_guides(
+        self,
+        numerical_guide,
+        categorical_guide,
+        strength=1.0,
+        max_correction=None,
+        max_log_ratio=10.0,
+        candidate_batch_size=65536,
+        query_active_mask=None,
+    ):
+        """Install separate numerical-score and categorical-log-h guides."""
         if strength < 0:
             raise ValueError("h-guide strength must be non-negative")
         if max_correction is not None and max_correction <= 0:
             raise ValueError("max_correction must be positive when provided")
         if max_log_ratio <= 0 or candidate_batch_size <= 0:
             raise ValueError("max_log_ratio and candidate_batch_size must be positive")
-        self.numerical_h_guide = guide
+        self.numerical_h_guide = numerical_guide
+        self.categorical_h_guide = categorical_guide
         self.h_guide_strength = float(strength)
         self.h_guide_max_correction = max_correction
         self.h_guide_max_log_ratio = float(max_log_ratio)
@@ -562,7 +586,7 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
             dtype=dtype,
         )[None, :].expand(batch_size, -1)
 
-    def _apply_numerical_h_guide(self, denoised, x_num_t, x_cat_t, t):
+    def _apply_numerical_h_guide(self, denoised, x_num_t, x_cat_t, t, sigma):
         if self.numerical_h_guide is None or self.num_numerical_features == 0:
             return denoised
         query_mask = self._guide_query_mask(
@@ -574,6 +598,15 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
             t,
             query_active_mask=query_mask,
         )
+        if getattr(self.numerical_h_guide, "scalar_h_gradient", False):
+            sigma = torch.as_tensor(
+                sigma,
+                device=correction.device,
+                dtype=correction.dtype,
+            )
+            if sigma.ndim == 1:
+                sigma = sigma[None, :]
+            correction = sigma.square() * correction
         if correction.shape != denoised.shape:
             raise ValueError(
                 "numerical h-guide correction shape "
@@ -589,74 +622,29 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
     @torch.no_grad()
     def _categorical_h_log_ratios(self, x_num_t, x_cat_t, t):
         """Evaluate log h(child)-log h(current) for every masked-token child."""
-        guide = self.numerical_h_guide
+        guide = self.categorical_h_guide
         if guide is None or not hasattr(guide, "log_h") or len(self.num_classes) == 0:
             return None
 
-        b, n_columns = x_cat_t.shape
-        max_classes_with_mask = int(self.mask_index.max().item()) + 1
-        log_ratios = x_num_t.new_zeros((b, n_columns, max_classes_with_mask))
-        current_one_hot = self.to_one_hot(x_cat_t).to(x_num_t.dtype)
+        b = x_cat_t.shape[0]
         current_query_mask = self._guide_query_mask(
             b, x_num_t.device, x_num_t.dtype
         )
-        current_log_h = guide.log_h(
+        log_ratios = categorical_log_h_ratios(
+            guide,
             x_num_t,
-            current_one_hot,
+            x_cat_t,
             t,
+            self.num_classes,
+            self.mask_index,
+            self.to_one_hot,
             query_active_mask=current_query_mask,
+            candidate_batch_size=self.h_guide_candidate_batch_size,
         )
-
-        for column, class_count_value in enumerate(self.num_classes):
-            class_count = int(class_count_value)
-            masked_rows = torch.nonzero(
-                x_cat_t[:, column] == self.mask_index[column],
-                as_tuple=False,
-            ).flatten()
-            if masked_rows.numel() == 0:
-                continue
-
-            repeated_rows = masked_rows.repeat_interleave(class_count)
-            candidate_categories = x_cat_t[repeated_rows].clone()
-            candidate_categories[:, column] = torch.arange(
-                class_count,
-                device=x_cat_t.device,
-            ).repeat(masked_rows.numel())
-            candidate_num = x_num_t[repeated_rows]
-            candidate_t = t[repeated_rows]
-
-            child_log_h_parts = []
-            for start in range(0, len(repeated_rows), self.h_guide_candidate_batch_size):
-                stop = start + self.h_guide_candidate_batch_size
-                child_one_hot = self.to_one_hot(
-                    candidate_categories[start:stop]
-                ).to(x_num_t.dtype)
-                child_log_h_parts.append(
-                    guide.log_h(
-                        candidate_num[start:stop],
-                        child_one_hot,
-                        candidate_t[start:stop],
-                        query_active_mask=(
-                            None
-                            if current_query_mask is None
-                            else current_query_mask[repeated_rows[start:stop]]
-                        ),
-                    )
-                )
-            child_log_h = torch.cat(child_log_h_parts)
-            ratio = child_log_h - current_log_h[repeated_rows]
-            ratio = ratio.reshape(masked_rows.numel(), class_count)
-            ratio = ratio.clamp(
-                min=-self.h_guide_max_log_ratio,
-                max=self.h_guide_max_log_ratio,
-            )
-            ratio = self.h_guide_strength * ratio
-            log_ratios[
-                masked_rows[:, None],
-                column,
-                torch.arange(class_count, device=x_cat_t.device)[None, :],
-            ] = ratio
-        return log_ratios
+        return self.h_guide_strength * log_ratios.clamp(
+            min=-self.h_guide_max_log_ratio,
+            max=self.h_guide_max_log_ratio,
+        )
 
     def _edm_loss(self, D_yn, y, sigma):
         weight = (sigma ** 2 + self.edm_params['sigma_data'] ** 2) / (sigma * self.edm_params['sigma_data']) ** 2
@@ -730,6 +718,7 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
             x_num_hat.float(),
             x_cat_hat_oh,
             t_hat.squeeze().repeat(b),
+            sigma_num_hat.unsqueeze(0).repeat(b, 1),
         )
         
         # Euler step
@@ -788,6 +777,7 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
                     x_num_next.float(),
                     x_cat_hat_oh,
                     t_next.squeeze().repeat(b),
+                    sigma_num_next.unsqueeze(0).repeat(b, 1),
                 )
                 
                 d_prime = (x_num_next - denoised) / sigma_num_next

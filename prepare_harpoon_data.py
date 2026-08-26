@@ -11,7 +11,7 @@ import pandas as pd
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dataname", required=True)
+    parser.add_argument("--dataname", choices=("shoppers",), default="shoppers")
     parser.add_argument("--harpoon-root", default="baselines/harpoon")
     return parser.parse_args()
 

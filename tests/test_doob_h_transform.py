@@ -4,7 +4,13 @@ import math
 import numpy as np
 import torch
 
-from tabdiff.models.doob_h_transform import NumericalBoxQuery, NumericalDoobHGuide
+from tabdiff.models.doob_h_transform import (
+    CategoricalHTransformGuide,
+    NumericalBoxQuery,
+    NumericalDoobHGuide,
+    NumericalHScoreGuide,
+    categorical_log_h_ratios,
+)
 from tabdiff.doob_h_runtime import infer_denoiser_type
 from tabdiff.models.unified_ctime_diffusion import UnifiedCtimeDiffusion
 
@@ -59,6 +65,60 @@ class NumericalBoxQueryTest(unittest.TestCase):
 
 
 class NumericalDoobHGuideTest(unittest.TestCase):
+    def test_separate_guides_have_independent_matching_backbones(self):
+        kwargs = dict(
+            d_numerical=3,
+            categories=[2],
+            d_token=16,
+            num_layers=1,
+            n_head=4,
+            n_frequencies=4,
+            query_mask_conditioning=True,
+        )
+        numerical = NumericalHScoreGuide(**kwargs)
+        categorical = CategoricalHTransformGuide(**kwargs)
+        x_num = torch.randn(4, 3)
+        x_cat = torch.zeros(4, 2)
+        x_cat[:, 0] = 1
+        t = torch.linspace(0.1, 0.9, 4)
+        active = torch.ones(4, 3)
+
+        self.assertIsNone(numerical.h_logit_head)
+        self.assertIsNone(categorical.correction_head)
+        self.assertIsNot(numerical.tokenizer, categorical.tokenizer)
+        self.assertEqual(numerical(x_num, x_cat, t, active).shape, (4, 3))
+        self.assertEqual(categorical.log_h(x_num, x_cat, t, active).shape, (4,))
+
+    def test_scalar_h_gradient_is_autograd_of_same_log_h(self):
+        guide = NumericalDoobHGuide(
+            d_numerical=3,
+            categories=[2],
+            d_token=16,
+            num_layers=1,
+            n_head=4,
+            n_frequencies=4,
+            query_mask_conditioning=True,
+            scalar_h_gradient=True,
+        )
+        guide.eval()
+        with torch.no_grad():
+            guide.h_logit_head.weight.normal_(mean=0.0, std=0.1)
+        x_num = torch.randn(4, 3)
+        x_cat = torch.zeros(4, 2)
+        x_cat[:, 0] = 1
+        t = torch.linspace(0.1, 0.9, 4)
+        active = torch.ones(4, 3)
+
+        x_expected = x_num.detach().requires_grad_(True)
+        expected = torch.autograd.grad(
+            guide.log_h(x_expected, x_cat, t, active).sum(),
+            x_expected,
+        )[0]
+        actual = guide(x_num, x_cat, t, active)
+
+        self.assertIsNone(guide.correction_head)
+        torch.testing.assert_close(actual, expected)
+
     def test_partial_query_mask_is_an_explicit_input(self):
         guide = NumericalDoobHGuide(
             d_numerical=3,
@@ -115,6 +175,35 @@ class NumericalDoobHGuideTest(unittest.TestCase):
 
 
 class CategoricalDoobUpdateTest(unittest.TestCase):
+    def test_shared_ratio_helper_is_differentiable(self):
+        class LinearLogH(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.weight = torch.nn.Parameter(torch.tensor([1.0, -1.0, 0.0]))
+
+            def log_h(self, x_num, x_cat, t, query_active_mask=None):
+                return (x_cat * self.weight).sum(dim=1)
+
+        guide = LinearLogH()
+        x_cat = torch.tensor([[2], [2]])
+
+        def to_one_hot(values):
+            return torch.nn.functional.one_hot(values[:, 0], num_classes=3).float()
+
+        ratios = categorical_log_h_ratios(
+            guide,
+            x_num_t=torch.zeros(2, 1),
+            x_cat_t=x_cat,
+            t=torch.tensor([0.2, 0.8]),
+            num_classes=[2],
+            mask_index=torch.tensor([2]),
+            to_one_hot=to_one_hot,
+        )
+        ratios[:, :, :2].sum().backward()
+
+        self.assertEqual(ratios.shape, (2, 1, 3))
+        self.assertIsNotNone(guide.weight.grad)
+
     def make_diffusion(self, num_classes=np.array([2])):
         return UnifiedCtimeDiffusion(
             num_classes=num_classes,
@@ -145,6 +234,25 @@ class CategoricalDoobUpdateTest(unittest.TestCase):
 
         expected = torch.tensor([[[0.3, 0.15, 0.2]]])
         torch.testing.assert_close(transition_weights, expected)
+
+    def test_scalar_h_gradient_is_scaled_by_sigma_squared(self):
+        diffusion = self.make_diffusion()
+
+        class ConstantGradientGuide(torch.nn.Module):
+            scalar_h_gradient = True
+
+            def forward(self, x_num_t, x_cat_t, t, query_active_mask=None):
+                return torch.ones_like(x_num_t)
+
+        diffusion.set_numerical_h_guide(ConstantGradientGuide())
+        corrected = diffusion._apply_numerical_h_guide(
+            denoised=torch.zeros(2, 1),
+            x_num_t=torch.zeros(2, 1),
+            x_cat_t=torch.zeros(2, 0),
+            t=torch.tensor([0.2, 0.8]),
+            sigma=torch.tensor([[2.0], [3.0]]),
+        )
+        torch.testing.assert_close(corrected, torch.tensor([[4.0], [9.0]]))
 
     def test_section4_posterior_prefers_middle_times(self):
         diffusion = self.make_diffusion(np.array([2, 3]))

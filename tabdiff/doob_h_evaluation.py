@@ -16,15 +16,18 @@ def raw_constraint_hits(
         name = spec.get("name")
         lower = spec.get("raw_lower")
         upper = spec.get("raw_upper")
-        if name not in frame.columns or lower is None or upper is None:
+        if name not in frame.columns or (lower is None and upper is None):
             raise ValueError(f"raw constraint metadata is incomplete for column {name!r}")
         values = frame[name].to_numpy(dtype=np.float64)
-        scale = max(1.0, abs(float(lower)), abs(float(upper)))
+        finite_bounds = [float(value) for value in (lower, upper) if value is not None]
+        scale = max(1.0, *(abs(value) for value in finite_bounds))
         tolerance = 1e-7 * scale
-        hits.append(
-            (values >= float(lower) - tolerance)
-            & (values <= float(upper) + tolerance)
-        )
+        column_hits = np.isfinite(values)
+        if lower is not None:
+            column_hits &= values >= float(lower) - tolerance
+        if upper is not None:
+            column_hits &= values <= float(upper) + tolerance
+        hits.append(column_hits)
     if not hits:
         raise ValueError("query does not contain any numerical column constraints")
     per_value = np.stack(hits, axis=1)

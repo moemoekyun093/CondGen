@@ -12,7 +12,12 @@ import torch
 
 from tabdiff.doob_h_runtime import load_doob_runtime, resolve_base_checkpoint
 from tabdiff.doob_h_evaluation import raw_constraint_hits
-from tabdiff.models.doob_h_transform import NumericalBoxQuery, NumericalDoobHGuide
+from tabdiff.models.doob_h_transform import (
+    CategoricalHTransformGuide,
+    NumericalBoxQuery,
+    NumericalDoobHGuide,
+    NumericalHScoreGuide,
+)
 from tabdiff.trainer import recover_data, split_num_cat_target
 
 
@@ -30,6 +35,11 @@ def parse_args() -> argparse.Namespace:
         "--active-columns",
         default=None,
         help="Comma-separated active numerical model indices; random when omitted",
+    )
+    parser.add_argument(
+        "--all-columns-active",
+        action="store_true",
+        help="Activate every numerical interval (first two-guide verification)",
     )
     parser.add_argument("--column-active-probability", type=float, default=0.5)
     parser.add_argument(
@@ -87,11 +97,16 @@ def choose_query_active_mask(
     d_numerical: int,
     probability: float,
     device: torch.device,
+    all_columns_active: bool = False,
 ) -> torch.Tensor:
     if not 0.0 < probability < 1.0:
         raise ValueError("column-active-probability must be between 0 and 1")
     mask = torch.zeros(d_numerical, dtype=torch.float32, device=device)
-    if specification is not None:
+    if all_columns_active:
+        if specification is not None:
+            raise ValueError("cannot combine all-columns-active with active-columns")
+        mask.fill_(1.0)
+    elif specification is not None:
         try:
             columns = [
                 int(value.strip())
@@ -139,22 +154,44 @@ def main() -> None:
     )
     runtime = load_doob_runtime(dataname, base_checkpoint, device)
 
-    guide = NumericalDoobHGuide(**metadata["guide"]).to(device)
-    guide.load_state_dict(guide_state["guide"])
-    guide.eval()
+    if "numerical_guide" in guide_state:
+        numerical_guide = NumericalHScoreGuide(
+            **metadata["numerical_guide"]
+        ).to(device)
+        categorical_guide = CategoricalHTransformGuide(
+            **metadata["categorical_guide"]
+        ).to(device)
+        numerical_guide.load_state_dict(guide_state["numerical_guide"])
+        categorical_guide.load_state_dict(guide_state["categorical_guide"])
+    else:
+        # Compatibility with checkpoints created before the two-guide split.
+        legacy_guide = NumericalDoobHGuide(**metadata["guide"]).to(device)
+        legacy_guide.load_state_dict(guide_state["guide"])
+        numerical_guide = legacy_guide
+        categorical_guide = legacy_guide
+    numerical_guide.eval()
+    categorical_guide.eval()
     d_numerical = runtime.dataset.d_numerical
     query_active_mask = choose_query_active_mask(
         args.active_columns,
         d_numerical,
         args.column_active_probability,
         device,
+        all_columns_active=args.all_columns_active,
     )
+    training_mode = metadata.get("training", {}).get("mode")
+    if training_mode == "all_constrained" and not bool(query_active_mask.bool().all()):
+        raise ValueError(
+            "this checkpoint was trained only with the all-ones constraint mask; "
+            "partial-mask sampling is intentionally disabled until partial training"
+        )
     active_columns = torch.nonzero(
         query_active_mask,
         as_tuple=False,
     ).flatten().tolist()
-    runtime.diffusion.set_numerical_h_guide(
-        guide,
+    runtime.diffusion.set_doob_h_guides(
+        numerical_guide,
+        categorical_guide,
         strength=1.0,
         max_correction=args.max_correction,
         max_log_ratio=args.max_log_h_ratio,

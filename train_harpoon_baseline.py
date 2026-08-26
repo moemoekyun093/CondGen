@@ -20,7 +20,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dataname", required=True)
+    parser.add_argument("--dataname", choices=("shoppers",), default="shoppers")
     parser.add_argument("--harpoon-root", default="baselines/harpoon")
     parser.add_argument("--hid-dim", type=int, default=1024)
     parser.add_argument("--batch-size", type=int, default=1024)

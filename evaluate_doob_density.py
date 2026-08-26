@@ -9,10 +9,7 @@ from pathlib import Path
 import pandas as pd
 import torch
 
-from tabdiff.doob_h_evaluation import (
-    compare_correlation_matrices,
-    raw_constraint_report,
-)
+from tabdiff.doob_h_evaluation import raw_constraint_report
 from tabdiff.metrics import TabMetrics
 
 
@@ -107,31 +104,6 @@ def main() -> None:
     conditional_real_path = output_dir / "real_conditional_reference.csv"
     conditional_real.to_csv(conditional_real_path, index=False)
 
-    numerical_columns = [spec["name"] for spec in query.get("columns", [])]
-    full_real_correlation = real[numerical_columns].corr(method="pearson")
-    conditional_real_correlation = conditional_real[numerical_columns].corr(
-        method="pearson"
-    )
-    generated_correlation = samples[numerical_columns].corr(method="pearson")
-    correlation_difference = conditional_real_correlation - full_real_correlation
-    full_real_correlation.to_csv(output_dir / "real_full_numerical_correlation.csv")
-    conditional_real_correlation.to_csv(
-        output_dir / "real_conditional_numerical_correlation.csv"
-    )
-    generated_correlation.to_csv(output_dir / "generated_numerical_correlation.csv")
-    correlation_difference.to_csv(
-        output_dir / "real_conditional_minus_full_correlation.csv"
-    )
-
-    constrained_vs_total_correlation = compare_correlation_matrices(
-        full_real_correlation,
-        conditional_real_correlation,
-    )
-    generated_vs_constrained_correlation = compare_correlation_matrices(
-        conditional_real_correlation,
-        generated_correlation,
-    )
-
     conditional_metrics, conditional_extras = density_evaluation(
         conditional_real_path,
         samples,
@@ -159,11 +131,6 @@ def main() -> None:
         "unconditional_generation_vs_conditional_real": float_metrics(
             unconditional_generation_metrics
         ),
-        "numerical_correlation": {
-            "method": "Pearson correlation over numerical columns",
-            "constrained_real_vs_total_real": constrained_vs_total_correlation,
-            "generated_vs_constrained_real": generated_vs_constrained_correlation,
-        },
     }
     with open(output_dir / "density_results.json", "w", encoding="utf-8") as stream:
         json.dump(results, stream, indent=2)
@@ -183,10 +150,6 @@ def main() -> None:
     print(json.dumps(results["conditional_generation_vs_conditional_real"], indent=2))
     print("Unconditional generation vs the same conditional real:")
     print(json.dumps(results["unconditional_generation_vs_conditional_real"], indent=2))
-    print("Numerical correlation: constrained real vs total real:")
-    print(json.dumps(constrained_vs_total_correlation, indent=2))
-    print("Numerical correlation: generated vs constrained real:")
-    print(json.dumps(generated_vs_constrained_correlation, indent=2))
     print(f"Saved density evaluation to {output_dir}")
 
 

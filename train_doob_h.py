@@ -40,8 +40,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--query-file", required=True)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--steps", type=int, default=8000)
-    parser.add_argument("--batch-size", type=int, default=4096)
+    parser.add_argument("--epochs", type=int, default=6000)
+    parser.add_argument("--diagnostic-batch-size", type=int, default=1024)
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--weight-decay", type=float, default=1e-4)
     parser.add_argument("--ema-decay", type=float, default=0.997)
@@ -253,7 +253,7 @@ def save_checkpoint(
     numerical_guide,
     categorical_guide,
     metadata,
-    step,
+    epoch,
     loss,
     ema,
 ):
@@ -262,8 +262,8 @@ def save_checkpoint(
             "numerical_guide": numerical_guide.state_dict(),
             "categorical_guide": categorical_guide.state_dict(),
             "metadata": metadata,
-            "step": step,
-            "epoch": step,
+            "step": epoch,
+            "epoch": epoch,
             "training_mse": loss,
             "ema": ema,
         },
@@ -274,13 +274,13 @@ def save_checkpoint(
 def main() -> None:
     args = parse_args()
     if min(
-        args.steps,
-        args.batch_size,
+        args.epochs,
+        args.diagnostic_batch_size,
         args.h_candidate_batch_size,
         args.diagnostic_every,
         args.log_every,
     ) <= 0:
-        raise ValueError("steps, batch size, and reporting intervals must be positive")
+        raise ValueError("epochs, diagnostic batch size, and reporting intervals must be positive")
     if args.gradient_loss_weight <= 0 or args.categorical_loss_weight <= 0:
         raise ValueError("gradient and categorical loss weights must be positive")
     if not 0.0 <= args.ema_decay < 1.0:
@@ -385,10 +385,11 @@ def main() -> None:
         },
         "training": {
             "mode": "all_constrained",
-            "steps": args.steps,
-            "batch_size": args.batch_size,
-            "optimizer_updates": args.steps,
-            "full_dataset_pass_per_step": False,
+            "epochs": args.epochs,
+            "rows_per_epoch": len(x_positive),
+            "optimizer_updates": args.epochs,
+            "full_conditional_pass_per_epoch": True,
+            "sampling_with_replacement": False,
             "fixed_conditional_diagnostic_every": args.diagnostic_every,
             "event_rate": event_rate,
             "positive_rows": int(event_all.sum()),
@@ -417,12 +418,12 @@ def main() -> None:
         f"{sum(p.numel() for p in categorical_guide.parameters()):,}"
     )
     print(
-        f"Optimizer steps: {args.steps}; gradient batch sampled uniformly from "
-        f"{len(x_positive)} all-constrained rows"
+        f"Epochs: {args.epochs}; every epoch uses all {len(x_positive)} "
+        "all-constrained rows exactly once"
     )
     print("Categorical objective: TabDiff absorbed loss with scalar-h ratios")
     print("No unrestricted rows and no BCE/classification objective")
-    print(f"Fixed EMA joint diagnostic every {args.diagnostic_every} steps")
+    print(f"Fixed EMA joint diagnostic every {args.diagnostic_every} epochs")
     print(f"Writing checkpoints to {output_dir}")
 
     best_ema = float("inf")
@@ -430,12 +431,8 @@ def main() -> None:
     last_ema_loss = float("nan")
     numerical_guide.train()
     categorical_guide.train()
-    for step in range(1, args.steps + 1):
-        positive_indices = torch.randint(
-            len(x_positive),
-            (args.batch_size,),
-            device=device,
-        )
+    for epoch in range(1, args.epochs + 1):
+        positive_indices = torch.randperm(len(x_positive), device=device)
         optimizer.zero_grad(set_to_none=True)
         gradient_loss, categorical_loss, _, _ = joint_batch(
             runtime,
@@ -450,7 +447,7 @@ def main() -> None:
         )
         if not torch.isfinite(loss):
             raise FloatingPointError(
-                f"non-finite joint loss at step {step}: "
+                f"non-finite joint loss at epoch {epoch}: "
                 f"numerical={gradient_loss.item()}, "
                 f"categorical={categorical_loss.item()}"
             )
@@ -473,20 +470,20 @@ def main() -> None:
         )
         last_loss = loss.item()
 
-        if step % args.log_every == 0 or step == 1:
+        if epoch % args.log_every == 0 or epoch == 1:
             print(
-                f"step={step:05d}/{args.steps:05d} total={last_loss:.6f} "
+                f"epoch={epoch:05d}/{args.epochs:05d} total={last_loss:.6f} "
                 f"gradient_mse={gradient_loss.item():.6f} "
                 f"categorical_loss={categorical_loss.item():.6f}"
             )
 
-        if step % args.diagnostic_every == 0 or step == args.steps:
+        if epoch % args.diagnostic_every == 0 or epoch == args.epochs:
             raw_metrics = joint_diagnostic(
                 runtime,
                 numerical_guide,
                 categorical_guide,
                 x_positive,
-                min(1024, args.batch_size),
+                min(args.diagnostic_batch_size, len(x_positive)),
                 args.seed + 100_000,
                 args.h_candidate_batch_size,
             )
@@ -495,7 +492,7 @@ def main() -> None:
                 ema_numerical_guide,
                 ema_categorical_guide,
                 x_positive,
-                min(1024, args.batch_size),
+                min(args.diagnostic_batch_size, len(x_positive)),
                 args.seed + 100_000,
                 args.h_candidate_batch_size,
             )
@@ -505,7 +502,7 @@ def main() -> None:
             )
             scheduler.step(last_ema_loss)
             print(
-                f"diagnostic step={step:05d} ema_total={last_ema_loss:.6f} "
+                f"diagnostic epoch={epoch:05d} ema_total={last_ema_loss:.6f} "
                 f"raw_gradient_mse={raw_metrics['gradient_mse']:.6f} "
                 f"ema_gradient_mse={ema_metrics['gradient_mse']:.6f} "
                 f"raw_categorical_loss={raw_metrics['categorical_loss']:.6f} "
@@ -513,34 +510,34 @@ def main() -> None:
                 f"ema_gradient_finite={ema_metrics['finite']} "
                 f"lr={optimizer.param_groups[0]['lr']:.3e}"
             )
-            if step > args.checkpoint_warmup and last_ema_loss < best_ema:
+            if epoch > args.checkpoint_warmup and last_ema_loss < best_ema:
                 best_ema = last_ema_loss
                 save_checkpoint(
                     output_dir / "best_guide.pt",
                     ema_numerical_guide,
                     ema_categorical_guide,
                     metadata,
-                    step,
+                    epoch,
                     last_ema_loss,
                     ema=True,
                 )
 
-        if step % args.checkpoint_every == 0:
+        if epoch % args.checkpoint_every == 0:
             save_checkpoint(
-                output_dir / f"guide_step_{step}.pt",
+                output_dir / f"guide_epoch_{epoch}.pt",
                 numerical_guide,
                 categorical_guide,
                 metadata,
-                step,
+                epoch,
                 last_loss,
                 ema=False,
             )
             save_checkpoint(
-                output_dir / f"ema_guide_step_{step}.pt",
+                output_dir / f"ema_guide_epoch_{epoch}.pt",
                 ema_numerical_guide,
                 ema_categorical_guide,
                 metadata,
-                step,
+                epoch,
                 last_ema_loss,
                 ema=True,
             )
@@ -550,7 +547,7 @@ def main() -> None:
         numerical_guide,
         categorical_guide,
         metadata,
-        args.steps,
+        args.epochs,
         last_loss,
         ema=False,
     )
@@ -559,7 +556,7 @@ def main() -> None:
         ema_numerical_guide,
         ema_categorical_guide,
         metadata,
-        args.steps,
+        args.epochs,
         last_ema_loss,
         ema=True,
     )
@@ -570,7 +567,7 @@ def main() -> None:
             ema_numerical_guide,
             ema_categorical_guide,
             metadata,
-            args.steps,
+            args.epochs,
             last_ema_loss,
             ema=True,
         )

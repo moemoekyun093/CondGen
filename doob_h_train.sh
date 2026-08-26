@@ -33,8 +33,8 @@ BASE_CKPT="${CKPT_CANDIDATES[0]}"
 GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_all_constrained_two_guides}"
 OUTPUT_DIR="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/${GUIDE_DIR_NAME}"
 QUERY_FILE="${QUERY_FILE:-constraints/${DATANAME}/fixed_numerical_intervals.json}"
-STEPS="${STEPS:-8000}"
-BATCH_SIZE="${BATCH_SIZE:-4096}"
+EPOCHS="${EPOCHS:-6000}"
+DIAGNOSTIC_BATCH_SIZE="${DIAGNOSTIC_BATCH_SIZE:-1024}"
 DIAGNOSTIC_EVERY="${DIAGNOSTIC_EVERY:-100}"
 H_CANDIDATE_BATCH_SIZE="${H_CANDIDATE_BATCH_SIZE:-16384}"
 
@@ -50,10 +50,10 @@ echo "Objective       : separate numerical h-score and categorical log-h guides"
 echo "Numerical       : direct sigma(t)^2 * grad_x log h correction"
 echo "Categorical     : h(child)/h(current) from a separate scalar network"
 echo "Categorical loss: original TabDiff absorbed categorical loss"
-echo "Gradient batch  : ${BATCH_SIZE} uniformly sampled constrained rows"
+echo "Epoch data      : every constrained row exactly once, no replacement"
 echo "Other rows      : none (no BCE/classification objective)"
-echo "Training        : ${STEPS} optimizer steps"
-echo "EMA diagnostic  : every ${DIAGNOSTIC_EVERY} steps"
+echo "Training        : ${EPOCHS} exact full-subset epochs"
+echo "EMA diagnostic  : every ${DIAGNOSTIC_EVERY} epochs"
 echo "========================================"
 nvidia-smi
 
@@ -72,8 +72,8 @@ python -u train_doob_h.py \
     --base-ckpt "${BASE_CKPT}" \
     --query-file "${QUERY_FILE}" \
     --output-dir "${OUTPUT_DIR}" \
-    --steps "${STEPS}" \
-    --batch-size "${BATCH_SIZE}" \
+    --epochs "${EPOCHS}" \
+    --diagnostic-batch-size "${DIAGNOSTIC_BATCH_SIZE}" \
     --gradient-loss-weight 1.0 \
     --categorical-loss-weight 1.0 \
     --h-candidate-batch-size "${H_CANDIDATE_BATCH_SIZE}" \

@@ -253,13 +253,13 @@ Evaluate the existing generated table without resampling:
 sbatch --array=0 --dependency="afterok:${SAMPLE_JOB}" doob_h_evaluate.sh
 ```
 
-Training runs for 8000 optimizer steps, not 8000 full-data epochs. Each step
-samples 4096 rows uniformly with replacement from the all-constrained subset
-and uses the same forward-noised batch for both the Section 5 numerical target
-and TabDiff categorical loss. It never draws endpoints outside that conditional
-subset. EMA updates both guides after every step; fixed diagnostics run only
-every 100 steps. Override these with, for example,
-`sbatch --array=0 --export=ALL,STEPS=2000,BATCH_SIZE=2048,DIAGNOSTIC_EVERY=100 doob_h_train.sh`.
+Training runs for 6000 exact epochs over the all-constrained subset. Every epoch
+randomly permutes that subset and uses every constrained row exactly once in one
+full-batch optimizer update, with no replacement sampling. The same
+forward-noised full batch supplies both the Section 5 numerical target and
+TabDiff categorical loss. EMA updates both guides after every epoch; fixed
+diagnostics run every 100 epochs. Override these with, for example,
+`sbatch --array=0 --export=ALL,EPOCHS=2000,DIAGNOSTIC_EVERY=100 doob_h_train.sh`.
 
 The dataset and checkpoint-directory names can also be overridden without
 editing the scripts, for example

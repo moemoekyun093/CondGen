@@ -105,6 +105,12 @@ def categorical_candidate_log_h(
     mask_index: Tensor,
     to_one_hot,
     query_active_mask: Tensor | None = None,
+    query_lower: Tensor | None = None,
+    query_upper: Tensor | None = None,
+    query_numerical_active: Tensor | None = None,
+    query_categorical_allowed: Tensor | None = None,
+    query_categorical_active: Tensor | None = None,
+    state_numerical_scale: Tensor | None = None,
     candidate_batch_size: int = 65536,
 ) -> Tensor:
     """Evaluate ``log h(child)`` for every masked-column real-token child.
@@ -145,16 +151,27 @@ def categorical_candidate_log_h(
             child_one_hot = to_one_hot(candidate_categories[start:stop]).to(
                 x_num_t.dtype
             )
+            query_kwargs = {
+                "query_active_mask": (
+                    None if query_active_mask is None else query_active_mask[rows]
+                )
+            }
+            for name, value in (
+                ("query_lower", query_lower),
+                ("query_upper", query_upper),
+                ("query_numerical_active", query_numerical_active),
+                ("query_categorical_allowed", query_categorical_allowed),
+                ("query_categorical_active", query_categorical_active),
+                ("state_numerical_scale", state_numerical_scale),
+            ):
+                if value is not None:
+                    query_kwargs[name] = value[rows]
             child_log_h_parts.append(
                 guide.log_h(
                     x_num_t[rows],
                     child_one_hot,
                     t[rows],
-                    query_active_mask=(
-                        None
-                        if query_active_mask is None
-                        else query_active_mask[rows]
-                    ),
+                    **query_kwargs,
                 )
             )
         child_log_h = torch.cat(child_log_h_parts)
@@ -568,3 +585,365 @@ class CategoricalHTransformGuide(NumericalDoobHGuide):
         query_active_mask: Tensor | None = None,
     ) -> Tensor:
         return self.h_logit(x_num_t, x_cat_t, t, query_active_mask)
+
+
+class PositiveLinear(nn.Module):
+    """Linear layer whose effective weights are strictly nonnegative."""
+
+    def __init__(self, in_features: int, out_features: int) -> None:
+        super().__init__()
+        self.raw_weight = nn.Parameter(torch.empty(out_features, in_features))
+        self.bias = nn.Parameter(torch.zeros(out_features))
+        nn.init.normal_(self.raw_weight, mean=-2.0, std=0.2)
+
+    def forward(self, value: Tensor) -> Tensor:
+        return torch.nn.functional.linear(
+            value,
+            torch.nn.functional.softplus(self.raw_weight),
+            self.bias,
+        )
+
+
+class MonotoneScalarEmbedding(nn.Module):
+    """Coordinatewise nondecreasing embedding of a scalar."""
+
+    def __init__(self, embedding_dim: int, hidden_dim: int | None = None) -> None:
+        super().__init__()
+        hidden_dim = int(hidden_dim or embedding_dim)
+        self.input = PositiveLinear(1, hidden_dim)
+        self.output = PositiveLinear(hidden_dim, embedding_dim)
+
+    def forward(self, value: Tensor) -> Tensor:
+        value = value.unsqueeze(-1)
+        hidden = torch.nn.functional.softplus(self.input(value))
+        return torch.nn.functional.softplus(self.output(hidden))
+
+
+class StructuredDoobHGuide(nn.Module):
+    """Lightweight guide conditioned on numerical intervals and category sets.
+
+    This is deliberately separate from :class:`NumericalDoobHGuide`, which is
+    retained unchanged for fixed-box active-mask checkpoints. The new guide
+    reuses a frozen FT-periodic tokenizer from the base denoiser, injects time
+    into the noisy state token, and only then fuses clean query information.
+    """
+
+    def __init__(
+        self,
+        *,
+        base_tokenizer: nn.Module,
+        d_numerical: int,
+        categories: Sequence[int],
+        base_d_token: int,
+        d_token: int = 48,
+        num_layers: int = 2,
+        n_head: int = 4,
+        factor: float = 2.0,
+        bound_embedding_dim: int = 8,
+        active_embedding_dim: int = 8,
+        output_kind: str = "numerical",
+    ) -> None:
+        super().__init__()
+        if output_kind not in {"numerical", "categorical"}:
+            raise ValueError("output_kind must be numerical or categorical")
+        if d_token % n_head != 0:
+            raise ValueError("d_token must be divisible by n_head")
+        categories = tuple(int(value) for value in categories)
+        if any(value < 2 for value in categories):
+            raise ValueError("categories must include at least one real class and MASK")
+
+        self.d_numerical = int(d_numerical)
+        self.categories = categories
+        self.real_category_counts = tuple(value - 1 for value in categories)
+        self.d_categorical_one_hot = sum(categories)
+        self.output_kind = output_kind
+        self.scalar_h_gradient = False
+        self._config = {
+            "d_numerical": d_numerical,
+            "categories": list(categories),
+            "base_d_token": base_d_token,
+            "d_token": d_token,
+            "num_layers": num_layers,
+            "n_head": n_head,
+            "factor": factor,
+            "bound_embedding_dim": bound_embedding_dim,
+            "active_embedding_dim": active_embedding_dim,
+            "output_kind": output_kind,
+        }
+
+        # Keep the frozen tokenizer external to the guide state_dict. It is
+        # restored from the base checkpoint and is shared by both guides.
+        object.__setattr__(self, "_base_tokenizer", base_tokenizer)
+        if not hasattr(base_tokenizer, "cat_weight"):
+            raise ValueError("the frozen base tokenizer has no categorical lookup")
+        if base_tokenizer.cat_weight.shape != (sum(categories), base_d_token):
+            raise ValueError("base tokenizer categorical lookup does not match guide config")
+        for parameter in base_tokenizer.parameters():
+            parameter.requires_grad_(False)
+        base_tokenizer.eval()
+
+        self.state_projection = nn.Linear(base_d_token, d_token)
+        self.map_time = PositionalEmbedding(num_channels=d_token)
+        self.time_embed = nn.Sequential(
+            nn.Linear(d_token, d_token),
+            nn.SiLU(),
+            nn.Linear(d_token, d_token),
+        )
+        self.state_time_fusion = nn.Sequential(
+            nn.Linear(2 * d_token, d_token),
+            nn.SiLU(),
+        )
+
+        self.lower_embedding = MonotoneScalarEmbedding(bound_embedding_dim)
+        self.upper_embedding = MonotoneScalarEmbedding(bound_embedding_dim)
+        numerical_query_dim = 2 + 2 * bound_embedding_dim
+        self.numerical_null = nn.Parameter(
+            torch.zeros(d_numerical, numerical_query_dim)
+        )
+        self.numerical_active_embedding = nn.Embedding(2, active_embedding_dim)
+        self.numerical_query_fusion = nn.Sequential(
+            nn.Linear(d_token + numerical_query_dim + active_embedding_dim, d_token),
+            nn.SiLU(),
+        )
+
+        self.categorical_null = nn.Parameter(
+            torch.zeros(len(categories), base_d_token)
+        )
+        self.categorical_active_embedding = nn.Embedding(2, active_embedding_dim)
+        self.categorical_query_fusion = nn.Sequential(
+            nn.Linear(d_token + base_d_token + active_embedding_dim, d_token),
+            nn.SiLU(),
+        )
+
+        self.blocks = nn.ModuleList(
+            [FTBlock(d_token, n_head, d_ffn_factor=factor) for _ in range(num_layers)]
+        )
+        self.final_norm = nn.LayerNorm(d_token)
+        self.correction_head = (
+            nn.Linear(d_token, 1) if output_kind == "numerical" else None
+        )
+        self.h_logit_head = (
+            nn.Linear(d_token, 1) if output_kind == "categorical" else None
+        )
+        head = self.correction_head or self.h_logit_head
+        nn.init.zeros_(head.weight)
+        nn.init.zeros_(head.bias)
+
+    def train(self, mode: bool = True):
+        super().train(mode)
+        self._base_tokenizer.eval()
+        return self
+
+    def _batch_query(
+        self,
+        value: Tensor | None,
+        batch_size: int,
+        width: int,
+        reference: Tensor,
+        name: str,
+        default: float,
+    ) -> Tensor:
+        if value is None:
+            return reference.new_full((batch_size, width), default)
+        value = torch.as_tensor(value, device=reference.device, dtype=reference.dtype)
+        if value.ndim == 1:
+            value = value[None, :].expand(batch_size, -1)
+        if value.shape != (batch_size, width):
+            raise ValueError(f"{name} must have shape ({batch_size}, {width})")
+        return value
+
+    def categorical_set_embedding(self, allowed: Tensor) -> Tensor:
+        """Sum ReLU-frozen real-category lookups, excluding MASK and bias."""
+        if allowed.ndim != 2 or allowed.shape[1] != sum(self.real_category_counts):
+            raise ValueError(
+                "categorical allowed-set tensor must have shape "
+                f"[batch, {sum(self.real_category_counts)}]"
+            )
+        categorical_query_parts = []
+        allowed_offset = 0
+        tokenizer_offset = 0
+        for real_count, total_count in zip(
+            self.real_category_counts,
+            self.categories,
+        ):
+            membership = allowed[
+                :, allowed_offset : allowed_offset + real_count
+            ]
+            pretrained_values = self._base_tokenizer.cat_weight[
+                tokenizer_offset : tokenizer_offset + real_count
+            ]
+            categorical_query_parts.append(
+                membership @ torch.relu(pretrained_values)
+            )
+            allowed_offset += real_count
+            tokenizer_offset += total_count
+        return torch.stack(categorical_query_parts, dim=1)
+
+    def _encode(
+        self,
+        x_num_t: Tensor,
+        x_cat_t: Tensor,
+        t: Tensor,
+        query_active_mask: Tensor | None = None,
+        query_lower: Tensor | None = None,
+        query_upper: Tensor | None = None,
+        query_numerical_active: Tensor | None = None,
+        query_categorical_allowed: Tensor | None = None,
+        query_categorical_active: Tensor | None = None,
+        state_numerical_scale: Tensor | None = None,
+    ) -> Tensor:
+        batch_size = x_num_t.shape[0]
+        if x_num_t.shape != (batch_size, self.d_numerical):
+            raise ValueError("numerical state has the wrong shape")
+        if x_cat_t.shape != (batch_size, self.d_categorical_one_hot):
+            raise ValueError("categorical one-hot state has the wrong shape")
+        t = t.reshape(-1).to(device=x_num_t.device, dtype=x_num_t.dtype)
+        if t.numel() == 1:
+            t = t.expand(batch_size)
+        if t.numel() != batch_size:
+            raise ValueError("time must be scalar or have one value per row")
+
+        lower = self._batch_query(
+            query_lower, batch_size, self.d_numerical, x_num_t, "query_lower", 0.0
+        )
+        upper = self._batch_query(
+            query_upper, batch_size, self.d_numerical, x_num_t, "query_upper", 0.0
+        )
+        if query_numerical_active is None and query_active_mask is not None:
+            query_numerical_active = query_active_mask
+        numerical_active = self._batch_query(
+            query_numerical_active,
+            batch_size,
+            self.d_numerical,
+            x_num_t,
+            "query_numerical_active",
+            0.0,
+        )
+        categorical_allowed = self._batch_query(
+            query_categorical_allowed,
+            batch_size,
+            sum(self.real_category_counts),
+            x_num_t,
+            "query_categorical_allowed",
+            0.0,
+        )
+        categorical_active = self._batch_query(
+            query_categorical_active,
+            batch_size,
+            len(self.categories),
+            x_num_t,
+            "query_categorical_active",
+            0.0,
+        )
+        numerical_scale = self._batch_query(
+            state_numerical_scale,
+            batch_size,
+            self.d_numerical,
+            x_num_t,
+            "state_numerical_scale",
+            1.0,
+        )
+        for name, active in (
+            ("query_numerical_active", numerical_active),
+            ("query_categorical_active", categorical_active),
+        ):
+            if not torch.all((active == 0) | (active == 1)):
+                raise ValueError(f"{name} entries must be binary")
+        if not torch.all((categorical_allowed == 0) | (categorical_allowed == 1)):
+            raise ValueError("query_categorical_allowed entries must be binary")
+        if torch.any((lower > upper) & numerical_active.bool()):
+            raise ValueError("every active numerical lower bound must be <= its upper bound")
+        offset = 0
+        for column, count in enumerate(self.real_category_counts):
+            set_size = categorical_allowed[:, offset : offset + count].sum(dim=1)
+            if torch.any(categorical_active[:, column].bool() & (set_size == 0)):
+                raise ValueError("every active categorical constraint needs an allowed value")
+            offset += count
+
+        with torch.no_grad():
+            base_tokens = self._base_tokenizer(
+                numerical_scale * x_num_t,
+                x_cat_t,
+            )[:, 1:, :]
+        state = self.state_projection(base_tokens)
+        time = self.map_time(t)
+        time = time.reshape(time.shape[0], 2, -1).flip(1).reshape_as(time)
+        time = self.time_embed(time)
+        state = self.state_time_fusion(
+            torch.cat((state, time[:, None, :].expand_as(state)), dim=-1)
+        )
+
+        # Passing -lower through a nondecreasing network makes the lower-bound
+        # representation nonincreasing in the actual lower endpoint.
+        lower_embedding = self.lower_embedding(-lower)
+        upper_embedding = self.upper_embedding(upper)
+        numerical_query = torch.cat(
+            ((-lower).unsqueeze(-1), upper.unsqueeze(-1), lower_embedding, upper_embedding),
+            dim=-1,
+        )
+        numerical_query = torch.where(
+            numerical_active.bool().unsqueeze(-1),
+            numerical_query,
+            self.numerical_null[None, :, :],
+        )
+        numerical_tokens = self.numerical_query_fusion(
+            torch.cat(
+                (
+                    state[:, : self.d_numerical],
+                    numerical_query,
+                    self.numerical_active_embedding(numerical_active.long()),
+                ),
+                dim=-1,
+            )
+        )
+
+        # The last lookup in each tokenizer slice is MASK. The tokenizer's
+        # feature bias is stored separately, so neither enters this clean set.
+        categorical_query = self.categorical_set_embedding(categorical_allowed)
+        categorical_query = torch.where(
+            categorical_active.bool().unsqueeze(-1),
+            categorical_query,
+            self.categorical_null[None, :, :],
+        )
+        categorical_tokens = self.categorical_query_fusion(
+            torch.cat(
+                (
+                    state[:, self.d_numerical :],
+                    categorical_query,
+                    self.categorical_active_embedding(categorical_active.long()),
+                ),
+                dim=-1,
+            )
+        )
+        tokens = torch.cat((numerical_tokens, categorical_tokens), dim=1)
+        for block in self.blocks:
+            tokens = block(tokens, time)
+        return self.final_norm(tokens)
+
+    def forward(self, x_num_t: Tensor, x_cat_t: Tensor, t: Tensor, **query) -> Tensor:
+        tokens = self._encode(x_num_t, x_cat_t, t, **query)
+        if self.output_kind == "numerical":
+            return self.correction_head(tokens[:, : self.d_numerical]).squeeze(-1)
+        return self.h_logit_head(tokens.mean(dim=1)).squeeze(-1)
+
+    def log_h(self, x_num_t: Tensor, x_cat_t: Tensor, t: Tensor, **query) -> Tensor:
+        if self.output_kind != "categorical":
+            raise RuntimeError("only the categorical structured guide parameterizes log h")
+        return self.forward(x_num_t, x_cat_t, t, **query)
+
+    def config_dict(self) -> Dict[str, Any]:
+        return dict(self._config)
+
+
+class StructuredNumericalHScoreGuide(StructuredDoobHGuide):
+    def __init__(self, **kwargs) -> None:
+        kwargs = dict(kwargs)
+        kwargs["output_kind"] = "numerical"
+        super().__init__(**kwargs)
+
+
+class StructuredCategoricalHTransformGuide(StructuredDoobHGuide):
+    def __init__(self, **kwargs) -> None:
+        kwargs = dict(kwargs)
+        kwargs["output_kind"] = "categorical"
+        super().__init__(**kwargs)

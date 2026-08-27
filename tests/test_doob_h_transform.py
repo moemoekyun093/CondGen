@@ -9,12 +9,16 @@ from tabdiff.models.doob_h_transform import (
     NumericalBoxQuery,
     NumericalDoobHGuide,
     NumericalHScoreGuide,
+    MonotoneScalarEmbedding,
+    StructuredCategoricalHTransformGuide,
+    StructuredNumericalHScoreGuide,
     categorical_candidate_log_h,
     eligible_row_indices,
     guided_categorical_log_probs,
     sample_conditional_batch,
     sample_constraint_mask,
 )
+from tabdiff.modules.main_modules import PeriodicTokenizer
 from tabdiff.doob_h_runtime import infer_denoiser_type
 from tabdiff.models.unified_ctime_diffusion import UnifiedCtimeDiffusion
 
@@ -263,6 +267,112 @@ class NumericalDoobHGuideTest(unittest.TestCase):
         restored = NumericalDoobHGuide(**guide.config_dict())
         output = restored(torch.randn(2, 4), None, torch.tensor(0.5))
         self.assertEqual(output.shape, (2, 4))
+
+
+class StructuredQueryGuideTest(unittest.TestCase):
+    def make_tokenizer(self):
+        return PeriodicTokenizer(
+            d_numerical=2,
+            categories=[3, 4],
+            d_token=24,
+            bias=True,
+            n_frequencies=4,
+        )
+
+    def test_scalar_embedding_is_coordinatewise_monotone(self):
+        embedding = MonotoneScalarEmbedding(embedding_dim=6)
+        values = torch.tensor([-2.0, -0.5, 0.0, 1.0, 3.0])
+        encoded = embedding(values)
+        self.assertTrue(torch.all(encoded[1:] >= encoded[:-1]))
+
+    def test_structured_architecture_uses_external_frozen_tokenizer(self):
+        tokenizer = self.make_tokenizer()
+        kwargs = dict(
+            base_tokenizer=tokenizer,
+            d_numerical=2,
+            categories=[3, 4],
+            base_d_token=24,
+            d_token=16,
+            num_layers=1,
+            n_head=4,
+            bound_embedding_dim=4,
+            active_embedding_dim=3,
+        )
+        numerical = StructuredNumericalHScoreGuide(**kwargs)
+        categorical = StructuredCategoricalHTransformGuide(**kwargs)
+        x_num = torch.randn(3, 2)
+        x_cat = torch.zeros(3, 7)
+        x_cat[:, 0] = 1.0
+        x_cat[:, 3] = 1.0
+        query = {
+            "query_lower": torch.tensor([-1.0, 0.0]),
+            "query_upper": torch.tensor([1.0, 2.0]),
+            "query_numerical_active": torch.tensor([1.0, 1.0]),
+            "query_categorical_allowed": torch.tensor([1, 0, 1, 0, 1], dtype=torch.float32),
+            "query_categorical_active": torch.tensor([1.0, 1.0]),
+        }
+        t = torch.tensor([0.1, 0.5, 0.9])
+        self.assertEqual(numerical(x_num, x_cat, t, **query).shape, (3, 2))
+        self.assertEqual(categorical.log_h(x_num, x_cat, t, **query).shape, (3,))
+        self.assertFalse(any(key.startswith("_base_tokenizer") for key in numerical.state_dict()))
+        self.assertTrue(all(not parameter.requires_grad for parameter in tokenizer.parameters()))
+
+    def test_frozen_categorical_set_embedding_preserves_subset_order(self):
+        guide = StructuredNumericalHScoreGuide(
+            base_tokenizer=self.make_tokenizer(),
+            d_numerical=2,
+            categories=[3, 4],
+            base_d_token=24,
+            d_token=16,
+            num_layers=1,
+            n_head=4,
+        )
+        inner = torch.tensor([[1.0, 0.0, 0.0, 1.0, 0.0]])
+        outer = torch.tensor([[1.0, 1.0, 1.0, 1.0, 0.0]])
+        inner_encoded = guide.categorical_set_embedding(inner)
+        outer_encoded = guide.categorical_set_embedding(outer)
+        self.assertTrue(torch.all(outer_encoded >= inner_encoded))
+        self.assertFalse(
+            any("categorical_set_embedding" in key for key in guide.state_dict())
+        )
+
+    def test_inactive_query_is_distinct_from_active_zero_bounds(self):
+        guide = StructuredNumericalHScoreGuide(
+            base_tokenizer=self.make_tokenizer(),
+            d_numerical=2,
+            categories=[3, 4],
+            base_d_token=24,
+            d_token=16,
+            num_layers=1,
+            n_head=4,
+            bound_embedding_dim=4,
+            active_embedding_dim=3,
+        )
+        x_num = torch.zeros(1, 2)
+        x_cat = torch.zeros(1, 7)
+        x_cat[:, 0] = 1.0
+        x_cat[:, 3] = 1.0
+        common = dict(
+            query_lower=torch.zeros(1, 2),
+            query_upper=torch.zeros(1, 2),
+            query_categorical_allowed=torch.zeros(1, 5),
+            query_categorical_active=torch.zeros(1, 2),
+        )
+        active = guide._encode(
+            x_num,
+            x_cat,
+            torch.tensor([0.5]),
+            query_numerical_active=torch.ones(1, 2),
+            **common,
+        )
+        inactive = guide._encode(
+            x_num,
+            x_cat,
+            torch.tensor([0.5]),
+            query_numerical_active=torch.zeros(1, 2),
+            **common,
+        )
+        self.assertFalse(torch.allclose(active, inactive))
 
 
 class CategoricalDoobUpdateTest(unittest.TestCase):

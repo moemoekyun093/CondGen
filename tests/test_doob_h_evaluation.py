@@ -56,6 +56,35 @@ class RawConstraintEvaluationTest(unittest.TestCase):
         self.assertEqual(mask.tolist(), [False, True, True])
         self.assertAlmostEqual(report["joint_hit_rate"], 2 / 3)
 
+    def test_full_arity_predicates_support_intervals_and_sets(self):
+        frame = pd.DataFrame(
+            {
+                "age": [20.0, 30.0, 40.0],
+                "group": ["a", "b", "c"],
+            }
+        )
+        query = {
+            "query_id": "mixed",
+            "predicates": [
+                {
+                    "col": "age",
+                    "modality": "numeric",
+                    "op": "between",
+                    "values": [20.0, 35.0],
+                },
+                {
+                    "col": "group",
+                    "modality": "categorical",
+                    "op": "in",
+                    "values": ["a", "c"],
+                },
+            ],
+        }
+        report, mask = raw_constraint_report(frame, query)
+        self.assertEqual(mask.tolist(), [True, False, False])
+        self.assertEqual(report["constraint_id"], "mixed")
+        self.assertAlmostEqual(report["per_column"][1]["hit_rate"], 2 / 3)
+
 
 class CorrelationComparisonTest(unittest.TestCase):
     def test_reports_structure_similarity_and_changed_pairs(self):

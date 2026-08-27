@@ -45,10 +45,41 @@ def raw_constraint_report(
 ) -> tuple[dict, np.ndarray]:
     """Build a serializable raw-space report and return the joint row mask."""
     column_specs = query.get("columns", [])
-    per_value, rows_satisfied = raw_constraint_hits(frame, column_specs)
+    predicates = query.get("predicates", [])
+    if predicates:
+        hits = []
+        column_specs = []
+        for predicate in predicates:
+            name = predicate["col"]
+            if name not in frame.columns:
+                raise ValueError(f"query column {name!r} is absent from the table")
+            if predicate["modality"] == "numeric" and predicate.get("op") == "between":
+                lower, upper = map(float, predicate["values"])
+                values = frame[name].to_numpy(dtype=np.float64)
+                scale = max(1.0, abs(lower), abs(upper))
+                tolerance = 1e-7 * scale
+                hit = (
+                    np.isfinite(values)
+                    & (values >= lower - tolerance)
+                    & (values <= upper + tolerance)
+                )
+                column_specs.append(
+                    {"name": name, "raw_lower": lower, "raw_upper": upper}
+                )
+            elif predicate["modality"] == "categorical" and predicate.get("op") == "in":
+                allowed = {str(value) for value in predicate["values"]}
+                hit = frame[name].astype(str).isin(allowed).to_numpy()
+                column_specs.append({"name": name, "allowed_values": sorted(allowed)})
+            else:
+                raise ValueError(f"unsupported query predicate for {name!r}")
+            hits.append(hit)
+        per_value = np.stack(hits, axis=1) if hits else np.empty((len(frame), 0), bool)
+        rows_satisfied = per_value.all(axis=1) if hits else np.ones(len(frame), bool)
+    else:
+        per_value, rows_satisfied = raw_constraint_hits(frame, column_specs)
     per_column_rates = per_value.mean(axis=0)
     report = {
-        "constraint_id": query.get("constraint_id"),
+        "constraint_id": query.get("constraint_id", query.get("query_id")),
         "evaluation_space": "raw generated table",
         "num_rows": len(frame),
         "joint_hit_rate": float(rows_satisfied.mean()),
@@ -64,6 +95,7 @@ def raw_constraint_report(
                 "hit_rate": float(per_column_rates[index]),
                 "raw_lower": spec.get("raw_lower"),
                 "raw_upper": spec.get("raw_upper"),
+                "allowed_values": spec.get("allowed_values"),
             }
         )
     return report, rows_satisfied

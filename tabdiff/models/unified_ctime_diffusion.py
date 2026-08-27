@@ -86,6 +86,7 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         self.h_guide_max_log_ratio = 10.0
         self.h_guide_candidate_batch_size = 65536
         self.h_guide_query_active_mask = None
+        self.h_guide_query_conditioning = None
         
         self.device = device
         
@@ -560,6 +561,7 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         max_log_ratio=10.0,
         candidate_batch_size=65536,
         query_active_mask=None,
+        query_conditioning=None,
     ):
         """Install separate numerical-score and categorical-log-h guides."""
         if strength < 0:
@@ -587,6 +589,13 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
                     "query_active_mask must contain one entry per numerical column"
                 )
             self.h_guide_query_active_mask = query_active_mask
+        if query_conditioning is None:
+            self.h_guide_query_conditioning = None
+        else:
+            self.h_guide_query_conditioning = {
+                name: torch.as_tensor(value, device=self.device, dtype=torch.float32).reshape(-1)
+                for name, value in query_conditioning.items()
+            }
 
     def _guide_query_mask(self, batch_size, device, dtype):
         if self.h_guide_query_active_mask is None:
@@ -596,17 +605,46 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
             dtype=dtype,
         )[None, :].expand(batch_size, -1)
 
+    def _guide_query_kwargs(self, batch_size, device, dtype):
+        query_mask = self._guide_query_mask(batch_size, device, dtype)
+        kwargs = {"query_active_mask": query_mask}
+        if self.h_guide_query_conditioning is not None:
+            kwargs.update(
+                {
+                    name: value.to(device=device, dtype=dtype)[None, :].expand(
+                        batch_size, -1
+                    )
+                    for name, value in self.h_guide_query_conditioning.items()
+                }
+            )
+        return kwargs
+
+    def _guide_state_numerical_scale(self, sigma, reference):
+        sigma = torch.as_tensor(
+            sigma, device=reference.device, dtype=reference.dtype
+        )
+        if sigma.ndim == 1:
+            sigma = sigma[None, :].expand(reference.shape[0], -1)
+        if getattr(self._denoise_fn, "precond", False):
+            sigma_data = self._denoise_fn.denoise_fn_D.sigma_data
+            return (sigma_data**2 + sigma**2).rsqrt()
+        return torch.ones_like(reference)
+
     def _apply_numerical_h_guide(self, denoised, x_num_t, x_cat_t, t, sigma):
         if self.numerical_h_guide is None or self.num_numerical_features == 0:
             return denoised
-        query_mask = self._guide_query_mask(
+        query_kwargs = self._guide_query_kwargs(
             x_num_t.shape[0], x_num_t.device, x_num_t.dtype
         )
+        if self.h_guide_query_conditioning is not None:
+            query_kwargs["state_numerical_scale"] = self._guide_state_numerical_scale(
+                sigma, x_num_t
+            )
         correction = self.numerical_h_guide(
             x_num_t,
             x_cat_t,
             t,
-            query_active_mask=query_mask,
+            **query_kwargs,
         )
         if getattr(self.numerical_h_guide, "scalar_h_gradient", False):
             sigma = torch.as_tensor(
@@ -630,16 +668,20 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         return denoised + self.h_guide_strength * correction
 
     @torch.no_grad()
-    def _categorical_h_candidate_scores(self, x_num_t, x_cat_t, t):
+    def _categorical_h_candidate_scores(self, x_num_t, x_cat_t, t, sigma):
         """Evaluate log h(child) for every masked-column real-token child."""
         guide = self.categorical_h_guide
         if guide is None or not hasattr(guide, "log_h") or len(self.num_classes) == 0:
             return None
 
         b = x_cat_t.shape[0]
-        current_query_mask = self._guide_query_mask(
+        query_kwargs = self._guide_query_kwargs(
             b, x_num_t.device, x_num_t.dtype
         )
+        if self.h_guide_query_conditioning is not None:
+            query_kwargs["state_numerical_scale"] = self._guide_state_numerical_scale(
+                sigma, x_num_t
+            )
         candidate_scores = categorical_candidate_log_h(
             guide,
             x_num_t,
@@ -648,8 +690,8 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
             self.num_classes,
             self.mask_index,
             self.to_one_hot,
-            query_active_mask=current_query_mask,
             candidate_batch_size=self.h_guide_candidate_batch_size,
+            **query_kwargs,
         )
         return self.h_guide_strength * candidate_scores
 
@@ -743,6 +785,7 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
                 x_num_hat.float(),
                 x_cat_hat,
                 t_hat.squeeze().repeat(b),
+                sigma_num_hat.unsqueeze(0).repeat(b, 1),
             )
             x_cat_next, q_xs = self._mdlm_update(
                 logits,

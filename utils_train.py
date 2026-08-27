@@ -30,7 +30,26 @@ class TabDiffDataset(Dataset):
         self.info = info
         self.isTrain = isTrain
 
-        X_num, X_cat, categories, d_numerical, num_inverse, int_inverse, cat_inverse = preprocess(data_dir, y_only, dequant_dist, int_dequant_factor, task_type = info['task_type'], inverse=True)
+        (
+            X_num,
+            X_cat,
+            categories,
+            d_numerical,
+            num_inverse,
+            int_inverse,
+            cat_inverse,
+            num_transform,
+            int_transform,
+            cat_transform,
+        ) = preprocess(
+            data_dir,
+            y_only,
+            dequant_dist,
+            int_dequant_factor,
+            task_type=info['task_type'],
+            inverse=True,
+            return_transforms=True,
+        )
         categories = np.array(categories)
 
         X_train_num, _ = X_num
@@ -46,6 +65,9 @@ class TabDiffDataset(Dataset):
         self.num_inverse = num_inverse
         self.int_inverse = int_inverse
         self.cat_inverse = cat_inverse
+        self.num_transform = num_transform
+        self.int_transform = int_transform
+        self.cat_transform = cat_transform
         self.d_numerical = d_numerical
         self.categories = categories
 
@@ -55,7 +77,7 @@ class TabDiffDataset(Dataset):
     def __len__(self):
         return self.X.shape[0]
 
-def preprocess(dataset_path, y_only=False, dequant_dist='none', int_dequant_factor=0.0, task_type = 'binclass', inverse = False, cat_encoding = None, concat = True):
+def preprocess(dataset_path, y_only=False, dequant_dist='none', int_dequant_factor=0.0, task_type = 'binclass', inverse = False, cat_encoding = None, concat = True, return_transforms=False):
     
     T_dict = {}
 
@@ -98,7 +120,22 @@ def preprocess(dataset_path, y_only=False, dequant_dist='none', int_dequant_fact
             int_inverse = dataset.int_transform.inverse_transform if dataset.int_transform is not None else lambda x: x
             cat_inverse = dataset.cat_transform.inverse_transform if dataset.cat_transform is not None else lambda x: x
 
-            return X_num, X_cat, categories, d_numerical, num_inverse, int_inverse, cat_inverse
+            result = (
+                X_num,
+                X_cat,
+                categories,
+                d_numerical,
+                num_inverse,
+                int_inverse,
+                cat_inverse,
+            )
+            if return_transforms:
+                result += (
+                    dataset.num_transform,
+                    dataset.int_transform,
+                    dataset.cat_transform,
+                )
+            return result
         else:
             return X_num, X_cat, categories, d_numerical
     else:

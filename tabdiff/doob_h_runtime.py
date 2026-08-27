@@ -27,6 +27,24 @@ class DoobRuntime:
     checkpoint_path: str
 
 
+def frozen_ft_tokenizer(runtime: DoobRuntime):
+    """Return the frozen tokenizer used by an FT-periodic base denoiser."""
+    model = runtime.diffusion._denoise_fn
+    backbone = model.denoise_fn_D
+    if hasattr(backbone, "denoise_fn_F"):
+        backbone = backbone.denoise_fn_F
+    tokenizer = getattr(backbone, "tokenizer", None)
+    if tokenizer is None or not hasattr(tokenizer, "d_token"):
+        raise ValueError(
+            "structured query conditioning currently requires an FT-periodic "
+            "base denoiser with a reusable tokenizer"
+        )
+    tokenizer.eval()
+    for parameter in tokenizer.parameters():
+        parameter.requires_grad_(False)
+    return tokenizer
+
+
 def resolve_base_checkpoint(
     dataname: str,
     checkpoint_path: str | None,

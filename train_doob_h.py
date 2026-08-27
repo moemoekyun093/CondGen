@@ -360,6 +360,8 @@ def main() -> None:
         "n_frequencies": args.n_frequencies,
         "freq_sigma": 0.05,
         "query_mask_conditioning": True,
+        "query_mask_fusion": "concat",
+        "query_mask_embedding_dim": 8,
     }
     numerical_guide = NumericalHScoreGuide(**architecture_kwargs).to(device)
     categorical_guide = CategoricalHTransformGuide(**architecture_kwargs).to(device)
@@ -384,7 +386,7 @@ def main() -> None:
 
     output_dir = Path(
         args.output_dir
-        or "tabdiff/ckpt/shoppers/ft_periodic_seed0/doob_h_partial_masks_candidate_logh"
+        or "tabdiff/ckpt/shoppers/ft_periodic_seed0/doob_h_partial_masks_concat_candidate_logh"
     )
     output_dir.mkdir(parents=True, exist_ok=True)
     metadata = {
@@ -396,6 +398,7 @@ def main() -> None:
             **query_spec,
             **query.to_dict(),
             "query_mask_conditioning": True,
+            "query_mask_fusion": "per_column_concat",
             "training_supports_partial_masks": True,
         },
         "objective": {

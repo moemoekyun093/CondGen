@@ -30,11 +30,11 @@ if [ ! -e "${CKPT_CANDIDATES[0]}" ] || [ "${#CKPT_CANDIDATES[@]}" -ne 1 ]; then
     exit 1
 fi
 BASE_CKPT="${CKPT_CANDIDATES[0]}"
-GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_partial_masks_candidate_logh}"
+GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_partial_masks_concat_candidate_logh}"
 GUIDE_CKPT="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/${GUIDE_DIR_NAME}/best_guide.pt"
 NUM_SAMPLES="${NUM_SAMPLES:-1000}"
 BATCH_SIZE="${BATCH_SIZE:-1000}"
-SAMPLE_SUFFIX="${SAMPLE_SUFFIX-_partial_masks}"
+SAMPLE_SUFFIX="${SAMPLE_SUFFIX-_partial_masks_concat}"
 OUTPUT="conditional_samples/${DATANAME}/${MODEL_NAME}${SAMPLE_SUFFIX}.csv"
 COLUMN_ACTIVE_PROBABILITY="${COLUMN_ACTIVE_PROBABILITY:-0.5}"
 ACTIVE_COLUMNS="${ACTIVE_COLUMNS:-}"

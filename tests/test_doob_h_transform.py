@@ -118,6 +118,8 @@ class NumericalDoobHGuideTest(unittest.TestCase):
             n_head=4,
             n_frequencies=4,
             query_mask_conditioning=True,
+            query_mask_fusion="concat",
+            query_mask_embedding_dim=4,
         )
         numerical = NumericalHScoreGuide(**kwargs)
         categorical = CategoricalHTransformGuide(**kwargs)
@@ -130,6 +132,10 @@ class NumericalDoobHGuideTest(unittest.TestCase):
         self.assertIsNone(numerical.h_logit_head)
         self.assertIsNone(categorical.correction_head)
         self.assertIsNot(numerical.tokenizer, categorical.tokenizer)
+        self.assertIsNot(
+            numerical.query_mask_embedding,
+            categorical.query_mask_embedding,
+        )
         self.assertEqual(numerical(x_num, x_cat, t, active).shape, (4, 3))
         self.assertEqual(categorical.log_h(x_num, x_cat, t, active).shape, (4,))
 
@@ -171,6 +177,8 @@ class NumericalDoobHGuideTest(unittest.TestCase):
             n_head=4,
             n_frequencies=4,
             query_mask_conditioning=True,
+            query_mask_fusion="concat",
+            query_mask_embedding_dim=4,
         )
         x_num = torch.randn(2, 3)
         t = torch.tensor([0.2, 0.7])
@@ -183,6 +191,45 @@ class NumericalDoobHGuideTest(unittest.TestCase):
         )
         self.assertFalse(torch.allclose(full_tokens, partial_tokens))
         self.assertTrue(guide.config_dict()["query_mask_conditioning"])
+        self.assertEqual(guide.config_dict()["query_mask_fusion"], "concat")
+        self.assertEqual(guide.query_mask_embedding.weight.shape, (2, 4))
+        self.assertEqual(guide.query_token_fusion[0].in_features, 20)
+        self.assertIsNone(guide.query_active_embed)
+
+    def test_legacy_additive_mask_architecture_still_loads(self):
+        kwargs = dict(
+            d_numerical=3,
+            d_token=16,
+            num_layers=1,
+            n_head=4,
+            n_frequencies=4,
+            query_mask_conditioning=True,
+        )
+        original = NumericalDoobHGuide(**kwargs)
+        restored = NumericalDoobHGuide(**kwargs)
+        restored.load_state_dict(original.state_dict())
+
+        self.assertEqual(restored.config_dict()["query_mask_fusion"], "additive")
+        self.assertIsNotNone(restored.query_active_embed)
+        self.assertIsNone(restored.query_mask_embedding)
+
+    def test_concat_fusion_rejects_nonbinary_mask(self):
+        guide = NumericalDoobHGuide(
+            d_numerical=2,
+            d_token=16,
+            num_layers=1,
+            n_head=4,
+            n_frequencies=4,
+            query_mask_conditioning=True,
+            query_mask_fusion="concat",
+        )
+        with self.assertRaisesRegex(ValueError, "must be binary"):
+            guide._encode(
+                torch.randn(1, 2),
+                None,
+                torch.tensor([0.5]),
+                torch.tensor([[1.0, 0.5]]),
+            )
 
     def test_mixed_context_produces_numeric_correction_only(self):
         guide = NumericalDoobHGuide(

@@ -248,7 +248,9 @@ class NumericalDoobHGuide(nn.Module):
     The interval endpoints remain fixed and are deliberately not network inputs.
     When mask conditioning is enabled, the binary value ``a_j`` is embedded into
     numerical token ``j`` so one guide represents all subsets of that fixed box.
-    The default remains disabled so older fixed-query checkpoints still load.
+    New guides concatenate a dedicated binary embedding to the matching feature
+    token and fuse it back to ``d_token``.  The legacy additive mode is retained
+    so existing checkpoints keep their original architecture.
     """
 
     def __init__(
@@ -262,6 +264,8 @@ class NumericalDoobHGuide(nn.Module):
         n_frequencies: int = 16,
         freq_sigma: float = 0.05,
         query_mask_conditioning: bool = False,
+        query_mask_fusion: str = "additive",
+        query_mask_embedding_dim: int = 8,
         scalar_h_gradient: bool = False,
     ) -> None:
         super().__init__()
@@ -271,6 +275,10 @@ class NumericalDoobHGuide(nn.Module):
             raise ValueError("d_token must be even, at least 4, and divisible by n_head")
         if num_layers <= 0 or n_frequencies <= 0 or factor <= 0:
             raise ValueError("num_layers, n_frequencies, and factor must be positive")
+        if query_mask_fusion not in {"additive", "concat"}:
+            raise ValueError("query_mask_fusion must be 'additive' or 'concat'")
+        if query_mask_embedding_dim <= 0:
+            raise ValueError("query_mask_embedding_dim must be positive")
 
         categories = list(categories or [])
         self.d_numerical = d_numerical
@@ -286,9 +294,12 @@ class NumericalDoobHGuide(nn.Module):
             "n_frequencies": n_frequencies,
             "freq_sigma": freq_sigma,
             "query_mask_conditioning": query_mask_conditioning,
+            "query_mask_fusion": query_mask_fusion,
+            "query_mask_embedding_dim": query_mask_embedding_dim,
             "scalar_h_gradient": scalar_h_gradient,
         }
         self.query_mask_conditioning = bool(query_mask_conditioning)
+        self.query_mask_fusion = query_mask_fusion
         self.scalar_h_gradient = bool(scalar_h_gradient)
         self.tokenizer = PeriodicTokenizer(
             d_numerical=d_numerical,
@@ -305,12 +316,24 @@ class NumericalDoobHGuide(nn.Module):
             nn.Linear(d_token, d_token),
         )
         self.query_active_embed = None
+        self.query_mask_embedding = None
+        self.query_token_fusion = None
         if self.query_mask_conditioning:
-            self.query_active_embed = nn.Sequential(
-                nn.Linear(1, d_token),
-                nn.SiLU(),
-                nn.Linear(d_token, d_token),
-            )
+            if self.query_mask_fusion == "additive":
+                self.query_active_embed = nn.Sequential(
+                    nn.Linear(1, d_token),
+                    nn.SiLU(),
+                    nn.Linear(d_token, d_token),
+                )
+            else:
+                self.query_mask_embedding = nn.Embedding(
+                    num_embeddings=2,
+                    embedding_dim=query_mask_embedding_dim,
+                )
+                self.query_token_fusion = nn.Sequential(
+                    nn.Linear(d_token + query_mask_embedding_dim, d_token),
+                    nn.SiLU(),
+                )
         self.blocks = nn.ModuleList(
             [FTBlock(d_token, n_head, d_ffn_factor=factor) for _ in range(num_layers)]
         )
@@ -380,12 +403,24 @@ class NumericalDoobHGuide(nn.Module):
                         "query_active_mask must have shape "
                         f"({x_num_t.shape[0]}, {self.d_numerical})"
                     )
-            active_embedding = self.query_active_embed(
-                query_active_mask.unsqueeze(-1)
-            )
+            if not torch.all((query_active_mask == 0) | (query_active_mask == 1)):
+                raise ValueError("query_active_mask entries must be binary (0 or 1)")
+            numerical_tokens = tokens[:, : self.d_numerical]
+            if self.query_mask_fusion == "additive":
+                active_embedding = self.query_active_embed(
+                    query_active_mask.unsqueeze(-1)
+                )
+                numerical_tokens = numerical_tokens + active_embedding
+            else:
+                active_embedding = self.query_mask_embedding(
+                    query_active_mask.to(dtype=torch.long)
+                )
+                numerical_tokens = self.query_token_fusion(
+                    torch.cat((numerical_tokens, active_embedding), dim=-1)
+                )
             tokens = torch.cat(
                 (
-                    tokens[:, : self.d_numerical] + active_embedding,
+                    numerical_tokens,
                     tokens[:, self.d_numerical :],
                 ),
                 dim=1,

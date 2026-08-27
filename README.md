@@ -209,6 +209,13 @@ the active intervals and draws the endpoint batch uniformly with replacement.
 The all-inactive anchor therefore uses the full dataset and teaches the guides
 to recover the unconditional model.
 
+The active mask has a dedicated per-column input path. For numerical column
+`j`, its binary bit `a_j` is mapped through an 8-dimensional embedding,
+concatenated with that column's 32-dimensional noisy feature token, and fused
+back to 32 dimensions before the FT blocks. Both independent guides use this
+same architecture. This keeps each constraint bit aligned with its column and
+does not add a global query token.
+
 For optional categorical equality constraints, the sampler also implements the
 Section 4 ordering construction. If categorical columns `C` are fixed, it draws
 each trajectory's reverse start time from the discretized posterior
@@ -253,7 +260,7 @@ SAMPLE_JOB=$(sbatch --parsable --array=0 \
 
 Each CSV gets a sibling `.query.json` containing only the active constraints.
 The default output is
-`conditional_samples/shoppers/ft_periodic_seed0_partial_masks.csv`.
+`conditional_samples/shoppers/ft_periodic_seed0_partial_masks_concat.csv`.
 
 Evaluate the existing generated table without resampling:
 

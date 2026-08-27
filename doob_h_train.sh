@@ -30,7 +30,7 @@ if [ ! -e "${CKPT_CANDIDATES[0]}" ] || [ "${#CKPT_CANDIDATES[@]}" -ne 1 ]; then
     exit 1
 fi
 BASE_CKPT="${CKPT_CANDIDATES[0]}"
-GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_partial_masks_candidate_logh}"
+GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_partial_masks_concat_candidate_logh}"
 OUTPUT_DIR="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/${GUIDE_DIR_NAME}"
 QUERY_FILE="${QUERY_FILE:-constraints/${DATANAME}/fixed_numerical_intervals.json}"
 EPOCHS="${EPOCHS:-6000}"
@@ -51,6 +51,7 @@ echo "Base checkpoint : ${BASE_CKPT}"
 echo "Output          : ${OUTPUT_DIR}"
 echo "Fixed query     : ${QUERY_FILE}"
 echo "Objective       : separate numerical h-score and categorical log-h guides"
+echo "Query mask      : per-column binary embedding concatenated and fused into each numerical token"
 echo "Numerical       : direct sigma(t)^2 * grad_x log h correction"
 echo "Categorical     : candidate log h(child) from a shared whole-state scalar network"
 echo "Categorical loss: conditional Generator Matching via original TabDiff absorbed loss"

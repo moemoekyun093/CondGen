@@ -49,6 +49,7 @@ DIAGNOSTIC_EVERY="${DIAGNOSTIC_EVERY:-100}"
 CHECKPOINT_WARMUP="${CHECKPOINT_WARMUP:-200}"
 CHECKPOINT_EVERY="${CHECKPOINT_EVERY:-500}"
 H_CANDIDATE_BATCH_SIZE="${H_CANDIDATE_BATCH_SIZE:-16384}"
+LR="${LR:-3e-4}"
 D_TOKEN="${D_TOKEN:-48}"
 NUM_LAYERS="${NUM_LAYERS:-2}"
 N_HEAD="${N_HEAD:-4}"
@@ -75,6 +76,7 @@ echo "Step mask       : one shared mask; Bernoulli p=${COLUMN_ACTIVE_PROBABILITY
 echo "Mask anchors    : all-on=${ALL_ACTIVE_PROBABILITY}, all-off=${ALL_INACTIVE_PROBABILITY}"
 echo "Endpoint batch  : ${BATCH_SIZE} uniform satisfying rows, with replacement"
 echo "Training        : ${EPOCHS} optimizer steps"
+echo "Learning rate   : ${LR}"
 echo "EMA diagnostic  : every ${DIAGNOSTIC_EVERY} optimizer steps"
 echo "Checkpointing   : best after step ${CHECKPOINT_WARMUP}; snapshots every ${CHECKPOINT_EVERY} steps"
 echo "========================================"
@@ -101,6 +103,7 @@ python -u train_doob_h.py \
     --all-active-probability "${ALL_ACTIVE_PROBABILITY}" \
     --all-inactive-probability "${ALL_INACTIVE_PROBABILITY}" \
     --diagnostic-batch-size "${DIAGNOSTIC_BATCH_SIZE}" \
+    --lr "${LR}" \
     --gradient-loss-weight 1.0 \
     --categorical-loss-weight 1.0 \
     --h-candidate-batch-size "${H_CANDIDATE_BATCH_SIZE}" \

@@ -279,6 +279,8 @@ updates both guides after every step; the fixed all-active diagnostic runs every
 100 steps. Best-checkpoint selection starts after step 200, and periodic
 snapshots are saved every 500 steps. Override these with, for example,
 `sbatch --array=0 --export=ALL,EPOCHS=3000,BATCH_SIZE=512,DIAGNOSTIC_EVERY=100 doob_h_train.sh`.
+The guide learning rate is runtime-overridable with `LR`; use a distinct guide
+directory for each learning-rate experiment so checkpoints are not overwritten.
 
 The dataset and checkpoint-directory names can also be overridden without
 editing the scripts, for example
@@ -315,6 +317,32 @@ Results are written under
 `evaluations/shoppers/<MODEL_NAME>_all_two_guides/density_results.json`, while SLURM
 stdout and stderr are written under `evaluations/slurm/`; the detailed
 per-column Shape and column-pair Trend tables are saved beside it.
+
+### Constraint-count sweep
+
+The GPU array `doob_h_constraint_sweep.sh` evaluates a nested sequence of
+queries containing 1 through 10 active numerical constraints. By default the
+column order is `0,1,...,9`, and at level `k` the first `k` columns are active.
+Override `COLUMN_ORDER_CSV` to test another deterministic ordering. The array is
+throttled to two simultaneous jobs and writes a separate generated CSV, active
+query, and constraint report for every level.
+
+After all array tasks succeed, `doob_h_constraint_sweep_plot.sh` collects the
+reports and writes `constraint_violation_by_count.csv`, JSON, and PNG under
+`evaluations/shoppers/<MODEL>_constraint_sweep_<NAME>/`. The plot shows the raw
+joint violation rate with a binomial 95% interval, together with the matching
+training-data prevalence baseline.
+
+```bash
+GUIDE_DIR=tabdiff/ckpt/shoppers/ft_periodic_seed0/doob_h_partial_masks_concat_d48_l2_h4_f2_6000_candidate_logh
+SWEEP_JOB=$(sbatch --parsable --array=1-10%2 \
+  --export=ALL,DATANAME=shoppers,FT_MODEL=ft_periodic_seed0 \
+  doob_h_constraint_sweep.sh "${GUIDE_DIR}" d48_l2_6000)
+
+PLOT_JOB=$(sbatch --parsable --dependency="afterok:${SWEEP_JOB}" \
+  --export=ALL,DATANAME=shoppers,FT_MODEL=ft_periodic_seed0 \
+  doob_h_constraint_sweep_plot.sh d48_l2_6000)
+```
 
 ### HARPOON baseline
 

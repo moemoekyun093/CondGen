@@ -287,6 +287,10 @@ def main() -> None:
     with open(active_query_output, "w", encoding="utf-8") as stream:
         json.dump(active_query, stream, indent=2)
 
+    training_partial_hit_rate = query.contains(
+        runtime.dataset.X[:, :d_numerical].float(),
+        query_active_mask.cpu(),
+    ).float().mean().item()
     constraint_report = {
         "constraint_id": metadata["query"].get("constraint_id"),
         "num_samples": len(frame),
@@ -294,6 +298,7 @@ def main() -> None:
         "joint_hit_rate": float(raw_joint_hit_rate),
         "raw_joint_hit_rate": float(raw_joint_hit_rate),
         "normalized_joint_hit_rate": normalized_joint_hit_rate,
+        "training_partial_hit_rate": training_partial_hit_rate,
         "all_rows_satisfy": bool(raw_rows_satisfied.all()),
         "query_active_mask": query_active_mask.int().cpu().tolist(),
         "active_numerical_columns": active_columns,
@@ -331,10 +336,6 @@ def main() -> None:
     with open(report_output, "w", encoding="utf-8") as stream:
         json.dump(constraint_report, stream, indent=2)
 
-    training_partial_hit_rate = query.contains(
-        runtime.dataset.X[:, :d_numerical].float(),
-        query_active_mask.cpu(),
-    ).float().mean().item()
     print(f"Generated {len(frame)} conditional rows")
     print(f"Active numerical model columns: {active_columns}")
     print(f"Raw-space numerical query hit rate: {raw_joint_hit_rate:.2%}")

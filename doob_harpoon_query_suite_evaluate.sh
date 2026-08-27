@@ -29,3 +29,7 @@ python -u evaluate_doob_query_suite.py \
     --real-data "${REAL_DATA}" \
     --info-file "${INFO_FILE}" \
     --output-dir "${SUITE_EVAL_DIR}"
+
+echo "Modality columns in by_selectivity_band.csv:"
+echo "  numeric_joint_miss_rate_mean / categorical_joint_miss_rate_mean"
+echo "  numeric_mean_column_miss_rate_mean / categorical_mean_column_miss_rate_mean"

@@ -101,6 +101,43 @@ def raw_constraint_report(
     return report, rows_satisfied
 
 
+def raw_modality_constraint_report(frame: pd.DataFrame, query: dict) -> dict:
+    """Separate joint and per-predicate miss rates by query modality."""
+    predicates = query.get("predicates", [])
+    if not predicates:
+        raise ValueError("modality diagnostics require predicate-style query metadata")
+    output = {}
+    for modality in ("numeric", "categorical"):
+        selected = [
+            predicate
+            for predicate in predicates
+            if predicate.get("modality") == modality
+        ]
+        if not selected:
+            output[modality] = {
+                "num_constraints": 0,
+                "joint_hit_rate": 1.0,
+                "joint_miss_rate": 0.0,
+                "mean_per_constraint_hit_rate": 1.0,
+                "mean_per_constraint_miss_rate": 0.0,
+            }
+            continue
+        report, _ = raw_constraint_report(frame, {"predicates": selected})
+        per_constraint_hits = [
+            float(column["hit_rate"]) for column in report["per_column"]
+        ]
+        joint_hit_rate = float(report["joint_hit_rate"])
+        mean_hit_rate = float(np.mean(per_constraint_hits))
+        output[modality] = {
+            "num_constraints": len(selected),
+            "joint_hit_rate": joint_hit_rate,
+            "joint_miss_rate": 1.0 - joint_hit_rate,
+            "mean_per_constraint_hit_rate": mean_hit_rate,
+            "mean_per_constraint_miss_rate": 1.0 - mean_hit_rate,
+        }
+    return output
+
+
 def compare_correlation_matrices(
     left: pd.DataFrame,
     right: pd.DataFrame,

@@ -11,7 +11,10 @@ import numpy as np
 import pandas as pd
 import torch
 
-from tabdiff.doob_h_evaluation import raw_constraint_report
+from tabdiff.doob_h_evaluation import (
+    raw_constraint_report,
+    raw_modality_constraint_report,
+)
 from tabdiff.metrics import TabMetrics
 
 
@@ -88,6 +91,10 @@ def aggregate(rows: pd.DataFrame, keys: list[str]) -> pd.DataFrame:
         "overall",
         "conditional_real_rate",
         "conditional_real_rows",
+        "numeric_joint_miss_rate",
+        "categorical_joint_miss_rate",
+        "numeric_mean_column_miss_rate",
+        "categorical_mean_column_miss_rate",
     ]
     grouped = rows.groupby(keys, sort=True, dropna=False)
     means = grouped[metrics].mean().add_suffix("_mean")
@@ -170,6 +177,7 @@ def main() -> None:
             if list(samples.columns) != list(real.columns):
                 raise ValueError(f"column mismatch for {samples_path}")
             constraint_report, _ = raw_constraint_report(samples, query)
+            modality_report = raw_modality_constraint_report(samples, query)
             metrics = density_metrics(reference_path, samples, info)
             hit_rate = float(constraint_report["joint_hit_rate"])
             ci_low, ci_high = confidence_interval(hit_rate, len(samples))
@@ -183,6 +191,24 @@ def main() -> None:
                     "conditional_real_rate": real_report["joint_hit_rate"],
                     "raw_joint_hit_rate": hit_rate,
                     "violation_rate": 1.0 - hit_rate,
+                    "num_numeric_constraints": modality_report["numeric"][
+                        "num_constraints"
+                    ],
+                    "num_categorical_constraints": modality_report["categorical"][
+                        "num_constraints"
+                    ],
+                    "numeric_joint_miss_rate": modality_report["numeric"][
+                        "joint_miss_rate"
+                    ],
+                    "categorical_joint_miss_rate": modality_report["categorical"][
+                        "joint_miss_rate"
+                    ],
+                    "numeric_mean_column_miss_rate": modality_report["numeric"][
+                        "mean_per_constraint_miss_rate"
+                    ],
+                    "categorical_mean_column_miss_rate": modality_report[
+                        "categorical"
+                    ]["mean_per_constraint_miss_rate"],
                     "violation_ci95_low": ci_low,
                     "violation_ci95_high": ci_high,
                     "shape": metrics["density/Shape"],

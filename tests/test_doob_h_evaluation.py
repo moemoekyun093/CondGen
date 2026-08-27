@@ -5,6 +5,7 @@ import pandas as pd
 from tabdiff.doob_h_evaluation import (
     compare_correlation_matrices,
     raw_constraint_report,
+    raw_modality_constraint_report,
 )
 
 
@@ -84,6 +85,29 @@ class RawConstraintEvaluationTest(unittest.TestCase):
         self.assertEqual(mask.tolist(), [True, False, False])
         self.assertEqual(report["constraint_id"], "mixed")
         self.assertAlmostEqual(report["per_column"][1]["hit_rate"], 2 / 3)
+
+    def test_modality_miss_rates_separate_joint_and_column_averages(self):
+        frame = pd.DataFrame(
+            {
+                "n1": [0.0, 2.0, 0.0],
+                "n2": [0.0, 0.0, 2.0],
+                "cat": ["a", "b", "a"],
+            }
+        )
+        query = {
+            "predicates": [
+                {"col": "n1", "modality": "numeric", "op": "between", "values": [0, 1]},
+                {"col": "n2", "modality": "numeric", "op": "between", "values": [0, 1]},
+                {"col": "cat", "modality": "categorical", "op": "in", "values": ["a"]},
+            ]
+        }
+        report = raw_modality_constraint_report(frame, query)
+        self.assertEqual(report["numeric"]["num_constraints"], 2)
+        self.assertAlmostEqual(report["numeric"]["joint_miss_rate"], 2 / 3)
+        self.assertAlmostEqual(
+            report["numeric"]["mean_per_constraint_miss_rate"], 1 / 3
+        )
+        self.assertAlmostEqual(report["categorical"]["joint_miss_rate"], 1 / 3)
 
 
 class CorrelationComparisonTest(unittest.TestCase):

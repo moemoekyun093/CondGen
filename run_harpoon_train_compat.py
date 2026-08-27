@@ -25,6 +25,7 @@ def main() -> None:
         return original_scheduler(*args, **kwargs)
 
     torch.optim.lr_scheduler.ReduceLROnPlateau = compatible_scheduler
+    sys.path.insert(0, str(upstream_script.parent))
     sys.argv = [str(upstream_script), *sys.argv[2:]]
     runpy.run_path(str(upstream_script), run_name="__main__")
 

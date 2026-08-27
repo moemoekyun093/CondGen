@@ -1,0 +1,34 @@
+{
+  "dataset": "shoppers",
+  "real_data": "synthetic/shoppers/real.csv",
+  "info_file": "data/shoppers/info.json",
+  "sample_limit": 1000,
+  "output_dir": "evaluations/shoppers/constraint_levels_lr1e3_harpoon_unconditional",
+  "series": [
+    {
+      "label": "Doob LR 1e-3",
+      "samples_glob": "conditional_samples/shoppers/ft_periodic_seed0_constraint_sweep_d48_l2_lr1e3_6000_k*.csv",
+      "parameters": {
+        "guide_learning_rate": 0.001,
+        "guidance_strength": 1.0,
+        "guide_steps": 6000
+      }
+    },
+    {
+      "label": "HARPOON eta 0.2",
+      "samples_glob": "conditional_samples/shoppers/harpoon_constraint_sweep_summed_relu_eta02_k*.csv",
+      "parameters": {
+        "guidance_strength": 0.2,
+        "inference_loss": "summed_squared_relu",
+        "diffusion_steps": 200
+      }
+    }
+  ],
+  "unconditional": {
+    "label": "Unconditional FT-periodic",
+    "samples": "tabdiff/result/shoppers/ft_periodic_seed0/8000/samples.csv",
+    "parameters": {
+      "checkpoint_epoch": 8000
+    }
+  }
+}

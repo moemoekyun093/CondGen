@@ -416,6 +416,63 @@ The comparison is saved under
 `evaluations/shoppers/doob_d48_l2_6000_vs_harpoon_summed_relu_eta02/` as CSV,
 JSON, and `doob_vs_harpoon_shape_trend_violation.png`.
 
+### Configurable multi-model constraint plots
+
+`plot_constraint_level_metrics.py` accepts a JSON configuration containing any
+number of completed constraint sweeps plus one unconditional-generation CSV.
+Every sweep must contain one CSV and sibling `.query.json` per constraint
+level. The evaluator verifies that all methods use identical constraints at
+each level, filters the real table by that query, and evaluates every method
+against the same conditional real reference.
+
+The supplied `constraint_level_comparison_shoppers.json` compares the Doob
+guide trained with learning rate `1e-3`, HARPOON with `eta=0.2`, and the frozen
+FT-periodic unconditional generations. Add or remove entries from `series` to
+plot a different collection of models. `sample_limit` applies the same
+deterministic row limit to every generated table.
+
+First generate any missing sweeps, then submit the CPU evaluator:
+
+```bash
+DOOB_LR1E3_GUIDE=tabdiff/ckpt/shoppers/ft_periodic_seed0/doob_h_partial_masks_concat_d48_l2_h4_f2_lr1e3_6000_candidate_logh
+DOOB_LR1E3_SWEEP=$(sbatch --parsable --array=1-10%2 \
+  doob_h_constraint_sweep.sh "${DOOB_LR1E3_GUIDE}" d48_l2_lr1e3_6000)
+
+HARPOON_SWEEP=$(sbatch --parsable --array=1-10%2 \
+  harpoon_constraint_sweep.sh summed_relu_eta02)
+
+PLOT_JOB=$(sbatch --parsable \
+  --dependency="afterok:${DOOB_LR1E3_SWEEP}:${HARPOON_SWEEP}" \
+  constraint_level_metrics.sh constraint_level_comparison_shoppers.json)
+```
+
+The job saves `shape_by_constraint_level.png`,
+`trend_by_constraint_level.png`, and `violation_by_constraint_level.png`, plus
+the exact values in CSV and JSON format, under the configured output directory.
+
+Methods can instead be supplied directly as repeated command-line parameters.
+The optional JSON metadata is recorded in every CSV/JSON result row; it labels
+the samples but does not rerun training or sampling.
+
+```bash
+sbatch constraint_level_metrics.sh \
+  --method "Doob LR 1e-3" \
+    "conditional_samples/shoppers/ft_periodic_seed0_constraint_sweep_d48_l2_lr1e3_6000_k*.csv" \
+  --method-params "Doob LR 1e-3" \
+    '{"guide_learning_rate":0.001,"guidance_strength":1.0,"guide_steps":6000}' \
+  --method "HARPOON eta 0.2" \
+    "conditional_samples/shoppers/harpoon_constraint_sweep_summed_relu_eta02_k*.csv" \
+  --method-params "HARPOON eta 0.2" \
+    '{"guidance_strength":0.2,"inference_loss":"summed_squared_relu"}' \
+  --unconditional "Unconditional FT-periodic" \
+    "tabdiff/result/shoppers/ft_periodic_seed0/8000/samples.csv" \
+  --unconditional-params '{"checkpoint_epoch":8000}' \
+  --real-data synthetic/shoppers/real.csv \
+  --info-file data/shoppers/info.json \
+  --sample-limit 1000 \
+  --output-dir evaluations/shoppers/custom_constraint_comparison
+```
+
 ## License
 
 This work is licensed undeer the MIT License.

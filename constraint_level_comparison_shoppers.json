@@ -3,6 +3,7 @@
   "real_data": "synthetic/shoppers/real.csv",
   "info_file": "data/shoppers/info.json",
   "sample_limit": 1000,
+  "alpha_beta_seed": 0,
   "output_dir": "evaluations/shoppers/constraint_levels_lr1e3_harpoon_unconditional",
   "series": [
     {

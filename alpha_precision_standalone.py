@@ -104,7 +104,11 @@ def build_features(real_df, syn_df, info):
             return np.char.strip(out.astype(str))
 
         cat_real = clean(cat_real); cat_syn = clean(cat_syn)
-        enc = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
+        try:
+            enc = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
+        except TypeError:
+            # sklearn < 1.2 uses ``sparse`` instead of ``sparse_output``.
+            enc = OneHotEncoder(handle_unknown='ignore', sparse=False)
         enc.fit(cat_real)
         oh_real = enc.transform(cat_real)
         oh_syn = enc.transform(cat_syn)

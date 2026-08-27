@@ -4,7 +4,7 @@
 #SBATCH --error=evaluations/slurm/%x_%j.err
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
-#SBATCH --time=03:00:00
+#SBATCH --time=06:00:00
 
 set -euo pipefail
 
@@ -35,4 +35,4 @@ fi
 
 python -u plot_constraint_level_metrics.py "${ARGS[@]}"
 
-echo "Finished constraint-level Shape, Trend, and violation plots"
+echo "Finished constraint-level density, C2ST, Alpha Precision, Beta Recall, and violation plots"

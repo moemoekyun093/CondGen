@@ -9,9 +9,14 @@ import json
 import math
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import torch
 
+from alpha_precision_standalone import (
+    alpha_precision_beta_recall_authenticity,
+    build_features,
+)
 from tabdiff.doob_h_evaluation import raw_constraint_report
 from tabdiff.metrics import TabMetrics
 
@@ -42,6 +47,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--real-data", default=None)
     parser.add_argument("--info-file", default=None)
     parser.add_argument("--sample-limit", type=int, default=None)
+    parser.add_argument("--alpha-beta-seed", type=int, default=None)
     parser.add_argument("--output-dir", default=None)
     return parser.parse_args()
 
@@ -145,6 +151,7 @@ def resolve_config(args: argparse.Namespace) -> dict:
         (args.real_data, "real_data"),
         (args.info_file, "info_file"),
         (args.sample_limit, "sample_limit"),
+        (args.alpha_beta_seed, "alpha_beta_seed"),
         (args.output_dir, "output_dir"),
     ):
         if argument is not None:
@@ -189,18 +196,54 @@ def discover_sweep(pattern: str) -> dict[int, tuple[Path, dict]]:
     return levels
 
 
-def evaluate_density(reference_path: Path, samples: pd.DataFrame, info: dict) -> dict:
+def evaluate_tabdiff_metrics(
+    reference_path: Path,
+    samples: pd.DataFrame,
+    info: dict,
+) -> dict:
     evaluator = TabMetrics(
         str(reference_path),
         str(reference_path),
         None,
         info,
         torch.device("cpu"),
-        metric_list=["density"],
+        metric_list=["density", "c2st", "c2st_xgb"],
         include_density_diagnostic=False,
     )
     metrics, _ = evaluator.evaluate(samples.copy())
     return {name: float(value) for name, value in metrics.items()}
+
+
+def evaluate_alpha_beta(
+    reference_path: Path,
+    samples: pd.DataFrame,
+    info: dict,
+    seed: int,
+) -> tuple[float, float]:
+    """Use the repository's exact standalone SynthCity-naive metric port."""
+    real = pd.read_csv(reference_path)
+    real_features, synthetic_features = build_features(real, samples, info)
+    if not np.isfinite(real_features).all() or not np.isfinite(
+        synthetic_features
+    ).all():
+        raise ValueError("Alpha Precision/Beta Recall inputs contain non-finite values")
+
+    random = np.random.RandomState(seed)
+    count = min(len(real_features), len(synthetic_features))
+    if len(real_features) > count:
+        real_features = real_features[
+            random.choice(len(real_features), count, replace=False)
+        ]
+    if len(synthetic_features) > count:
+        synthetic_features = synthetic_features[
+            random.choice(len(synthetic_features), count, replace=False)
+        ]
+    alpha_precision, beta_recall, _ = alpha_precision_beta_recall_authenticity(
+        real_features,
+        synthetic_features,
+        seed=seed,
+    )
+    return alpha_precision, beta_recall
 
 
 def read_samples(path: Path, columns: list[str], sample_limit: int | None) -> pd.DataFrame:
@@ -229,9 +272,16 @@ def metric_row(
     reference_path: Path,
     conditional_real_rows: int,
     info: dict,
+    alpha_beta_seed: int,
 ) -> dict:
     constraint_report, _ = raw_constraint_report(samples, query)
-    metrics = evaluate_density(reference_path, samples, info)
+    metrics = evaluate_tabdiff_metrics(reference_path, samples, info)
+    alpha_precision, beta_recall = evaluate_alpha_beta(
+        reference_path,
+        samples,
+        info,
+        alpha_beta_seed,
+    )
     hit_rate = float(constraint_report["joint_hit_rate"])
     standard_error = math.sqrt(hit_rate * (1.0 - hit_rate) / len(samples))
     violation = 1.0 - hit_rate
@@ -248,6 +298,11 @@ def metric_row(
         "shape": metrics["density/Shape"],
         "trend": metrics["density/Trend"],
         "overall": metrics["density/Overall"],
+        "c2st": metrics["c2st"],
+        "c2st_xgb": metrics["c2st_xgb"],
+        "c2st_xgb_auc": metrics["c2st_xgb_auc"],
+        "alpha_precision": alpha_precision,
+        "beta_recall": beta_recall,
         "raw_joint_hit_rate": hit_rate,
         "violation_rate": violation,
         "violation_ci95_low": max(0.0, violation - 1.96 * standard_error),
@@ -300,11 +355,19 @@ def save_plot(rows: list[dict], metric: str, output: Path) -> None:
         "shape": "Column Shape by constraint level (higher is better)",
         "trend": "Column-pair Trend by constraint level (higher is better)",
         "violation_rate": "Joint constraint violations (lower is better)",
+        "c2st": "Logistic C2ST similarity by constraint level (higher is better)",
+        "c2st_xgb": "XGBoost C2ST similarity by constraint level (higher is better)",
+        "alpha_precision": "Alpha Precision by constraint level (higher is better)",
+        "beta_recall": "Beta Recall by constraint level (higher is better)",
     }
     ylabels = {
         "shape": "Shape score",
         "trend": "Trend score",
         "violation_rate": "Joint violation rate",
+        "c2st": "C2ST similarity score",
+        "c2st_xgb": "C2ST XGBoost similarity score",
+        "alpha_precision": "Alpha Precision",
+        "beta_recall": "Beta Recall",
     }
     counts = sorted({row["constraint_count"] for row in rows})
     axis.set_title(titles[metric])
@@ -351,6 +414,7 @@ def main() -> None:
         info = json.load(stream)
     sample_limit = config.get("sample_limit")
     sample_limit = None if sample_limit is None else int(sample_limit)
+    alpha_beta_seed = int(config.get("alpha_beta_seed", 0))
     unconditional = read_samples(unconditional_path, columns, sample_limit)
 
     output_dir = Path(
@@ -394,6 +458,7 @@ def main() -> None:
                     reference_path,
                     len(conditional_real),
                     info,
+                    alpha_beta_seed,
                 )
             )
         rows.append(
@@ -408,6 +473,7 @@ def main() -> None:
                 reference_path,
                 len(conditional_real),
                 info,
+                alpha_beta_seed,
             )
         )
 
@@ -424,6 +490,10 @@ def main() -> None:
         "shape": output_dir / "shape_by_constraint_level.png",
         "trend": output_dir / "trend_by_constraint_level.png",
         "violation_rate": output_dir / "violation_by_constraint_level.png",
+        "c2st": output_dir / "c2st_by_constraint_level.png",
+        "c2st_xgb": output_dir / "c2st_xgb_by_constraint_level.png",
+        "alpha_precision": output_dir / "alpha_precision_by_constraint_level.png",
+        "beta_recall": output_dir / "beta_recall_by_constraint_level.png",
     }
     for metric, output in outputs.items():
         save_plot(rows, metric, output)

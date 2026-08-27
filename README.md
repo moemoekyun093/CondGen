@@ -446,9 +446,12 @@ PLOT_JOB=$(sbatch --parsable \
   constraint_level_metrics.sh constraint_level_comparison_shoppers.json)
 ```
 
-The job saves `shape_by_constraint_level.png`,
-`trend_by_constraint_level.png`, and `violation_by_constraint_level.png`, plus
-the exact values in CSV and JSON format, under the configured output directory.
+The job saves separate constraint-level plots for Shape, Trend, raw joint
+violation rate, logistic C2ST, XGBoost C2ST, Alpha Precision, and Beta Recall,
+plus the exact values in CSV and JSON format. C2ST uses TabDiff's existing
+SDMetrics implementations. Alpha Precision and Beta Recall use the repository's
+standalone exact port of SynthCity's naive metrics, with deterministic
+equal-size subsampling controlled by `alpha_beta_seed`.
 
 Methods can instead be supplied directly as repeated command-line parameters.
 The optional JSON metadata is recorded in every CSV/JSON result row; it labels
@@ -470,6 +473,7 @@ sbatch constraint_level_metrics.sh \
   --real-data synthetic/shoppers/real.csv \
   --info-file data/shoppers/info.json \
   --sample-limit 1000 \
+  --alpha-beta-seed 0 \
   --output-dir evaluations/shoppers/custom_constraint_comparison
 ```
 

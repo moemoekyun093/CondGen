@@ -17,6 +17,7 @@ from tabdiff.doob_h_runtime import (
 )
 from tabdiff.doob_h_evaluation import raw_constraint_report
 from tabdiff.doob_query_suite import load_structured_query_suite
+from tabdiff.doob_query_suite import _model_column_names
 from tabdiff.models.doob_h_transform import (
     StructuredCategoricalHTransformGuide,
     StructuredNumericalHScoreGuide,
@@ -39,6 +40,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", required=True)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--diagnose-guidance",
+        action="store_true",
+        help="Save raw pre-clipping numerical correction statistics",
+    )
     return parser.parse_args()
 
 
@@ -106,6 +112,8 @@ def main() -> None:
         candidate_batch_size=args.h_candidate_batch_size,
         query_conditioning=query.model_kwargs(device, torch.float32),
     )
+    if args.diagnose_guidance:
+        runtime.diffusion.enable_numerical_h_guide_diagnostics()
     if args.num_timesteps is not None:
         if args.num_timesteps < 2:
             raise ValueError("num-timesteps must be at least 2")
@@ -148,6 +156,25 @@ def main() -> None:
     }
     with output.with_suffix(".constraints.json").open("w", encoding="utf-8") as stream:
         json.dump(report, stream, indent=2)
+    if args.diagnose_guidance:
+        guidance_report = runtime.diffusion.numerical_h_guide_diagnostics()
+        numerical_names, _ = _model_column_names(runtime.info)
+        for column, name in zip(guidance_report["per_column"], numerical_names):
+            column["name"] = name
+        guidance_report.update(
+            {
+                "query_id": query_id,
+                "max_correction": args.max_correction,
+                "guidance_strength": 1.0,
+                "correction_kind": "direct denoiser correction before coordinate-wise clipping",
+            }
+        )
+        with output.with_suffix(".guidance.json").open("w", encoding="utf-8") as stream:
+            json.dump(guidance_report, stream, indent=2)
+        print(
+            "Numerical correction clipping rate: "
+            f"{guidance_report['overall_clip_rate']:.2%}"
+        )
     print(f"Raw full-query hit rate: {joint.mean():.2%}")
     print(f"Saved {output}")
 

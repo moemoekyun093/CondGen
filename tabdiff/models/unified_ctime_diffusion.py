@@ -87,6 +87,9 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         self.h_guide_candidate_batch_size = 65536
         self.h_guide_query_active_mask = None
         self.h_guide_query_conditioning = None
+        self.h_guide_diagnostics_enabled = False
+        self._h_guide_correction_chunks = []
+        self._h_guide_time_diagnostics = []
         
         self.device = device
         
@@ -630,6 +633,68 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
             return (sigma_data**2 + sigma**2).rsqrt()
         return torch.ones_like(reference)
 
+    def enable_numerical_h_guide_diagnostics(self):
+        """Collect raw pre-clipping numerical corrections during sampling."""
+        self.h_guide_diagnostics_enabled = True
+        self._h_guide_correction_chunks = []
+        self._h_guide_time_diagnostics = []
+
+    def numerical_h_guide_diagnostics(self):
+        """Summarize correction magnitude and clipping by numerical column."""
+        if not self._h_guide_correction_chunks:
+            return {
+                "enabled": self.h_guide_diagnostics_enabled,
+                "num_guide_evaluations": 0,
+                "clip_threshold": self.h_guide_max_correction,
+                "overall_clip_rate": 0.0,
+                "per_column": [],
+                "per_time_call": [],
+            }
+        corrections = torch.cat(self._h_guide_correction_chunks, dim=0)
+        threshold = self.h_guide_max_correction
+        clipped = (
+            corrections.abs() > threshold
+            if threshold is not None
+            else torch.zeros_like(corrections, dtype=torch.bool)
+        )
+        per_column = []
+        for column in range(corrections.shape[1]):
+            values = corrections[:, column]
+            absolute = values.abs()
+            column_clipped = clipped[:, column]
+            per_column.append(
+                {
+                    "model_index": column,
+                    "mean": float(values.mean()),
+                    "std": float(values.std(unbiased=False)),
+                    "mean_absolute": float(absolute.mean()),
+                    "absolute_q50": float(torch.quantile(absolute, 0.50)),
+                    "absolute_q90": float(torch.quantile(absolute, 0.90)),
+                    "absolute_q99": float(torch.quantile(absolute, 0.99)),
+                    "absolute_q999": float(torch.quantile(absolute, 0.999)),
+                    "absolute_max": float(absolute.max()),
+                    "clip_rate": float(column_clipped.float().mean()),
+                    "positive_clip_rate": float(
+                        (values > threshold).float().mean()
+                        if threshold is not None
+                        else 0.0
+                    ),
+                    "negative_clip_rate": float(
+                        (values < -threshold).float().mean()
+                        if threshold is not None
+                        else 0.0
+                    ),
+                }
+            )
+        return {
+            "enabled": True,
+            "num_guide_evaluations": int(corrections.shape[0]),
+            "clip_threshold": threshold,
+            "overall_clip_rate": float(clipped.float().mean()),
+            "per_column": per_column,
+            "per_time_call": self._h_guide_time_diagnostics,
+        }
+
     def _apply_numerical_h_guide(self, denoised, x_num_t, x_cat_t, t, sigma):
         if self.numerical_h_guide is None or self.num_numerical_features == 0:
             return denoised
@@ -659,6 +724,25 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
             raise ValueError(
                 "numerical h-guide correction shape "
                 f"{tuple(correction.shape)} does not match denoiser output {tuple(denoised.shape)}"
+            )
+        if self.h_guide_diagnostics_enabled:
+            raw = correction.detach().float().cpu()
+            self._h_guide_correction_chunks.append(raw)
+            threshold = self.h_guide_max_correction
+            clip_rate = (
+                float((raw.abs() > threshold).float().mean())
+                if threshold is not None
+                else 0.0
+            )
+            time_value = torch.as_tensor(t).detach().float().mean().cpu().item()
+            self._h_guide_time_diagnostics.append(
+                {
+                    "call_index": len(self._h_guide_time_diagnostics),
+                    "mean_t": float(time_value),
+                    "mean_absolute_correction": float(raw.abs().mean()),
+                    "absolute_q99": float(torch.quantile(raw.abs(), 0.99)),
+                    "clip_rate": clip_rate,
+                }
             )
         if self.h_guide_max_correction is not None:
             correction = correction.clamp(

@@ -30,11 +30,18 @@ if [ ! -e "${CKPT_CANDIDATES[0]}" ] || [ "${#CKPT_CANDIDATES[@]}" -ne 1 ]; then
     exit 1
 fi
 BASE_CKPT="${CKPT_CANDIDATES[0]}"
-GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_partial_masks_concat_candidate_logh}"
-GUIDE_CKPT="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/${GUIDE_DIR_NAME}/best_guide.pt"
+# Usage: sbatch doob_h_sample.sh [GUIDE_DIR_OR_NAME] [SAMPLE_SUFFIX]
+# Positional arguments take precedence over environment variables/defaults.
+GUIDE_DIR_ARG="${1:-${GUIDE_DIR_NAME:-doob_h_partial_masks_concat_d48_l2_h4_f2_6000_candidate_logh}}"
+if [[ "${GUIDE_DIR_ARG}" == */* ]]; then
+    GUIDE_DIR="${GUIDE_DIR_ARG}"
+else
+    GUIDE_DIR="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/${GUIDE_DIR_ARG}"
+fi
+GUIDE_CKPT="${GUIDE_DIR}/best_guide.pt"
 NUM_SAMPLES="${NUM_SAMPLES:-1000}"
 BATCH_SIZE="${BATCH_SIZE:-1000}"
-SAMPLE_SUFFIX="${SAMPLE_SUFFIX-_partial_masks_concat}"
+SAMPLE_SUFFIX="${2:-${SAMPLE_SUFFIX-_partial_masks_concat_d48_l2_6000}}"
 OUTPUT="conditional_samples/${DATANAME}/${MODEL_NAME}${SAMPLE_SUFFIX}.csv"
 COLUMN_ACTIVE_PROBABILITY="${COLUMN_ACTIVE_PROBABILITY:-0.5}"
 ACTIVE_COLUMNS="${ACTIVE_COLUMNS:-}"

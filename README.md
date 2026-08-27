@@ -248,33 +248,37 @@ cat constraints/shoppers/fixed_numerical_intervals.json
 Train the two mask-conditioned FT-periodic guides:
 
 ```bash
-TRAIN_JOB=$(sbatch --parsable --array=0 doob_h_train.sh)
+GUIDE_DIR=tabdiff/ckpt/shoppers/ft_periodic_seed0/doob_h_partial_masks_concat_d48_l2_h4_f2_6000_candidate_logh
+TRAIN_JOB=$(sbatch --parsable --array=0 doob_h_train.sh "${GUIDE_DIR}")
 ```
 
 Then sample a random test-time mask:
 
 ```bash
+SAMPLE_SUFFIX=_partial_masks_concat_d48_l2_6000
 SAMPLE_JOB=$(sbatch --parsable --array=0 \
-  --dependency="afterok:${TRAIN_JOB}" doob_h_sample.sh)
+  --dependency="afterok:${TRAIN_JOB}" doob_h_sample.sh \
+  "${GUIDE_DIR}" "${SAMPLE_SUFFIX}")
 ```
 
 Each CSV gets a sibling `.query.json` containing only the active constraints.
 The default output is
-`conditional_samples/shoppers/ft_periodic_seed0_partial_masks_concat.csv`.
+`conditional_samples/shoppers/ft_periodic_seed0_partial_masks_concat_d48_l2_6000.csv`.
 
 Evaluate the existing generated table without resampling:
 
 ```bash
-sbatch --array=0 --dependency="afterok:${SAMPLE_JOB}" doob_h_evaluate.sh
+sbatch --array=0 --dependency="afterok:${SAMPLE_JOB}" \
+  doob_h_evaluate.sh "${SAMPLE_SUFFIX}"
 ```
 
-Training runs for 1000 optimizer steps by default, with a batch of 1024
+Training runs for 6000 optimizer steps by default, with a batch of 1024
 uniformly sampled conditional endpoints per step. The same forward-noised batch
 supplies both the Section 5 numerical target and TabDiff categorical loss. EMA
 updates both guides after every step; the fixed all-active diagnostic runs every
 100 steps. Best-checkpoint selection starts after step 200, and periodic
-snapshots are saved at steps 500 and 1000. Override these with, for example,
-`sbatch --array=0 --export=ALL,EPOCHS=1500,BATCH_SIZE=512,DIAGNOSTIC_EVERY=100 doob_h_train.sh`.
+snapshots are saved every 500 steps. Override these with, for example,
+`sbatch --array=0 --export=ALL,EPOCHS=3000,BATCH_SIZE=512,DIAGNOSTIC_EVERY=100 doob_h_train.sh`.
 
 The dataset and checkpoint-directory names can also be overridden without
 editing the scripts, for example

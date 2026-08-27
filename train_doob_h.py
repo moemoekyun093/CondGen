@@ -42,7 +42,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--query-file", required=True)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--epochs", type=int, default=1000)
+    parser.add_argument("--epochs", type=int, default=6000)
     parser.add_argument("--batch-size", type=int, default=1024)
     parser.add_argument("--column-active-probability", type=float, default=0.5)
     parser.add_argument("--all-active-probability", type=float, default=0.1)
@@ -60,11 +60,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--checkpoint-every", type=int, default=500)
     parser.add_argument("--reduce-lr-patience", type=int, default=20)
     parser.add_argument("--lr-factor", type=float, default=0.9)
-    parser.add_argument("--d-token", type=int, default=32)
+    parser.add_argument("--d-token", type=int, default=48)
     parser.add_argument("--num-layers", type=int, default=2)
     parser.add_argument("--n-head", type=int, default=4)
     parser.add_argument("--factor", type=float, default=2.0)
     parser.add_argument("--n-frequencies", type=int, default=16)
+    parser.add_argument("--freq-sigma", type=float, default=0.05)
+    parser.add_argument("--query-mask-embedding-dim", type=int, default=8)
     return parser.parse_args()
 
 
@@ -358,10 +360,10 @@ def main() -> None:
         "n_head": args.n_head,
         "factor": args.factor,
         "n_frequencies": args.n_frequencies,
-        "freq_sigma": 0.05,
+        "freq_sigma": args.freq_sigma,
         "query_mask_conditioning": True,
         "query_mask_fusion": "concat",
-        "query_mask_embedding_dim": 8,
+        "query_mask_embedding_dim": args.query_mask_embedding_dim,
     }
     numerical_guide = NumericalHScoreGuide(**architecture_kwargs).to(device)
     categorical_guide = CategoricalHTransformGuide(**architecture_kwargs).to(device)
@@ -386,14 +388,36 @@ def main() -> None:
 
     output_dir = Path(
         args.output_dir
-        or "tabdiff/ckpt/shoppers/ft_periodic_seed0/doob_h_partial_masks_concat_candidate_logh"
+        or "tabdiff/ckpt/shoppers/ft_periodic_seed0/doob_h_partial_masks_concat_d48_l2_h4_f2_6000_candidate_logh"
     )
     output_dir.mkdir(parents=True, exist_ok=True)
+    base_parameter_count = sum(
+        parameter.numel() for parameter in runtime.diffusion._denoise_fn.parameters()
+    )
+    numerical_parameter_count = sum(
+        parameter.numel() for parameter in numerical_guide.parameters()
+    )
+    categorical_parameter_count = sum(
+        parameter.numel() for parameter in categorical_guide.parameters()
+    )
+    combined_guide_parameter_count = (
+        numerical_parameter_count + categorical_parameter_count
+    )
+    combined_parameter_ratio = (
+        combined_guide_parameter_count / base_parameter_count
+    )
     metadata = {
         "dataname": args.dataname,
         "base_checkpoint": runtime.checkpoint_path,
         "numerical_guide": architecture_kwargs,
         "categorical_guide": architecture_kwargs,
+        "parameter_counts": {
+            "base_denoiser": base_parameter_count,
+            "numerical_guide": numerical_parameter_count,
+            "categorical_guide": categorical_parameter_count,
+            "combined_guides": combined_guide_parameter_count,
+            "combined_guides_over_base": combined_parameter_ratio,
+        },
         "query": {
             **query_spec,
             **query.to_dict(),
@@ -447,13 +471,15 @@ def main() -> None:
         f"All-constrained event: {int(event_all.sum())}/{len(event_all)} "
         f"({event_rate:.2%})"
     )
-    print(
-        "Numerical guide parameters: "
-        f"{sum(p.numel() for p in numerical_guide.parameters()):,}"
-    )
+    print(f"Base denoiser parameters: {base_parameter_count:,}")
+    print(f"Numerical guide parameters: {numerical_parameter_count:,}")
     print(
         "Categorical guide parameters: "
-        f"{sum(p.numel() for p in categorical_guide.parameters()):,}"
+        f"{categorical_parameter_count:,}"
+    )
+    print(
+        f"Combined guide parameters: {combined_guide_parameter_count:,} "
+        f"({combined_parameter_ratio:.2%} of base denoiser)"
     )
     print(
         f"Optimizer steps: {args.epochs}; conditional batch size: {args.batch_size}"

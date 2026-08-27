@@ -20,7 +20,9 @@ MODEL_NAMES=(
     "${ORIGINAL_MODEL}"
 )
 MODEL_NAME="${MODEL_NAMES[$SLURM_ARRAY_TASK_ID]}"
-SAMPLE_SUFFIX="${SAMPLE_SUFFIX-_partial_masks_concat}"
+# Usage: sbatch doob_h_evaluate.sh [SAMPLE_SUFFIX]
+# A positional argument takes precedence over the environment variable/default.
+SAMPLE_SUFFIX="${1:-${SAMPLE_SUFFIX-_partial_masks_concat_d48_l2_6000}}"
 SAMPLE_NAME="${MODEL_NAME}${SAMPLE_SUFFIX}"
 SAMPLES="conditional_samples/${DATANAME}/${SAMPLE_NAME}.csv"
 SAVED_ACTIVE_QUERY="conditional_samples/${DATANAME}/${SAMPLE_NAME}.query.json"

@@ -30,10 +30,16 @@ if [ ! -e "${CKPT_CANDIDATES[0]}" ] || [ "${#CKPT_CANDIDATES[@]}" -ne 1 ]; then
     exit 1
 fi
 BASE_CKPT="${CKPT_CANDIDATES[0]}"
-GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_partial_masks_concat_candidate_logh}"
-OUTPUT_DIR="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/${GUIDE_DIR_NAME}"
+# Usage: sbatch doob_h_train.sh [GUIDE_DIR_OR_NAME]
+# A positional argument takes precedence over the environment variable/default.
+GUIDE_DIR_ARG="${1:-${GUIDE_DIR_NAME:-doob_h_partial_masks_concat_d48_l2_h4_f2_6000_candidate_logh}}"
+if [[ "${GUIDE_DIR_ARG}" == */* ]]; then
+    OUTPUT_DIR="${GUIDE_DIR_ARG}"
+else
+    OUTPUT_DIR="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/${GUIDE_DIR_ARG}"
+fi
 QUERY_FILE="${QUERY_FILE:-constraints/${DATANAME}/fixed_numerical_intervals.json}"
-EPOCHS="${EPOCHS:-1000}"
+EPOCHS="${EPOCHS:-6000}"
 BATCH_SIZE="${BATCH_SIZE:-1024}"
 COLUMN_ACTIVE_PROBABILITY="${COLUMN_ACTIVE_PROBABILITY:-0.5}"
 ALL_ACTIVE_PROBABILITY="${ALL_ACTIVE_PROBABILITY:-0.1}"
@@ -43,6 +49,13 @@ DIAGNOSTIC_EVERY="${DIAGNOSTIC_EVERY:-100}"
 CHECKPOINT_WARMUP="${CHECKPOINT_WARMUP:-200}"
 CHECKPOINT_EVERY="${CHECKPOINT_EVERY:-500}"
 H_CANDIDATE_BATCH_SIZE="${H_CANDIDATE_BATCH_SIZE:-16384}"
+D_TOKEN="${D_TOKEN:-48}"
+NUM_LAYERS="${NUM_LAYERS:-2}"
+N_HEAD="${N_HEAD:-4}"
+FACTOR="${FACTOR:-2}"
+N_FREQUENCIES="${N_FREQUENCIES:-16}"
+FREQ_SIGMA="${FREQ_SIGMA:-0.05}"
+QUERY_MASK_EMBEDDING_DIM="${QUERY_MASK_EMBEDDING_DIM:-8}"
 
 echo "========================================"
 echo "Job ID          : ${SLURM_JOB_ID}"
@@ -54,6 +67,7 @@ echo "Output          : ${OUTPUT_DIR}"
 echo "Fixed query     : ${QUERY_FILE}"
 echo "Objective       : separate numerical h-score and categorical log-h guides"
 echo "Query mask      : per-column binary embedding concatenated and fused into each numerical token"
+echo "Guide model     : d=${D_TOKEN}, L=${NUM_LAYERS}, heads=${N_HEAD}, factor=${FACTOR}, frequencies=${N_FREQUENCIES}, mask_dim=${QUERY_MASK_EMBEDDING_DIM}"
 echo "Numerical       : direct sigma(t)^2 * grad_x log h correction"
 echo "Categorical     : candidate log h(child) from a shared whole-state scalar network"
 echo "Categorical loss: conditional Generator Matching via original TabDiff absorbed loss"
@@ -96,11 +110,13 @@ python -u train_doob_h.py \
     --lr-factor 0.9 \
     --checkpoint-warmup "${CHECKPOINT_WARMUP}" \
     --checkpoint-every "${CHECKPOINT_EVERY}" \
-    --d-token 32 \
-    --num-layers 2 \
-    --n-head 4 \
-    --factor 2 \
-    --n-frequencies 16 \
+    --d-token "${D_TOKEN}" \
+    --num-layers "${NUM_LAYERS}" \
+    --n-head "${N_HEAD}" \
+    --factor "${FACTOR}" \
+    --n-frequencies "${N_FREQUENCIES}" \
+    --freq-sigma "${FREQ_SIGMA}" \
+    --query-mask-embedding-dim "${QUERY_MASK_EMBEDDING_DIM}" \
     --device cuda
 
 echo "Finished Doob h-guide training"

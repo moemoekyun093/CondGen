@@ -33,13 +33,15 @@ BASE_CKPT="${CKPT_CANDIDATES[0]}"
 GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_h_partial_masks_concat_candidate_logh}"
 OUTPUT_DIR="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/${GUIDE_DIR_NAME}"
 QUERY_FILE="${QUERY_FILE:-constraints/${DATANAME}/fixed_numerical_intervals.json}"
-EPOCHS="${EPOCHS:-6000}"
+EPOCHS="${EPOCHS:-1000}"
 BATCH_SIZE="${BATCH_SIZE:-1024}"
 COLUMN_ACTIVE_PROBABILITY="${COLUMN_ACTIVE_PROBABILITY:-0.5}"
 ALL_ACTIVE_PROBABILITY="${ALL_ACTIVE_PROBABILITY:-0.1}"
 ALL_INACTIVE_PROBABILITY="${ALL_INACTIVE_PROBABILITY:-0.1}"
 DIAGNOSTIC_BATCH_SIZE="${DIAGNOSTIC_BATCH_SIZE:-1024}"
 DIAGNOSTIC_EVERY="${DIAGNOSTIC_EVERY:-100}"
+CHECKPOINT_WARMUP="${CHECKPOINT_WARMUP:-200}"
+CHECKPOINT_EVERY="${CHECKPOINT_EVERY:-500}"
 H_CANDIDATE_BATCH_SIZE="${H_CANDIDATE_BATCH_SIZE:-16384}"
 
 echo "========================================"
@@ -60,6 +62,7 @@ echo "Mask anchors    : all-on=${ALL_ACTIVE_PROBABILITY}, all-off=${ALL_INACTIVE
 echo "Endpoint batch  : ${BATCH_SIZE} uniform satisfying rows, with replacement"
 echo "Training        : ${EPOCHS} optimizer steps"
 echo "EMA diagnostic  : every ${DIAGNOSTIC_EVERY} optimizer steps"
+echo "Checkpointing   : best after step ${CHECKPOINT_WARMUP}; snapshots every ${CHECKPOINT_EVERY} steps"
 echo "========================================"
 nvidia-smi
 
@@ -91,8 +94,8 @@ python -u train_doob_h.py \
     --diagnostic-every "${DIAGNOSTIC_EVERY}" \
     --reduce-lr-patience 20 \
     --lr-factor 0.9 \
-    --checkpoint-warmup 4000 \
-    --checkpoint-every 2000 \
+    --checkpoint-warmup "${CHECKPOINT_WARMUP}" \
+    --checkpoint-every "${CHECKPOINT_EVERY}" \
     --d-token 32 \
     --num-layers 2 \
     --n-head 4 \

@@ -268,12 +268,13 @@ Evaluate the existing generated table without resampling:
 sbatch --array=0 --dependency="afterok:${SAMPLE_JOB}" doob_h_evaluate.sh
 ```
 
-Training runs for 6000 optimizer steps by default, with a batch of 1024
+Training runs for 1000 optimizer steps by default, with a batch of 1024
 uniformly sampled conditional endpoints per step. The same forward-noised batch
 supplies both the Section 5 numerical target and TabDiff categorical loss. EMA
 updates both guides after every step; the fixed all-active diagnostic runs every
-100 steps. Override these with, for example,
-`sbatch --array=0 --export=ALL,EPOCHS=2000,BATCH_SIZE=512,DIAGNOSTIC_EVERY=100 doob_h_train.sh`.
+100 steps. Best-checkpoint selection starts after step 200, and periodic
+snapshots are saved at steps 500 and 1000. Override these with, for example,
+`sbatch --array=0 --export=ALL,EPOCHS=1500,BATCH_SIZE=512,DIAGNOSTIC_EVERY=100 doob_h_train.sh`.
 
 The dataset and checkpoint-directory names can also be overridden without
 editing the scripts, for example

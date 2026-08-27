@@ -348,25 +348,29 @@ PLOT_JOB=$(sbatch --parsable --dependency="afterok:${SWEEP_JOB}" \
 
 The official [HARPOON repository](https://github.com/adis98/Harpoon) is pinned
 as `baselines/harpoon` at commit `40dc8cee26e215e86523045fdafb7c1ad89c3fd7`.
-This is a Shoppers-only, paper-aligned baseline. It does not use the learned
-Doob guide, active-mask parameterization, categorical `h` ratios, or posterior
-start logic. It trains HARPOON's unconditional OHE DDPM and applies Algorithm 1
-only at test time.
+Files inside that checkout are not modified. `harpoon_train.sh` invokes the
+upstream `train_repaint.py` directly, and `harpoon_official_and.sh` invokes the
+upstream general-constraint sampler directly with `--constraint both`.
+Prepared data, checkpoints, and experiment outputs are kept outside the
+checkout under `/scratch/work/agrawaa4/harpoon_runtime` by default.
 
-For dirty estimate `x0_hat = Q_t(x_t)`, Appendix D Eq. 9 and Appendix G.2 give
+The unchanged official Shoppers AND query is
+`Administrative >= 4 AND VisitorType == New_Visitor`. The released sampler
+forms it by adding its squared-ReLU numerical range penalty and categorical
+MAE penalty before differentiating with respect to `x_t`.
+
+For the numerical constraint-count sweep, the external adapter applies the
+same additive rule to the active numerical intervals:
 
 ```
-L_inf = ||ReLU(lower - x0_hat)||_2 + ||ReLU(x0_hat - upper)||_2.
+L_inf = sum_j [ReLU(lower_j - x0_hat_j)^2
+               + ReLU(x0_hat_j - upper_j)^2].
 g_t = grad_x_t L_inf(Q_t(x_t), c).
 x_{t-1} = DDPM_step(x_t) - eta * g_t.
 ```
 
-The default exactly uses the paper's Shoppers range task,
-`Administrative >= 4`, with `T=200`, `eta=0.2`, batch size 1024, 1000 epochs,
-and the paper's linear beta schedule. The stochastic reverse term uses the
-standard DDPM posterior standard deviation. By default, the generated sample
-count equals the number of Shoppers test rows satisfying the inequality, as in
-the paper; set `NUM_SAMPLES=1000` to override this for a fixed-size comparison.
+The external adapter imports the official preprocessing, MLP, diffusion
+schedule, and checkpoint. It does not train a separate guidance model.
 
 After cloning this repository, fetch the pinned baseline once:
 
@@ -381,33 +385,36 @@ Train the Shoppers unconditional HARPOON backbone:
 HARPOON_TRAIN=$(sbatch --parsable harpoon_train.sh)
 ```
 
-Generate the paper's guided range samples and a matching unconditional table:
+Run the authors' unchanged Shoppers AND experiment:
 
 ```bash
-HARPOON_COND=$(sbatch --parsable --dependency="afterok:${HARPOON_TRAIN}" \
-  harpoon_sample.sh)
-HARPOON_UNCOND=$(sbatch --parsable --dependency="afterok:${HARPOON_TRAIN}" \
-  --export=ALL,GUIDANCE_SCALE=0,OUTPUT=conditional_samples/shoppers/harpoon_unconditional.csv \
-  harpoon_sample.sh)
+HARPOON_OFFICIAL=$(sbatch --parsable --dependency="afterok:${HARPOON_TRAIN}" \
+  harpoon_official_and.sh)
 ```
 
-Constraints are supplied only at inference and can change without retraining.
-For example, this is a new conjunction:
+Run the 1-through-10 nested numerical AND sweep using the same fixed intervals
+and column order as the Doob sweep:
 
 ```bash
-export LOWER_BOUNDS="Administrative=5,PageValues=10"
-export UPPER_BOUNDS="BounceRates=0.04"
-sbatch --export=ALL,OUTPUT=conditional_samples/shoppers/harpoon_new_query.csv \
-  harpoon_sample.sh
+HARPOON_SWEEP=$(sbatch --parsable --array=1-10%2 \
+  --dependency="afterok:${HARPOON_TRAIN}" \
+  --export=ALL,DATANAME=shoppers,NUM_SAMPLES=1000,GUIDANCE_SCALE=0.2 \
+  harpoon_constraint_sweep.sh summed_relu_eta02)
 ```
 
-Evaluate the paper task against Shoppers test rows satisfying
-`Administrative >= 4`:
+After both method sweeps finish, compute Shape and Trend against the real rows
+satisfying each active query, calculate raw joint violation, and make the
+three-panel comparison plot:
 
 ```bash
-sbatch --dependency="afterok:${HARPOON_COND}:${HARPOON_UNCOND}" \
-  harpoon_evaluate.sh
+COMPARE_JOB=$(sbatch --parsable \
+  --dependency="afterok:${DOOB_SWEEP}:${HARPOON_SWEEP}" \
+  harpoon_doob_sweep_compare.sh d48_l2_6000 summed_relu_eta02)
 ```
+
+The comparison is saved under
+`evaluations/shoppers/doob_d48_l2_6000_vs_harpoon_summed_relu_eta02/` as CSV,
+JSON, and `doob_vs_harpoon_shape_trend_violation.png`.
 
 ## License
 

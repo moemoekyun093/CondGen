@@ -20,14 +20,30 @@ fi
 EPOCHS="${EPOCHS:-1000}"
 BATCH_SIZE="${BATCH_SIZE:-1024}"
 HID_DIM="${HID_DIM:-1024}"
+HARPOON_RUNTIME="${HARPOON_RUNTIME:-/scratch/work/agrawaa4/harpoon_runtime}"
 
-python -u prepare_harpoon_data.py --dataname "${DATANAME}"
-python -u train_harpoon_baseline.py \
+echo "Training code     : unchanged baselines/harpoon/train_repaint.py"
+echo "Dataset           : ${DATANAME}"
+echo "Epochs            : ${EPOCHS}"
+echo "Batch size        : ${BATCH_SIZE}"
+echo "Hidden dimension  : ${HID_DIM}"
+echo "Runtime artifacts : ${HARPOON_RUNTIME}"
+
+mkdir -p "${HARPOON_RUNTIME}"
+python -u prepare_harpoon_data.py \
     --dataname "${DATANAME}" \
-    --device cuda \
-    --hid-dim "${HID_DIM}" \
-    --batch-size "${BATCH_SIZE}" \
-    --epochs "${EPOCHS}" \
-    --timesteps 200
+    --harpoon-root "${HARPOON_RUNTIME}"
+(
+    cd "${HARPOON_RUNTIME}"
+    python -u /scratch/work/agrawaa4/TabDiff/baselines/harpoon/train_repaint.py \
+        --dataname "${DATANAME}" \
+        --gpu 0 \
+        --hid_dim "${HID_DIM}" \
+        --batch_size "${BATCH_SIZE}" \
+        --epochs "${EPOCHS}" \
+        --timesteps 200 \
+        --beta_0 0.0001 \
+        --beta_T 0.02
+)
 
-echo "Saved HARPOON checkpoint to baselines/harpoon/saved_models/${DATANAME}/diffputer_selfmade.pt"
+echo "Saved HARPOON checkpoint to ${HARPOON_RUNTIME}/saved_models/${DATANAME}/diffputer_selfmade.pt"

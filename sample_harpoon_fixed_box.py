@@ -34,7 +34,22 @@ def parse_args() -> argparse.Namespace:
         metavar="COLUMN=VALUE",
         help="Test-time upper-bound inequality; repeat for multiple columns",
     )
+    parser.add_argument(
+        "--query-file",
+        default=None,
+        help="Fixed-interval JSON; mutually exclusive with explicit bound arguments",
+    )
+    parser.add_argument(
+        "--active-columns",
+        default=None,
+        help="Comma-separated numerical model indices selected from --query-file",
+    )
     parser.add_argument("--harpoon-root", default="baselines/harpoon")
+    parser.add_argument(
+        "--runtime-root",
+        default=None,
+        help="Directory containing HARPOON datasets and saved_models; defaults to --harpoon-root",
+    )
     parser.add_argument("--checkpoint", default=None)
     parser.add_argument("--output", default=None)
     parser.add_argument(
@@ -90,6 +105,61 @@ def parse_bound_specs(
     return list(constraints.values())
 
 
+def load_query_specs(query_file: str, active_columns: str | None) -> list[dict]:
+    """Load a nested numerical query without changing the upstream HARPOON code."""
+    with open(query_file, "r", encoding="utf-8") as stream:
+        query = json.load(stream)
+    columns = query.get("columns")
+    if not isinstance(columns, list) or not columns:
+        raise ValueError("query file must contain a non-empty columns list")
+
+    by_index = {}
+    for position, column in enumerate(columns):
+        model_index = int(column.get("model_index", position))
+        if model_index in by_index:
+            raise ValueError(f"duplicate model_index {model_index} in query file")
+        by_index[model_index] = column
+
+    if active_columns is None or active_columns.strip().lower() == "all":
+        selected_indices = sorted(by_index)
+    else:
+        selected_indices = [
+            int(value.strip())
+            for value in active_columns.split(",")
+            if value.strip()
+        ]
+    if not selected_indices:
+        raise ValueError("at least one active query column is required")
+    if len(selected_indices) != len(set(selected_indices)):
+        raise ValueError("active query columns must be unique")
+
+    specs = []
+    for model_index in selected_indices:
+        if model_index not in by_index:
+            raise ValueError(f"model_index {model_index} is absent from query file")
+        column = by_index[model_index]
+        specs.append(
+            {
+                "model_index": model_index,
+                "name": str(column["name"]),
+                "raw_lower": column.get("raw_lower"),
+                "raw_upper": column.get("raw_upper"),
+            }
+        )
+    return specs
+
+
+def summed_squared_relu_loss(
+    constrained: torch.Tensor,
+    lower: torch.Tensor,
+    upper: torch.Tensor,
+) -> torch.Tensor:
+    """Official HARPOON AND rule extended across numerical inequalities."""
+    lower_loss = torch.relu(lower - constrained).square()
+    upper_loss = torch.relu(constrained - upper).square()
+    return (lower_loss + upper_loss).sum(dim=1)
+
+
 def torch_load(path: Path, device: torch.device):
     try:
         return torch.load(path, map_location=device, weights_only=True)
@@ -109,10 +179,25 @@ def main() -> None:
     harpoon_root = (PROJECT_ROOT / args.harpoon_root).resolve()
     if not harpoon_root.is_dir():
         raise FileNotFoundError(harpoon_root)
-    column_specs = parse_bound_specs(args.lower_bound, args.upper_bound)
+    runtime_root = (
+        Path(args.runtime_root).resolve()
+        if args.runtime_root
+        else harpoon_root
+    )
+    if not runtime_root.is_dir():
+        raise FileNotFoundError(runtime_root)
+    if args.query_file and (args.lower_bound or args.upper_bound):
+        raise ValueError("--query-file cannot be combined with explicit bounds")
+    if args.active_columns is not None and not args.query_file:
+        raise ValueError("--active-columns requires --query-file")
+    column_specs = (
+        load_query_specs(args.query_file, args.active_columns)
+        if args.query_file
+        else parse_bound_specs(args.lower_bound, args.upper_bound)
+    )
 
     previous_cwd = Path.cwd()
-    os.chdir(harpoon_root)
+    os.chdir(runtime_root)
     try:
         Preprocessor, MLPDiffusion, calc_diffusion_hyperparams = load_harpoon(
             harpoon_root
@@ -230,19 +315,14 @@ def main() -> None:
                             x_t - torch.sqrt(1 - alpha_bar_t) * predicted_noise
                         ) / torch.sqrt(alpha_bar_t)
                         constrained = x0_hat[:, constraint_indices]
-                        # Appendix D, Eq. 9 and Appendix G.2: ReLU constraint
-                        # violations with the 2-norm (lambda_g=1), evaluated on
-                        # the dirty estimate Q_t(x_t).
-                        lower_violation = torch.relu(lower - constrained)
-                        upper_violation = torch.relu(constrained - upper)
-                        inference_loss = torch.linalg.vector_norm(
-                            lower_violation,
-                            ord=2,
-                            dim=1,
-                        ) + torch.linalg.vector_norm(
-                            upper_violation,
-                            ord=2,
-                            dim=1,
+                        # The released general-constraint sampler squares its
+                        # ReLU range loss and adds independent constraint losses
+                        # for an AND query. Extend exactly that additive rule to
+                        # every active numerical interval.
+                        inference_loss = summed_squared_relu_loss(
+                            constrained,
+                            lower,
+                            upper,
                         )
                         gradient = torch.autograd.grad(
                             inference_loss.sum(),
@@ -258,10 +338,13 @@ def main() -> None:
                         / (torch.sqrt(alpha_t) * torch.sqrt(1 - alpha_bar_t))
                     ) * predicted_noise
                     if step > 0:
-                        # Algorithm 1 uses the standard DDPM posterior standard
-                        # deviation sigma_t, exposed by the upstream helper.
-                        sigma_t = diffusion["Sigma"][step].to(device)
-                        x_t += sigma_t * torch.randn_like(x_t)
+                        # Match the stochastic term in the released HARPOON
+                        # general-constraint sampler.
+                        alpha_bar_t_1 = diffusion["Alpha_bar"][step - 1].to(device)
+                        posterior_variance = (1 - alpha_t) * (
+                            (1 - alpha_bar_t_1) / (1 - alpha_bar_t)
+                        )
+                        x_t += posterior_variance * torch.randn_like(x_t)
                     # Algorithm 1, line 11: tangential test-time correction.
                     x_t -= args.guidance_scale * gradient
             generated_parts.append(x_t.cpu().numpy())
@@ -317,13 +400,18 @@ def main() -> None:
         "paper": "arXiv:2602.07875v3",
         "dataname": "shoppers",
         "constraints": column_specs,
-        "inference_loss": "||ReLU(lower-x0_hat)||_2 + ||ReLU(x0_hat-upper)||_2",
+        "inference_loss": "sum_j ReLU(lower_j-x0_hat_j)^2 + ReLU(x0_hat_j-upper_j)^2",
+        "constraint_combination": "AND by addition, matching the released HARPOON general-constraint sampler",
         "gradient": "grad_x_t L_inf(Q_t(x_t), c)",
         "update_order": "unconditional DDPM step, then -eta*gradient",
         "num_samples": len(generated),
         "paper_protocol_reference_rows": reference_rows,
         "sample_count_overridden": args.num_samples is not None,
         "raw_joint_hit_rate": float(satisfied.mean()),
+        "active_numerical_columns": [
+            int(spec.get("model_index", index))
+            for index, spec in enumerate(column_specs)
+        ],
         "eta": args.guidance_scale,
         "timesteps": args.timesteps,
     }

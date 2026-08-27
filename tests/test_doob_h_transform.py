@@ -20,6 +20,7 @@ from tabdiff.models.doob_h_transform import (
 )
 from tabdiff.modules.main_modules import PeriodicTokenizer
 from tabdiff.doob_h_runtime import infer_denoiser_type
+from tabdiff.doob_query_suite import _model_column_names
 from tabdiff.models.unified_ctime_diffusion import UnifiedCtimeDiffusion
 
 
@@ -35,6 +36,24 @@ class CheckpointArchitectureTest(unittest.TestCase):
     def test_infers_tabnet_architecture(self):
         state = {"denoise_fn_D.denoise_fn_F.tabnet_steps.0.weight": object()}
         self.assertEqual(infer_denoiser_type(state), "tabnet")
+
+    def test_classification_target_precedes_categorical_features_in_model(self):
+        info = {
+            "task_type": "binclass",
+            "num_col_idx": [0, 1],
+            "cat_col_idx": [2, 3],
+            "target_col_idx": [4],
+            "idx_name_mapping": {
+                "0": "n0",
+                "1": "n1",
+                "2": "c0",
+                "3": "c1",
+                "4": "target",
+            },
+        }
+        numerical, categorical = _model_column_names(info)
+        self.assertEqual(numerical, ["n0", "n1"])
+        self.assertEqual(categorical, ["target", "c0", "c1"])
 
 
 class NumericalBoxQueryTest(unittest.TestCase):

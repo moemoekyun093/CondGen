@@ -37,9 +37,26 @@ class StructuredQuery:
         }
 
 
-def _column_names(info: Dict[str, Any], count: int, offset: int = 0) -> list[str]:
+def _model_column_names(info: Dict[str, Any]) -> tuple[list[str], list[str]]:
+    """Return feature names in the internal transformed tensor order.
+
+    TabDiff prepends the target to the modality that contains it. In a
+    classification dataset this makes categorical model order
+    ``target, categorical features`` even though the recovered raw table puts
+    the target last.
+    """
     mapping = {int(key): value for key, value in info["idx_name_mapping"].items()}
-    return [mapping[index + offset] for index in range(count)]
+    numerical_indices = list(info["num_col_idx"])
+    categorical_indices = list(info["cat_col_idx"])
+    target_indices = list(info["target_col_idx"])
+    if info["task_type"] == "regression":
+        numerical_indices = target_indices + numerical_indices
+    else:
+        categorical_indices = target_indices + categorical_indices
+    return (
+        [mapping[int(index)] for index in numerical_indices],
+        [mapping[int(index)] for index in categorical_indices],
+    )
 
 
 def _categorical_value_maps(dataset) -> list[dict[str, int]]:
@@ -55,9 +72,21 @@ def _categorical_value_maps(dataset) -> list[dict[str, int]]:
         mapping = {}
         for class_index in range(count):
             value = decoded[class_index, column]
-            mapping[str(value)] = class_index
+            mapping[_category_key(value)] = class_index
         mappings.append(mapping)
     return mappings
+
+
+def _category_key(value: Any) -> str:
+    """Canonicalize JSON/scikit-learn representations of category labels."""
+    text = str(value).strip()
+    try:
+        numeric = float(text)
+    except ValueError:
+        return text
+    if np.isfinite(numeric) and numeric.is_integer():
+        return str(int(numeric))
+    return text
 
 
 def _transform_numerical_bounds(dataset, lower: np.ndarray, upper: np.ndarray):
@@ -84,10 +113,11 @@ def load_structured_query_suite(
     dataset = runtime.dataset
     d_numerical = dataset.d_numerical
     category_counts = [int(value) for value in dataset.categories]
-    numerical_names = _column_names(runtime.info, d_numerical)
-    categorical_names = _column_names(
-        runtime.info, len(category_counts), offset=d_numerical
-    )
+    numerical_names, categorical_names = _model_column_names(runtime.info)
+    if len(numerical_names) != d_numerical:
+        raise ValueError("metadata numerical order does not match transformed data")
+    if len(categorical_names) != len(category_counts):
+        raise ValueError("metadata categorical order does not match transformed data")
     numerical_index = {name: index for index, name in enumerate(numerical_names)}
     categorical_index = {name: index for index, name in enumerate(categorical_names)}
     category_maps = _categorical_value_maps(dataset)
@@ -137,7 +167,7 @@ def load_structured_query_suite(
                 index = categorical_index[name]
                 categorical_active[index] = 1.0
                 for raw_value in predicate["values"]:
-                    key = str(raw_value)
+                    key = _category_key(raw_value)
                     if key not in category_maps[index]:
                         raise ValueError(
                             f"unknown value {raw_value!r} for {name} in {query_id}"

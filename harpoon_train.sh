@@ -35,7 +35,8 @@ python -u prepare_harpoon_data.py \
     --harpoon-root "${HARPOON_RUNTIME}"
 (
     cd "${HARPOON_RUNTIME}"
-    python -u /scratch/work/agrawaa4/TabDiff/baselines/harpoon/train_repaint.py \
+    python -u /scratch/work/agrawaa4/TabDiff/run_harpoon_train_compat.py \
+        /scratch/work/agrawaa4/TabDiff/baselines/harpoon/train_repaint.py \
         --dataname "${DATANAME}" \
         --gpu 0 \
         --hid_dim "${HID_DIM}" \

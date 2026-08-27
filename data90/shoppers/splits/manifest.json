@@ -1,0 +1,172 @@
+{
+  "dataset": "shoppers",
+  "root": "data90",
+  "layout": "train 81% (core) / val 9% / test 10%",
+  "trainval_test_from_provided_partitions": true,
+  "provided_partition_sizes": {
+    "train": 11097,
+    "test": 1233
+  },
+  "provided_split_is_tabsyn_90_10": true,
+  "seed_start": 1234,
+  "seed_final": 1235,
+  "seed_increments": 1,
+  "scheme": "provided train (11097) / test (1233) kept; val = seeded tabpc carve int(11097*0.9) -> 9987/1110 core/val",
+  "n_total": 12330,
+  "n_source_rows": 12330,
+  "guard_ok": true,
+  "sizes": {
+    "train": 9987,
+    "val": 1110,
+    "test": 1233
+  },
+  "n_trainval": 11097,
+  "fractions": {
+    "train": 0.809976,
+    "val": 0.090024,
+    "test": 0.1
+  },
+  "cat_columns_checked": [
+    "Month",
+    "OperatingSystems",
+    "Browser",
+    "Region",
+    "TrafficType",
+    "VisitorType",
+    "Weekend",
+    "Revenue"
+  ],
+  "coverage_criterion": "the 81% CORE train must contain every level of the full table; only the train/val carve is retried, train+val vs test membership is the provided split",
+  "coverage": {
+    "Month": {
+      "n_levels_full": 10,
+      "train": {
+        "n_levels": 10,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 10,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 10,
+        "covers_all": true
+      }
+    },
+    "OperatingSystems": {
+      "n_levels_full": 8,
+      "train": {
+        "n_levels": 8,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 7,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 7,
+        "covers_all": false
+      }
+    },
+    "Browser": {
+      "n_levels_full": 13,
+      "train": {
+        "n_levels": 13,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 12,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 11,
+        "covers_all": false
+      }
+    },
+    "Region": {
+      "n_levels_full": 9,
+      "train": {
+        "n_levels": 9,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 9,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 9,
+        "covers_all": true
+      }
+    },
+    "TrafficType": {
+      "n_levels_full": 20,
+      "train": {
+        "n_levels": 20,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 15,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 17,
+        "covers_all": false
+      }
+    },
+    "VisitorType": {
+      "n_levels_full": 3,
+      "train": {
+        "n_levels": 3,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 3,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 3,
+        "covers_all": true
+      }
+    },
+    "Weekend": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    },
+    "Revenue": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    }
+  },
+  "rare_levels": {
+    "Browser": 1,
+    "TrafficType": 2
+  },
+  "singleton_levels": {
+    "Browser": 1,
+    "TrafficType": 2
+  },
+  "train_level_gaps": 0,
+  "data_sha256": "3554449435c896feaea3566091acf4c161b433896aa635b83c37f9a3bf0bb949"
+}

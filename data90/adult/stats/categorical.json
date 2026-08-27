@@ -1,0 +1,295 @@
+{
+  "dataset": "adult",
+  "computed_on": "train (81% core)",
+  "columns": {
+    "workclass": {
+      "col_idx": 1,
+      "n": 29304,
+      "n_levels": 9,
+      "freq": {
+        " Private": 20420,
+        " Self-emp-not-inc": 2284,
+        " Local-gov": 1883,
+        " ?": 1654,
+        " State-gov": 1165,
+        " Self-emp-inc": 1026,
+        " Federal-gov": 852,
+        " Without-pay": 13,
+        " Never-worked": 7
+      },
+      "prob": {
+        " Private": 0.6968331968331969,
+        " Self-emp-not-inc": 0.07794157794157794,
+        " Local-gov": 0.06425743925743926,
+        " ?": 0.05644280644280644,
+        " State-gov": 0.039755664755664756,
+        " Self-emp-inc": 0.03501228501228501,
+        " Federal-gov": 0.029074529074529076,
+        " Without-pay": 0.0004436254436254436,
+        " Never-worked": 0.00023887523887523886
+      }
+    },
+    "education": {
+      "col_idx": 3,
+      "n": 29304,
+      "n_levels": 16,
+      "freq": {
+        " HS-grad": 9388,
+        " Some-college": 6581,
+        " Bachelors": 4848,
+        " Masters": 1548,
+        " Assoc-voc": 1240,
+        " 11th": 1072,
+        " Assoc-acdm": 944,
+        " 10th": 843,
+        " 7th-8th": 584,
+        " Prof-school": 523,
+        " 9th": 467,
+        " 12th": 386,
+        " Doctorate": 378,
+        " 5th-6th": 301,
+        " 1st-4th": 158,
+        " Preschool": 43
+      },
+      "prob": {
+        " HS-grad": 0.32036582036582034,
+        " Some-college": 0.22457684957684956,
+        " Bachelors": 0.16543816543816545,
+        " Masters": 0.052825552825552825,
+        " Assoc-voc": 0.042315042315042316,
+        " 11th": 0.036582036582036584,
+        " Assoc-acdm": 0.03221403221403221,
+        " 10th": 0.028767403767403766,
+        " 7th-8th": 0.01992901992901993,
+        " Prof-school": 0.017847392847392847,
+        " 9th": 0.015936390936390935,
+        " 12th": 0.013172263172263173,
+        " Doctorate": 0.012899262899262898,
+        " 5th-6th": 0.010271635271635271,
+        " 1st-4th": 0.005391755391755392,
+        " Preschool": 0.0014673764673764674
+      }
+    },
+    "marital.status": {
+      "col_idx": 5,
+      "n": 29304,
+      "n_levels": 7,
+      "freq": {
+        " Married-civ-spouse": 13519,
+        " Never-married": 9569,
+        " Divorced": 4011,
+        " Separated": 920,
+        " Widowed": 879,
+        " Married-spouse-absent": 386,
+        " Married-AF-spouse": 20
+      },
+      "prob": {
+        " Married-civ-spouse": 0.46133633633633636,
+        " Never-married": 0.32654245154245154,
+        " Divorced": 0.13687551187551186,
+        " Separated": 0.03139503139503139,
+        " Widowed": 0.029995904995904994,
+        " Married-spouse-absent": 0.013172263172263173,
+        " Married-AF-spouse": 0.0006825006825006825
+      }
+    },
+    "occupation": {
+      "col_idx": 6,
+      "n": 29304,
+      "n_levels": 15,
+      "freq": {
+        " Prof-specialty": 3756,
+        " Craft-repair": 3699,
+        " Exec-managerial": 3618,
+        " Adm-clerical": 3393,
+        " Sales": 3288,
+        " Other-service": 2968,
+        " Machine-op-inspct": 1795,
+        " ?": 1661,
+        " Transport-moving": 1440,
+        " Handlers-cleaners": 1223,
+        " Farming-fishing": 899,
+        " Tech-support": 843,
+        " Protective-serv": 575,
+        " Priv-house-serv": 140,
+        " Armed-Forces": 6
+      },
+      "prob": {
+        " Prof-specialty": 0.12817362817362818,
+        " Craft-repair": 0.12622850122850124,
+        " Exec-managerial": 0.12346437346437346,
+        " Adm-clerical": 0.11578624078624078,
+        " Sales": 0.1122031122031122,
+        " Other-service": 0.10128310128310128,
+        " Machine-op-inspct": 0.06125443625443625,
+        " ?": 0.05668168168168168,
+        " Transport-moving": 0.04914004914004914,
+        " Handlers-cleaners": 0.041734916734916735,
+        " Farming-fishing": 0.030678405678405678,
+        " Tech-support": 0.028767403767403766,
+        " Protective-serv": 0.019621894621894623,
+        " Priv-house-serv": 0.004777504777504778,
+        " Armed-Forces": 0.00020475020475020476
+      }
+    },
+    "relationship": {
+      "col_idx": 7,
+      "n": 29304,
+      "n_levels": 6,
+      "freq": {
+        " Husband": 11899,
+        " Not-in-family": 7438,
+        " Own-child": 4553,
+        " Unmarried": 3102,
+        " Wife": 1423,
+        " Other-relative": 889
+      },
+      "prob": {
+        " Husband": 0.40605378105378104,
+        " Not-in-family": 0.2538220038220038,
+        " Own-child": 0.15537128037128037,
+        " Unmarried": 0.10585585585585586,
+        " Wife": 0.04855992355992356,
+        " Other-relative": 0.030337155337155336
+      }
+    },
+    "race": {
+      "col_idx": 8,
+      "n": 29304,
+      "n_levels": 5,
+      "freq": {
+        " White": 25061,
+        " Black": 2805,
+        " Asian-Pac-Islander": 920,
+        " Amer-Indian-Eskimo": 272,
+        " Other": 246
+      },
+      "prob": {
+        " White": 0.8552074802074802,
+        " Black": 0.09572072072072071,
+        " Asian-Pac-Islander": 0.03139503139503139,
+        " Amer-Indian-Eskimo": 0.009282009282009281,
+        " Other": 0.008394758394758395
+      }
+    },
+    "sex": {
+      "col_idx": 9,
+      "n": 29304,
+      "n_levels": 2,
+      "freq": {
+        " Male": 19603,
+        " Female": 9701
+      },
+      "prob": {
+        " Male": 0.668953043953044,
+        " Female": 0.33104695604695605
+      }
+    },
+    "native.country": {
+      "col_idx": 13,
+      "n": 29304,
+      "n_levels": 42,
+      "freq": {
+        " United-States": 26255,
+        " Mexico": 573,
+        " ?": 527,
+        " Philippines": 182,
+        " Germany": 130,
+        " Canada": 106,
+        " Puerto-Rico": 105,
+        " El-Salvador": 97,
+        " India": 84,
+        " Cuba": 82,
+        " England": 82,
+        " Jamaica": 76,
+        " Italy": 69,
+        " China": 68,
+        " South": 68,
+        " Dominican-Republic": 62,
+        " Vietnam": 59,
+        " Poland": 55,
+        " Guatemala": 55,
+        " Columbia": 53,
+        " Japan": 52,
+        " Taiwan": 49,
+        " Haiti": 39,
+        " Iran": 37,
+        " Portugal": 34,
+        " Peru": 29,
+        " Nicaragua": 29,
+        " Ecuador": 27,
+        " Greece": 26,
+        " France": 24,
+        " Ireland": 21,
+        " Hong": 18,
+        " Cambodia": 18,
+        " Trinadad&Tobago": 17,
+        " Thailand": 16,
+        " Yugoslavia": 16,
+        " Laos": 15,
+        " Outlying-US(Guam-USVI-etc)": 14,
+        " Honduras": 13,
+        " Hungary": 11,
+        " Scotland": 10,
+        " Holand-Netherlands": 1
+      },
+      "prob": {
+        " United-States": 0.8959527709527709,
+        " Mexico": 0.019553644553644552,
+        " ?": 0.017983892983892982,
+        " Philippines": 0.006210756210756211,
+        " Germany": 0.004436254436254436,
+        " Canada": 0.003617253617253617,
+        " Puerto-Rico": 0.0035831285831285833,
+        " El-Salvador": 0.00331012831012831,
+        " India": 0.0028665028665028664,
+        " Cuba": 0.0027982527982527983,
+        " England": 0.0027982527982527983,
+        " Jamaica": 0.0025935025935025936,
+        " Italy": 0.0023546273546273546,
+        " China": 0.0023205023205023203,
+        " South": 0.0023205023205023203,
+        " Dominican-Republic": 0.0021157521157521156,
+        " Vietnam": 0.0020133770133770133,
+        " Poland": 0.0018768768768768769,
+        " Guatemala": 0.0018768768768768769,
+        " Columbia": 0.0018086268086268086,
+        " Japan": 0.0017745017745017745,
+        " Taiwan": 0.0016721266721266722,
+        " Haiti": 0.0013308763308763308,
+        " Iran": 0.0012626262626262627,
+        " Portugal": 0.0011602511602511602,
+        " Peru": 0.0009896259896259897,
+        " Nicaragua": 0.0009896259896259897,
+        " Ecuador": 0.0009213759213759214,
+        " Greece": 0.0008872508872508873,
+        " France": 0.000819000819000819,
+        " Ireland": 0.0007166257166257166,
+        " Hong": 0.0006142506142506142,
+        " Cambodia": 0.0006142506142506142,
+        " Trinadad&Tobago": 0.0005801255801255801,
+        " Thailand": 0.000546000546000546,
+        " Yugoslavia": 0.000546000546000546,
+        " Laos": 0.0005118755118755119,
+        " Outlying-US(Guam-USVI-etc)": 0.0004777504777504777,
+        " Honduras": 0.0004436254436254436,
+        " Hungary": 0.00037537537537537537,
+        " Scotland": 0.00034125034125034127,
+        " Holand-Netherlands": 3.412503412503413e-05
+      }
+    },
+    "income": {
+      "col_idx": 14,
+      "n": 29304,
+      "n_levels": 2,
+      "freq": {
+        " <=50K": 22201,
+        " >50K": 7103
+      },
+      "prob": {
+        " <=50K": 0.7576098826098826,
+        " >50K": 0.2423901173901174
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+dataset,arity,band,n_candidates,n_accepted,n_test_supported,median_train_selectivity,median_train_cardinality,median_test_cardinality,realized_bands
+fb-comments,52,0.4,10,10,10,0.40011926058437686,63074,7938,25-50%
+fb-comments,52,0.25,10,10,10,0.25055189738514827,39496,5004,"10-25%,25-50%"
+fb-comments,52,0.1,10,10,10,0.10038188761593017,15824,2027,"10-25%,5-10%"
+fb-comments,52,0.05,10,10,10,0.049997462540757945,7881,1021,"2-5%,5-10%"
+fb-comments,52,0.02,10,10,10,0.018054022507263477,2846,361,1-2%
+fb-comments,52,0.01,10,10,10,0.011234600794224742,1771,240,1-2%
+fb-comments,52,0.005,10,1,1,0.0,0,0,"0.5-1%,<0.5%"

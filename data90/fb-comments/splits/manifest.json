@@ -1,0 +1,278 @@
+{
+  "dataset": "fb-comments",
+  "root": "data90",
+  "layout": "train 81% (core) / val 9% / test 10%",
+  "trainval_test_from_provided_partitions": true,
+  "provided_partition_sizes": {
+    "train": 157638,
+    "test": 39442
+  },
+  "provided_split_is_tabsyn_90_10": false,
+  "seed_start": 1234,
+  "seed_final": null,
+  "seed_increments": null,
+  "scheme": "provided train/val/test kept verbatim (157638/19722/19720); no carve, no reshuffle [rtdl val recovered from the head of test.csv]",
+  "n_total": 197080,
+  "n_source_rows": 197080,
+  "guard_ok": true,
+  "sizes": {
+    "train": 157638,
+    "val": 19722,
+    "test": 19720
+  },
+  "n_trainval": 177360,
+  "fractions": {
+    "train": 0.799868,
+    "val": 0.100071,
+    "test": 0.100061
+  },
+  "cat_columns_checked": [
+    "cat_0",
+    "cat_1",
+    "cat_2",
+    "cat_3",
+    "cat_4",
+    "cat_5",
+    "cat_6",
+    "cat_7",
+    "cat_8",
+    "cat_9",
+    "cat_10",
+    "cat_11",
+    "cat_12",
+    "cat_13",
+    "cat_14"
+  ],
+  "coverage_criterion": "the 81% CORE train must contain every level of the full table; only the train/val carve is retried, train+val vs test membership is the provided split",
+  "coverage": {
+    "cat_0": {
+      "n_levels_full": 81,
+      "train": {
+        "n_levels": 81,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 80,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 80,
+        "covers_all": false
+      }
+    },
+    "cat_1": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    },
+    "cat_2": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    },
+    "cat_3": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    },
+    "cat_4": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    },
+    "cat_5": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    },
+    "cat_6": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    },
+    "cat_7": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    },
+    "cat_8": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    },
+    "cat_9": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    },
+    "cat_10": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    },
+    "cat_11": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    },
+    "cat_12": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    },
+    "cat_13": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    },
+    "cat_14": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    }
+  },
+  "rare_levels": {},
+  "singleton_levels": {},
+  "train_level_gaps": 0,
+  "data_sha256": "853d0873b1e05fbc9f83055648b73e95033db51ce56a37a5e5588b0a43235ff3"
+}

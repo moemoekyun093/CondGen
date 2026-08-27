@@ -1,0 +1,528 @@
+{
+  "query_id": "qf_news_b05p0_0",
+  "dataset": "news",
+  "suite": "full_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 48,
+  "arity_tier": "extension",
+  "modality_mix": "all_columns",
+  "n_num_cols": 46,
+  "n_cat_cols": 2,
+  "per_predicate_share": 0.8769838959181961,
+  "calibration_exponent": 2.1032584354281427,
+  "predicates": [
+    {
+      "col": " timedelta",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        42.52566378841003,
+        682.4143909311473
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " n_tokens_title",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        7.0,
+        13.0
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " n_tokens_content",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        136.80935933948774,
+        1482.1334031499832
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " n_unique_tokens",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.6700888572826824
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " n_non_stop_words",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.25277950061904153,
+        1.0
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " n_non_stop_unique_tokens",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.8194547755488447
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " num_hrefs",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        21.84217911781712
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " num_self_hrefs",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        9.329336043152495
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " num_imgs",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        23.00447256814693
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " num_videos",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        7.475891650497417
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " average_token_length",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        4.2031817131575755,
+        5.116667629088928
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " num_keywords",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        4.0,
+        10.0
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " kw_min_min",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -1.0,
+        217.0
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " kw_max_min",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1666.2547052931316
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " kw_avg_min",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.39868717887083416,
+        510.79772864547516
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " kw_min_max",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        636833.2765059147
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " kw_max_max",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        597349.5499480187,
+        843300.0
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " kw_avg_max",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        9564.871209886907,
+        421098.96613783395
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " kw_min_avg",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        3064.8108251075487
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " kw_max_avg",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        3279.052449166437,
+        10627.55477207336
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " kw_avg_avg",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1738.1557721199006,
+        4811.608119506109
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " self_reference_min_shares",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        11209.846502907243
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " self_reference_max_shares",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        46225.978472838004
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " self_reference_avg_sharess",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        598628.1662794568
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " LDA_00",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.02000161337513928,
+        0.6727737784050465
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " LDA_01",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.02001243376988228,
+        0.6151786863225768
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " LDA_02",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.02001827992747282,
+        0.8259695395913409
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " LDA_03",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0200922177436783,
+        0.8662032018890197
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " LDA_04",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.020185656605935836,
+        0.823581045857147
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " global_subjectivity",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.32966151298029706,
+        0.6368165994784003
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " global_sentiment_polarity",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -0.03483820644083946,
+        0.24847294726739852
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " global_rate_positive_words",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.016821900256413187,
+        0.06971381106267939
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " global_rate_negative_words",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.02933752564562484
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " rate_positive_words",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.3852150447838966,
+        0.9079759108337966
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " rate_negative_words",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.1089096650623515,
+        0.7990940124325883
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " avg_positive_polarity",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.2570926159226021,
+        0.6251551932898142
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " min_positive_polarity",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.13636364
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " max_positive_polarity",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1.0
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " avg_negative_polarity",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -0.39967874525583363,
+        0.0
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " min_negative_polarity",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -1.0,
+        0.0
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " max_negative_polarity",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -0.2269986701316258,
+        0.0
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " title_subjectivity",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1.0
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " title_sentiment_polarity",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -0.2,
+        0.5
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " abs_title_subjectivity",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.05008291454007115,
+        0.5
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " abs_title_sentiment_polarity",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.5
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": " shares",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        495.69970526853876,
+        6405.428466824592
+      ],
+      "target_share": 0.8769838959181961
+    },
+    {
+      "col": "data_channel",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "5",
+        "0",
+        "4",
+        "1",
+        "2"
+      ],
+      "target_share": 0.8769838959181961,
+      "form": "set",
+      "covered_train_prob": 0.9419824982093364
+    },
+    {
+      "col": "weekday",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2",
+        "1",
+        "3",
+        "0",
+        "4",
+        "6"
+      ],
+      "target_share": 0.8769838959181961,
+      "form": "set",
+      "covered_train_prob": 0.9374980536264831
+    }
+  ],
+  "counts": {
+    "train": 1596,
+    "val": 160,
+    "trainval": 1756,
+    "test": 205
+  },
+  "selectivity": {
+    "train": 0.04970259412662328,
+    "val": 0.04484304932735426,
+    "trainval": 0.04921662602651419,
+    "test": 0.05170239596469105
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "5-10%"
+}

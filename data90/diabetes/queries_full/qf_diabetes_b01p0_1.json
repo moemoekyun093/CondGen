@@ -1,0 +1,606 @@
+{
+  "query_id": "qf_diabetes_b01p0_1",
+  "dataset": "diabetes",
+  "suite": "full_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 37,
+  "arity_tier": "extension",
+  "modality_mix": "all_columns",
+  "n_num_cols": 9,
+  "n_cat_cols": 28,
+  "per_predicate_share": 0.7522117863709062,
+  "calibration_exponent": 2.28770751953125,
+  "predicates": [
+    {
+      "col": "num_lab_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        25.111746788541677,
+        70.6658508512646
+      ],
+      "target_share": 0.7522117863709062
+    },
+    {
+      "col": "num_medications",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        10.0,
+        32.911666906282704
+      ],
+      "target_share": 0.7522117863709062
+    },
+    {
+      "col": "number_outpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1.0
+      ],
+      "target_share": 0.7522117863709062
+    },
+    {
+      "col": "number_emergency",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        76.0
+      ],
+      "target_share": 0.7522117863709062
+    },
+    {
+      "col": "number_inpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1.1270173834169053
+      ],
+      "target_share": 0.7522117863709062
+    },
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        4.0,
+        8.0
+      ],
+      "target_share": 0.7522117863709062
+    },
+    {
+      "col": "time_in_hospital",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2.0,
+        14.0
+      ],
+      "target_share": 0.7522117863709062
+    },
+    {
+      "col": "num_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        2.0
+      ],
+      "target_share": 0.7522117863709062
+    },
+    {
+      "col": "number_diagnoses",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        4.214385966264666,
+        9.0
+      ],
+      "target_share": 0.7522117863709062
+    },
+    {
+      "col": "race",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Caucasian",
+        "AfricanAmerican"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.9372410291685092
+    },
+    {
+      "col": "gender",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Female",
+        "Male"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.9999508671940255
+    },
+    {
+      "col": "admission_type_id",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1",
+        "3",
+        "2"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.8985571332645474
+    },
+    {
+      "col": "discharge_disposition_id",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1",
+        "3",
+        "6"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.8559098576786387
+    },
+    {
+      "col": "admission_source_id",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "7",
+        "1"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.8555495504348254
+    },
+    {
+      "col": "diag_1",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "428",
+        "414",
+        "786",
+        "410",
+        "486",
+        "427",
+        "491",
+        "715",
+        "682",
+        "780",
+        "996",
+        "434",
+        "276",
+        "250.8",
+        "38",
+        "599",
+        "584",
+        "250.6",
+        "V57",
+        "518",
+        "577",
+        "820",
+        "493",
+        "435",
+        "574",
+        "562",
+        "296",
+        "250.7",
+        "250.13",
+        "560",
+        "440",
+        "433",
+        "998",
+        "722",
+        "578",
+        "250.02",
+        "507",
+        "250.11",
+        "789",
+        "8",
+        "453",
+        "530",
+        "403",
+        "295",
+        "535",
+        "402",
+        "458",
+        "724",
+        "415",
+        "162",
+        "250.12",
+        "997",
+        "250.82",
+        "733",
+        "278",
+        "590",
+        "558",
+        "482",
+        "285",
+        "401"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.7529274963559834
+    },
+    {
+      "col": "diag_2",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "276",
+        "428",
+        "250",
+        "427",
+        "401",
+        "496",
+        "599",
+        "403",
+        "414",
+        "411",
+        "250.02",
+        "707",
+        "585",
+        "584",
+        "491",
+        "285",
+        "250.01",
+        "780",
+        "682",
+        "425",
+        "486",
+        "518",
+        "424",
+        "413",
+        "493",
+        "250.6",
+        "305",
+        "786",
+        "280",
+        "998",
+        "410",
+        "785",
+        "511",
+        "38",
+        "996",
+        "440",
+        "295",
+        "197",
+        "571",
+        "577",
+        "272",
+        "V45",
+        "162",
+        "560",
+        "41",
+        "788",
+        "402",
+        "997",
+        "648",
+        "574"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.7543032149232706
+    },
+    {
+      "col": "diag_3",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "250",
+        "401",
+        "276",
+        "428",
+        "427",
+        "414",
+        "496",
+        "403",
+        "272",
+        "599",
+        "585",
+        "empty",
+        "V45",
+        "707",
+        "250.02",
+        "780",
+        "285",
+        "425",
+        "424",
+        "250.6",
+        "584",
+        "305",
+        "682",
+        "250.01",
+        "518",
+        "41",
+        "493",
+        "278",
+        "530",
+        "786",
+        "491",
+        "486",
+        "244",
+        "V58",
+        "250.4",
+        "411",
+        "280",
+        "357",
+        "785",
+        "197",
+        "287",
+        "402",
+        "511",
+        "593",
+        "412",
+        "788",
+        "787",
+        "438",
+        "V15",
+        "295",
+        "998",
+        "413",
+        "799",
+        "571"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.7542213269133133
+    },
+    {
+      "col": "max_glu_serum",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "empty"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.9482140225028252
+    },
+    {
+      "col": "A1Cresult",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "empty"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.8333578997363206
+    },
+    {
+      "col": "metformin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.8033541328878625
+    },
+    {
+      "col": "repaglinide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.9847852077498812
+    },
+    {
+      "col": "nateglinide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.992957631143648
+    },
+    {
+      "col": "chlorpropamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.9991156094924581
+    },
+    {
+      "col": "glimepiride",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.9491966786223162
+    },
+    {
+      "col": "glipizide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.8751862952226535
+    },
+    {
+      "col": "glyburide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.8959039617419218
+    },
+    {
+      "col": "tolbutamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.9997870911741102
+    },
+    {
+      "col": "pioglitazone",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.9280531944512684
+    },
+    {
+      "col": "rosiglitazone",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.9386331253377881
+    },
+    {
+      "col": "acarbose",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.9970192764375441
+    },
+    {
+      "col": "miglitol",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.9995905599502121
+    },
+    {
+      "col": "tolazamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.9996069375522036
+    },
+    {
+      "col": "insulin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No",
+        "Steady"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.7691576999295764
+    },
+    {
+      "col": "glyburide-metformin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.9928593655316988
+    },
+    {
+      "col": "change",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No",
+        "Ch"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 1.0
+    },
+    {
+      "col": "diabetesMed",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Yes"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 0.7696326503873303
+    },
+    {
+      "col": "readmitted",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0",
+        "1"
+      ],
+      "target_share": 0.7522117863709062,
+      "form": "set",
+      "covered_train_prob": 1.0
+    }
+  ],
+  "counts": {
+    "train": 610,
+    "val": 204,
+    "trainval": 814,
+    "test": 191
+  },
+  "selectivity": {
+    "train": 0.009990337214825005,
+    "val": 0.010023092418808038,
+    "trainval": 0.009998526015820764,
+    "test": 0.009383904883560971
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "0.5-1%",
+  "realized_band_test": "0.5-1%"
+}

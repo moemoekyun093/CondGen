@@ -1,0 +1,220 @@
+{
+  "query_id": "qf_beijing_b25p0_4",
+  "dataset": "beijing",
+  "suite": "full_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 12,
+  "arity_tier": "extension",
+  "modality_mix": "all_columns",
+  "n_num_cols": 7,
+  "n_cat_cols": 5,
+  "per_predicate_share": 0.818798828913216,
+  "calibration_exponent": 1.7305143356323243,
+  "predicates": [
+    {
+      "col": "pm2.5",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        14.958249374114505,
+        252.94751712572966
+      ],
+      "target_share": 0.818798828913216
+    },
+    {
+      "col": "DEWP",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -19.725923058018736,
+        20.0
+      ],
+      "target_share": 0.818798828913216
+    },
+    {
+      "col": "TEMP",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -5.0,
+        28.0
+      ],
+      "target_share": 0.818798828913216
+    },
+    {
+      "col": "PRES",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1004.0,
+        1033.265888897034
+      ],
+      "target_share": 0.818798828913216
+    },
+    {
+      "col": "Iws",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.89,
+        85.03378707911371
+      ],
+      "target_share": 0.818798828913216
+    },
+    {
+      "col": "Is",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        27.0
+      ],
+      "target_share": 0.818798828913216
+    },
+    {
+      "col": "Ir",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        36.0
+      ],
+      "target_share": 0.818798828913216
+    },
+    {
+      "col": "year",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2014",
+        "2013",
+        "2012",
+        "2011",
+        "2010"
+      ],
+      "target_share": 0.818798828913216,
+      "form": "set",
+      "covered_train_prob": 1.0
+    },
+    {
+      "col": "month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "7",
+        "12",
+        "10",
+        "5",
+        "3",
+        "11",
+        "1",
+        "4",
+        "2",
+        "8"
+      ],
+      "target_share": 0.818798828913216,
+      "form": "set",
+      "covered_train_prob": 0.8391283779788304
+    },
+    {
+      "col": "day",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "17",
+        "4",
+        "18",
+        "3",
+        "2",
+        "13",
+        "26",
+        "12",
+        "10",
+        "9",
+        "14",
+        "16",
+        "25",
+        "11",
+        "6",
+        "7",
+        "28",
+        "15",
+        "5",
+        "21",
+        "23",
+        "8",
+        "24",
+        "1",
+        "27"
+      ],
+      "target_share": 0.818798828913216,
+      "form": "set",
+      "covered_train_prob": 0.8245520667021464
+    },
+    {
+      "col": "hour",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "18",
+        "20",
+        "13",
+        "6",
+        "2",
+        "10",
+        "21",
+        "23",
+        "15",
+        "3",
+        "14",
+        "1",
+        "19",
+        "7",
+        "17",
+        "16",
+        "9",
+        "12",
+        "11",
+        "8"
+      ],
+      "target_share": 0.818798828913216,
+      "form": "set",
+      "covered_train_prob": 0.8356690911241205
+    },
+    {
+      "col": "cbwd",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "SE",
+        "NW",
+        "cv"
+      ],
+      "target_share": 0.818798828913216,
+      "form": "set",
+      "covered_train_prob": 0.8867305304239844
+    }
+  ],
+  "counts": {
+    "train": 8536,
+    "val": 907,
+    "trainval": 9443,
+    "test": 1053
+  },
+  "selectivity": {
+    "train": 0.2523801076222577,
+    "val": 0.2412875764831072,
+    "trainval": 0.25127058886139275,
+    "test": 0.2521551724137931
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

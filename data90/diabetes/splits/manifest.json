@@ -1,0 +1,503 @@
+{
+  "dataset": "diabetes",
+  "root": "data90",
+  "layout": "train 81% (core) / val 9% / test 10%",
+  "trainval_test_from_provided_partitions": true,
+  "provided_partition_sizes": {
+    "train": 61059,
+    "val": 20353,
+    "test": 20354
+  },
+  "provided_split_is_tabsyn_90_10": false,
+  "seed_start": 1234,
+  "seed_final": null,
+  "seed_increments": null,
+  "scheme": "provided train/val/test kept verbatim (61059/20353/20354); no carve, no reshuffle",
+  "n_total": 101766,
+  "n_source_rows": 101766,
+  "guard_ok": true,
+  "sizes": {
+    "train": 61059,
+    "val": 20353,
+    "test": 20354
+  },
+  "n_trainval": 81412,
+  "fractions": {
+    "train": 0.599994,
+    "val": 0.199998,
+    "test": 0.200008
+  },
+  "cat_columns_checked": [
+    "race",
+    "gender",
+    "admission_type_id",
+    "discharge_disposition_id",
+    "admission_source_id",
+    "diag_1",
+    "diag_2",
+    "diag_3",
+    "max_glu_serum",
+    "A1Cresult",
+    "metformin",
+    "repaglinide",
+    "nateglinide",
+    "chlorpropamide",
+    "glimepiride",
+    "glipizide",
+    "glyburide",
+    "tolbutamide",
+    "pioglitazone",
+    "rosiglitazone",
+    "acarbose",
+    "miglitol",
+    "tolazamide",
+    "insulin",
+    "glyburide-metformin",
+    "change",
+    "diabetesMed",
+    "readmitted"
+  ],
+  "coverage_criterion": "the 81% CORE train must contain every level of the full table; only the train/val carve is retried, train+val vs test membership is the provided split",
+  "coverage": {
+    "race": {
+      "n_levels_full": 6,
+      "train": {
+        "n_levels": 6,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 6,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 6,
+        "covers_all": true
+      }
+    },
+    "gender": {
+      "n_levels_full": 3,
+      "train": {
+        "n_levels": 3,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": false
+      }
+    },
+    "admission_type_id": {
+      "n_levels_full": 8,
+      "train": {
+        "n_levels": 8,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 8,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 8,
+        "covers_all": true
+      }
+    },
+    "discharge_disposition_id": {
+      "n_levels_full": 26,
+      "train": {
+        "n_levels": 26,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 24,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 23,
+        "covers_all": false
+      }
+    },
+    "admission_source_id": {
+      "n_levels_full": 17,
+      "train": {
+        "n_levels": 16,
+        "covers_all": false
+      },
+      "val": {
+        "n_levels": 15,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 14,
+        "covers_all": false
+      }
+    },
+    "diag_1": {
+      "n_levels_full": 717,
+      "train": {
+        "n_levels": 670,
+        "covers_all": false
+      },
+      "val": {
+        "n_levels": 552,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 556,
+        "covers_all": false
+      }
+    },
+    "diag_2": {
+      "n_levels_full": 749,
+      "train": {
+        "n_levels": 695,
+        "covers_all": false
+      },
+      "val": {
+        "n_levels": 548,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 531,
+        "covers_all": false
+      }
+    },
+    "diag_3": {
+      "n_levels_full": 790,
+      "train": {
+        "n_levels": 716,
+        "covers_all": false
+      },
+      "val": {
+        "n_levels": 574,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 569,
+        "covers_all": false
+      }
+    },
+    "max_glu_serum": {
+      "n_levels_full": 4,
+      "train": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 4,
+        "covers_all": true
+      }
+    },
+    "A1Cresult": {
+      "n_levels_full": 4,
+      "train": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 4,
+        "covers_all": true
+      }
+    },
+    "metformin": {
+      "n_levels_full": 4,
+      "train": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 4,
+        "covers_all": true
+      }
+    },
+    "repaglinide": {
+      "n_levels_full": 4,
+      "train": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 4,
+        "covers_all": true
+      }
+    },
+    "nateglinide": {
+      "n_levels_full": 4,
+      "train": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 4,
+        "covers_all": true
+      }
+    },
+    "chlorpropamide": {
+      "n_levels_full": 4,
+      "train": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 3,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": false
+      }
+    },
+    "glimepiride": {
+      "n_levels_full": 4,
+      "train": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 4,
+        "covers_all": true
+      }
+    },
+    "glipizide": {
+      "n_levels_full": 4,
+      "train": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 4,
+        "covers_all": true
+      }
+    },
+    "glyburide": {
+      "n_levels_full": 4,
+      "train": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 4,
+        "covers_all": true
+      }
+    },
+    "tolbutamide": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    },
+    "pioglitazone": {
+      "n_levels_full": 4,
+      "train": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 4,
+        "covers_all": true
+      }
+    },
+    "rosiglitazone": {
+      "n_levels_full": 4,
+      "train": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 4,
+        "covers_all": true
+      }
+    },
+    "acarbose": {
+      "n_levels_full": 4,
+      "train": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 3,
+        "covers_all": false
+      }
+    },
+    "miglitol": {
+      "n_levels_full": 4,
+      "train": {
+        "n_levels": 3,
+        "covers_all": false
+      },
+      "val": {
+        "n_levels": 3,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 3,
+        "covers_all": false
+      }
+    },
+    "tolazamide": {
+      "n_levels_full": 3,
+      "train": {
+        "n_levels": 2,
+        "covers_all": false
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 3,
+        "covers_all": true
+      }
+    },
+    "insulin": {
+      "n_levels_full": 4,
+      "train": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 4,
+        "covers_all": true
+      }
+    },
+    "glyburide-metformin": {
+      "n_levels_full": 4,
+      "train": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 3,
+        "covers_all": false
+      }
+    },
+    "change": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    },
+    "diabetesMed": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    },
+    "readmitted": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    }
+  },
+  "rare_levels": {
+    "discharge_disposition_id": 1,
+    "admission_source_id": 4,
+    "diag_1": 143,
+    "diag_2": 184,
+    "diag_3": 187,
+    "chlorpropamide": 1,
+    "miglitol": 1,
+    "tolazamide": 1
+  },
+  "singleton_levels": {
+    "admission_source_id": 1,
+    "diag_1": 82,
+    "diag_2": 124,
+    "diag_3": 122,
+    "chlorpropamide": 1,
+    "tolazamide": 1
+  },
+  "train_level_gaps": 178,
+  "data_sha256": "cd890e835c0b5023ae99dfb6225412de3a57ddad28083de9a8a512cf5416c673"
+}

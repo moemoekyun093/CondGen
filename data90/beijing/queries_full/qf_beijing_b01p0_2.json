@@ -1,0 +1,200 @@
+{
+  "query_id": "qf_beijing_b01p0_2",
+  "dataset": "beijing",
+  "suite": "full_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 12,
+  "arity_tier": "extension",
+  "modality_mix": "all_columns",
+  "n_num_cols": 7,
+  "n_cat_cols": 5,
+  "per_predicate_share": 0.5517417396000968,
+  "calibration_exponent": 1.5495849609375,
+  "predicates": [
+    {
+      "col": "pm2.5",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        15.254879908026593,
+        109.2871616041088
+      ],
+      "target_share": 0.5517417396000968
+    },
+    {
+      "col": "DEWP",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -17.0,
+        12.0
+      ],
+      "target_share": 0.5517417396000968
+    },
+    {
+      "col": "TEMP",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2.1129110046102997,
+        25.0
+      ],
+      "target_share": 0.5517417396000968
+    },
+    {
+      "col": "PRES",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1009.0,
+        1027.7969125437878
+      ],
+      "target_share": 0.5517417396000968
+    },
+    {
+      "col": "Iws",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        3.58,
+        142.12991665384905
+      ],
+      "target_share": 0.5517417396000968
+    },
+    {
+      "col": "Is",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        27.0
+      ],
+      "target_share": 0.5517417396000968
+    },
+    {
+      "col": "Ir",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        36.0
+      ],
+      "target_share": 0.5517417396000968
+    },
+    {
+      "col": "year",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2014",
+        "2013",
+        "2012"
+      ],
+      "target_share": 0.5517417396000968,
+      "form": "set",
+      "covered_train_prob": 0.612855537815623
+    },
+    {
+      "col": "month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "7",
+        "12",
+        "10",
+        "5",
+        "3",
+        "11",
+        "1"
+      ],
+      "target_share": 0.5517417396000968,
+      "form": "set",
+      "covered_train_prob": 0.5955295369877596
+    },
+    {
+      "col": "day",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "17",
+        "4",
+        "18",
+        "3",
+        "2",
+        "13",
+        "26",
+        "12",
+        "10",
+        "9",
+        "14",
+        "16",
+        "25",
+        "11",
+        "6",
+        "7",
+        "28"
+      ],
+      "target_share": 0.5517417396000968,
+      "form": "set",
+      "covered_train_prob": 0.5651351191532138
+    },
+    {
+      "col": "hour",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "18",
+        "20",
+        "13",
+        "6",
+        "2",
+        "10",
+        "21",
+        "23",
+        "15",
+        "3",
+        "14",
+        "1",
+        "19",
+        "7"
+      ],
+      "target_share": 0.5517417396000968,
+      "form": "set",
+      "covered_train_prob": 0.5876352669859854
+    },
+    {
+      "col": "cbwd",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "SE",
+        "NW"
+      ],
+      "target_share": 0.5517417396000968,
+      "form": "set",
+      "covered_train_prob": 0.6725799775294188
+    }
+  ],
+  "counts": {
+    "train": 343,
+    "val": 41,
+    "trainval": 384,
+    "test": 44
+  },
+  "selectivity": {
+    "train": 0.010141328129619775,
+    "val": 0.010907156158552806,
+    "trainval": 0.010217929272770815,
+    "test": 0.01053639846743295
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "1-2%",
+  "realized_band_test": "1-2%"
+}

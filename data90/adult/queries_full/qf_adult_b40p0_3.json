@@ -1,0 +1,223 @@
+{
+  "query_id": "qf_adult_b40p0_3",
+  "dataset": "adult",
+  "suite": "full_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 15,
+  "arity_tier": "extension",
+  "modality_mix": "all_columns",
+  "n_num_cols": 6,
+  "n_cat_cols": 9,
+  "per_predicate_share": 0.8828509841473768,
+  "calibration_exponent": 2.039726843684911,
+  "predicates": [
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        18.58515816437114,
+        58.87025657910882
+      ],
+      "target_share": 0.8828509841473768
+    },
+    {
+      "col": "fnlwgt",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        49517.25742830302,
+        383883.21181340324
+      ],
+      "target_share": 0.8828509841473768
+    },
+    {
+      "col": "education.num",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        6.0,
+        14.0
+      ],
+      "target_share": 0.8828509841473768
+    },
+    {
+      "col": "capital.gain",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        3475.525040356489
+      ],
+      "target_share": 0.8828509841473768
+    },
+    {
+      "col": "capital.loss",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        3910.4912593339695
+      ],
+      "target_share": 0.8828509841473768
+    },
+    {
+      "col": "hours.per.week",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        20.0,
+        60.0
+      ],
+      "target_share": 0.8828509841473768
+    },
+    {
+      "col": "workclass",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Private",
+        " Self-emp-not-inc",
+        " Local-gov",
+        " ?"
+      ],
+      "target_share": 0.8828509841473768,
+      "form": "set",
+      "covered_train_prob": 0.8954750204750206
+    },
+    {
+      "col": "education",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " HS-grad",
+        " Some-college",
+        " Bachelors",
+        " Masters",
+        " Assoc-voc",
+        " 11th",
+        " Assoc-acdm",
+        " 10th"
+      ],
+      "target_share": 0.8828509841473768,
+      "form": "set",
+      "covered_train_prob": 0.9030849030849031
+    },
+    {
+      "col": "marital.status",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Married-civ-spouse",
+        " Never-married",
+        " Divorced"
+      ],
+      "target_share": 0.8828509841473768,
+      "form": "set",
+      "covered_train_prob": 0.9247542997542997
+    },
+    {
+      "col": "occupation",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Prof-specialty",
+        " Craft-repair",
+        " Exec-managerial",
+        " Adm-clerical",
+        " Sales",
+        " Other-service",
+        " Machine-op-inspct",
+        " ?",
+        " Transport-moving",
+        " Handlers-cleaners"
+      ],
+      "target_share": 0.8828509841473768,
+      "form": "set",
+      "covered_train_prob": 0.9159500409500408
+    },
+    {
+      "col": "relationship",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Husband",
+        " Not-in-family",
+        " Own-child",
+        " Unmarried"
+      ],
+      "target_share": 0.8828509841473768,
+      "form": "set",
+      "covered_train_prob": 0.921102921102921
+    },
+    {
+      "col": "race",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " White",
+        " Black"
+      ],
+      "target_share": 0.8828509841473768,
+      "form": "set",
+      "covered_train_prob": 0.9509282009282009
+    },
+    {
+      "col": "sex",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Male",
+        " Female"
+      ],
+      "target_share": 0.8828509841473768,
+      "form": "set",
+      "covered_train_prob": 1.0
+    },
+    {
+      "col": "native.country",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " United-States"
+      ],
+      "target_share": 0.8828509841473768,
+      "form": "set",
+      "covered_train_prob": 0.8959527709527709
+    },
+    {
+      "col": "income",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " <=50K",
+        " >50K"
+      ],
+      "target_share": 0.8828509841473768,
+      "form": "set",
+      "covered_train_prob": 1.0
+    }
+  ],
+  "counts": {
+    "train": 11732,
+    "val": 1362,
+    "trainval": 13094,
+    "test": 6545
+  },
+  "selectivity": {
+    "train": 0.40035490035490034,
+    "val": 0.4181762357998158,
+    "trainval": 0.4021375264887442,
+    "test": 0.4020023340089675
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

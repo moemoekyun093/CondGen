@@ -1,0 +1,206 @@
+{
+  "dataset": "default",
+  "root": "data90",
+  "layout": "train 81% (core) / val 9% / test 10%",
+  "trainval_test_from_provided_partitions": true,
+  "provided_partition_sizes": {
+    "train": 27000,
+    "test": 3000
+  },
+  "provided_split_is_tabsyn_90_10": true,
+  "seed_start": 1234,
+  "seed_final": 1234,
+  "seed_increments": 0,
+  "scheme": "provided train (27000) / test (3000) kept; val = seeded tabpc carve int(27000*0.9) -> 24300/2700 core/val",
+  "n_total": 30000,
+  "n_source_rows": 30000,
+  "guard_ok": true,
+  "sizes": {
+    "train": 24300,
+    "val": 2700,
+    "test": 3000
+  },
+  "n_trainval": 27000,
+  "fractions": {
+    "train": 0.81,
+    "val": 0.09,
+    "test": 0.1
+  },
+  "cat_columns_checked": [
+    "SEX",
+    "EDUCATION",
+    "MARRIAGE",
+    "PAY_0",
+    "PAY_2",
+    "PAY_3",
+    "PAY_4",
+    "PAY_5",
+    "PAY_6",
+    "default payment next month"
+  ],
+  "coverage_criterion": "the 81% CORE train must contain every level of the full table; only the train/val carve is retried, train+val vs test membership is the provided split",
+  "coverage": {
+    "SEX": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    },
+    "EDUCATION": {
+      "n_levels_full": 7,
+      "train": {
+        "n_levels": 7,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 7,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 6,
+        "covers_all": false
+      }
+    },
+    "MARRIAGE": {
+      "n_levels_full": 4,
+      "train": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 4,
+        "covers_all": true
+      }
+    },
+    "PAY_0": {
+      "n_levels_full": 11,
+      "train": {
+        "n_levels": 11,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 11,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 11,
+        "covers_all": true
+      }
+    },
+    "PAY_2": {
+      "n_levels_full": 11,
+      "train": {
+        "n_levels": 11,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 10,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 10,
+        "covers_all": false
+      }
+    },
+    "PAY_3": {
+      "n_levels_full": 11,
+      "train": {
+        "n_levels": 11,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 10,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 9,
+        "covers_all": false
+      }
+    },
+    "PAY_4": {
+      "n_levels_full": 11,
+      "train": {
+        "n_levels": 11,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 8,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 8,
+        "covers_all": false
+      }
+    },
+    "PAY_5": {
+      "n_levels_full": 10,
+      "train": {
+        "n_levels": 10,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 9,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 9,
+        "covers_all": false
+      }
+    },
+    "PAY_6": {
+      "n_levels_full": 10,
+      "train": {
+        "n_levels": 10,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 9,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 9,
+        "covers_all": false
+      }
+    },
+    "default payment next month": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    }
+  },
+  "rare_levels": {
+    "PAY_2": 1,
+    "PAY_4": 2,
+    "PAY_5": 1,
+    "PAY_6": 1
+  },
+  "singleton_levels": {
+    "PAY_2": 1,
+    "PAY_5": 1
+  },
+  "train_level_gaps": 0,
+  "data_sha256": "b1756284de5ad62f787665c6137a392da6233a8a9cb20b22c28bb546947d7d61"
+}

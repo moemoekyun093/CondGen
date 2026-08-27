@@ -1,0 +1,118 @@
+{
+  "dataset": "beijing",
+  "root": "data90",
+  "layout": "train 81% (core) / val 9% / test 10%",
+  "trainval_test_from_provided_partitions": true,
+  "provided_partition_sizes": {
+    "train": 37581,
+    "test": 4176
+  },
+  "provided_split_is_tabsyn_90_10": true,
+  "seed_start": 1234,
+  "seed_final": 1234,
+  "seed_increments": 0,
+  "scheme": "provided train (37581) / test (4176) kept; val = seeded tabpc carve int(37581*0.9) -> 33822/3759 core/val",
+  "n_total": 41757,
+  "n_source_rows": 41757,
+  "guard_ok": true,
+  "sizes": {
+    "train": 33822,
+    "val": 3759,
+    "test": 4176
+  },
+  "n_trainval": 37581,
+  "fractions": {
+    "train": 0.809972,
+    "val": 0.090021,
+    "test": 0.100007
+  },
+  "cat_columns_checked": [
+    "year",
+    "month",
+    "day",
+    "hour",
+    "cbwd"
+  ],
+  "coverage_criterion": "the 81% CORE train must contain every level of the full table; only the train/val carve is retried, train+val vs test membership is the provided split",
+  "coverage": {
+    "year": {
+      "n_levels_full": 5,
+      "train": {
+        "n_levels": 5,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 5,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 5,
+        "covers_all": true
+      }
+    },
+    "month": {
+      "n_levels_full": 12,
+      "train": {
+        "n_levels": 12,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 12,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 12,
+        "covers_all": true
+      }
+    },
+    "day": {
+      "n_levels_full": 31,
+      "train": {
+        "n_levels": 31,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 31,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 31,
+        "covers_all": true
+      }
+    },
+    "hour": {
+      "n_levels_full": 24,
+      "train": {
+        "n_levels": 24,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 24,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 24,
+        "covers_all": true
+      }
+    },
+    "cbwd": {
+      "n_levels_full": 4,
+      "train": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 4,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 4,
+        "covers_all": true
+      }
+    }
+  },
+  "rare_levels": {},
+  "singleton_levels": {},
+  "train_level_gaps": 0,
+  "data_sha256": "523fc38283c4c38914825fd37c632a39611f56ca2d31b94ecd78d4515e55a65b"
+}

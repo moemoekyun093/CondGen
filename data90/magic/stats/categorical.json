@@ -1,0 +1,19 @@
+{
+  "dataset": "magic",
+  "computed_on": "train (81% core)",
+  "columns": {
+    "class": {
+      "col_idx": 10,
+      "n": 15405,
+      "n_levels": 2,
+      "freq": {
+        "g": 9997,
+        "h": 5408
+      },
+      "prob": {
+        "g": 0.6489451476793249,
+        "h": 0.3510548523206751
+      }
+    }
+  }
+}

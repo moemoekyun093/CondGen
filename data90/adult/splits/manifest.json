@@ -1,0 +1,186 @@
+{
+  "dataset": "adult",
+  "root": "data90",
+  "layout": "train 81% (core) / val 9% / test 10%",
+  "trainval_test_from_provided_partitions": true,
+  "provided_partition_sizes": {
+    "train": 32561,
+    "test": 16281
+  },
+  "provided_split_is_tabsyn_90_10": false,
+  "seed_start": 1234,
+  "seed_final": 1234,
+  "seed_increments": 0,
+  "scheme": "provided train (32561) / test (16281) kept; val = seeded tabpc carve int(32561*0.9) -> 29304/3257 core/val",
+  "n_total": 48842,
+  "n_source_rows": 48842,
+  "guard_ok": true,
+  "sizes": {
+    "train": 29304,
+    "val": 3257,
+    "test": 16281
+  },
+  "n_trainval": 32561,
+  "fractions": {
+    "train": 0.599975,
+    "val": 0.066684,
+    "test": 0.33334
+  },
+  "cat_columns_checked": [
+    "workclass",
+    "education",
+    "marital.status",
+    "occupation",
+    "relationship",
+    "race",
+    "sex",
+    "native.country",
+    "income"
+  ],
+  "coverage_criterion": "the 81% CORE train must contain every level of the full table; only the train/val carve is retried, train+val vs test membership is the provided split",
+  "coverage": {
+    "workclass": {
+      "n_levels_full": 9,
+      "train": {
+        "n_levels": 9,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 8,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 9,
+        "covers_all": true
+      }
+    },
+    "education": {
+      "n_levels_full": 16,
+      "train": {
+        "n_levels": 16,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 16,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 16,
+        "covers_all": true
+      }
+    },
+    "marital.status": {
+      "n_levels_full": 7,
+      "train": {
+        "n_levels": 7,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 7,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 7,
+        "covers_all": true
+      }
+    },
+    "occupation": {
+      "n_levels_full": 15,
+      "train": {
+        "n_levels": 15,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 15,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 15,
+        "covers_all": true
+      }
+    },
+    "relationship": {
+      "n_levels_full": 6,
+      "train": {
+        "n_levels": 6,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 6,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 6,
+        "covers_all": true
+      }
+    },
+    "race": {
+      "n_levels_full": 5,
+      "train": {
+        "n_levels": 5,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 5,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 5,
+        "covers_all": true
+      }
+    },
+    "sex": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    },
+    "native.country": {
+      "n_levels_full": 42,
+      "train": {
+        "n_levels": 42,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 38,
+        "covers_all": false
+      },
+      "test": {
+        "n_levels": 41,
+        "covers_all": false
+      }
+    },
+    "income": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    }
+  },
+  "rare_levels": {
+    "native.country": 1
+  },
+  "singleton_levels": {
+    "native.country": 1
+  },
+  "train_level_gaps": 0,
+  "data_sha256": "4018a9a9338c5e0458d824812d01715111468f7f66e47df9aafcc75d80f5f665"
+}

@@ -1,0 +1,598 @@
+{
+  "query_id": "qf_fb-comments_b01p0_9",
+  "dataset": "fb-comments",
+  "suite": "full_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 52,
+  "arity_tier": "extension",
+  "modality_mix": "all_columns",
+  "n_num_cols": 37,
+  "n_cat_cols": 15,
+  "per_predicate_share": 0.8445298808554691,
+  "calibration_exponent": 1.9080094739794728,
+  "predicates": [
+    {
+      "col": "num_0",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        714.4634572668955,
+        2167741.4900760613
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_1",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        9515.6654052145
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_2",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        4.0,
+        1033.5221552207126
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_3",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.3932647311589277,
+        58.16872103292178
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_4",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        13.009625971969351
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_5",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.6983136724486716,
+        133.86034160435224
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_6",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        7.61064344930182,
+        1123.574082597715
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_7",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.9922612924059393,
+        384.1306502999072
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_8",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        9.283069063733576
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_9",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.346991120502927,
+        92.56589315952226
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_10",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        183.51947530300944
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_11",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        56.619828724731896,
+        228967.49816724958
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_12",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.23832065582732984,
+        1006.9480545514605
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_13",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.20978486262366752,
+        119.98715564148392
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_14",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        120.9427925284445
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_15",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2.1744716803034208,
+        197.71469675977855
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_16",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -990.0626127652665,
+        -7.329026859947401
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_17",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        15.08546460981998,
+        1430.1019963124916
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_18",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -0.8094157962165034,
+        8.691289051787495
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_19",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -8.371632913988217,
+        0.0
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_20",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.7798919861686148,
+        138.5947619546227
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_21",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        140.54503556678716
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_22",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        61.60421985568859
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_23",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        216.51230042428386
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_24",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        112.38052185969883
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_25",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -50.690710465562404,
+        36.63369734783532
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_26",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        10.0,
+        71.80896582202841
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_27",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        3.1224680215884972,
+        582.9783561083528
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_28",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.0,
+        465.3589580923122
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_29",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        23.846580222065374,
+        24.0
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_30",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1458.0
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_31",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.21354274663888095,
+        1098.26484590858
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_32",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2.637331992153373,
+        748.7078813583882
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_33",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        123.58291713641398
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_34",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2.3993657201359264,
+        216.54077213371102
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "num_35",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        197.0
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "target",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        17.252494697905405
+      ],
+      "target_share": 0.8445298808554691
+    },
+    {
+      "col": "cat_0",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "9",
+        "24",
+        "18",
+        "36",
+        "16",
+        "14",
+        "8",
+        "32",
+        "4",
+        "2",
+        "1",
+        "40",
+        "39",
+        "13",
+        "17",
+        "26",
+        "38",
+        "27",
+        "46",
+        "44",
+        "28",
+        "55",
+        "42",
+        "5",
+        "80"
+      ],
+      "target_share": 0.8445298808554691,
+      "form": "set",
+      "covered_train_prob": 0.844980271254393
+    },
+    {
+      "col": "cat_1",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.8445298808554691,
+      "form": "set",
+      "covered_train_prob": 0.8777388700693995
+    },
+    {
+      "col": "cat_2",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.8445298808554691,
+      "form": "set",
+      "covered_train_prob": 0.8565003362133495
+    },
+    {
+      "col": "cat_3",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.8445298808554691,
+      "form": "set",
+      "covered_train_prob": 0.8503216229589312
+    },
+    {
+      "col": "cat_4",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0",
+        "1"
+      ],
+      "target_share": 0.8445298808554691,
+      "form": "set",
+      "covered_train_prob": 1.0
+    },
+    {
+      "col": "cat_5",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.8445298808554691,
+      "form": "set",
+      "covered_train_prob": 0.8552633248328448
+    },
+    {
+      "col": "cat_6",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.8445298808554691,
+      "form": "set",
+      "covered_train_prob": 0.853855034953501
+    },
+    {
+      "col": "cat_7",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.8445298808554691,
+      "form": "set",
+      "covered_train_prob": 0.863015262817341
+    },
+    {
+      "col": "cat_8",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.8445298808554691,
+      "form": "set",
+      "covered_train_prob": 0.8601098719851812
+    },
+    {
+      "col": "cat_9",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.8445298808554691,
+      "form": "set",
+      "covered_train_prob": 0.8651403849325671
+    },
+    {
+      "col": "cat_10",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.8445298808554691,
+      "form": "set",
+      "covered_train_prob": 0.8633641634631244
+    },
+    {
+      "col": "cat_11",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.8445298808554691,
+      "form": "set",
+      "covered_train_prob": 0.8537408492876083
+    },
+    {
+      "col": "cat_12",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0",
+        "1"
+      ],
+      "target_share": 0.8445298808554691,
+      "form": "set",
+      "covered_train_prob": 1.0
+    },
+    {
+      "col": "cat_13",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.8445298808554691,
+      "form": "set",
+      "covered_train_prob": 0.8552886994252655
+    },
+    {
+      "col": "cat_14",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.8445298808554691,
+      "form": "set",
+      "covered_train_prob": 0.8578261586673264
+    }
+  ],
+  "counts": {
+    "train": 1814,
+    "val": 256,
+    "trainval": 2070,
+    "test": 244
+  },
+  "selectivity": {
+    "train": 0.011507377662746293,
+    "val": 0.012980427948483926,
+    "trainval": 0.011671177266576455,
+    "test": 0.012373225152129817
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "1-2%",
+  "realized_band_test": "1-2%"
+}

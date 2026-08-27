@@ -1,0 +1,248 @@
+{
+  "query_id": "qf_shoppers_b40p0_4",
+  "dataset": "shoppers",
+  "suite": "full_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 18,
+  "arity_tier": "extension",
+  "modality_mix": "all_columns",
+  "n_num_cols": 10,
+  "n_cat_cols": 8,
+  "per_predicate_share": 0.8886928146949764,
+  "calibration_exponent": 2.3181131362915037,
+  "predicates": [
+    {
+      "col": "Administrative",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        22.428531232863016
+      ],
+      "target_share": 0.8886928146949764
+    },
+    {
+      "col": "Administrative_Duration",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        253.6893603922721
+      ],
+      "target_share": 0.8886928146949764
+    },
+    {
+      "col": "Informational",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        3.0
+      ],
+      "target_share": 0.8886928146949764
+    },
+    {
+      "col": "Informational_Duration",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        187.067307694471
+      ],
+      "target_share": 0.8886928146949764
+    },
+    {
+      "col": "ProductRelated",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.783887744388538,
+        104.53169213886184
+      ],
+      "target_share": 0.8886928146949764
+    },
+    {
+      "col": "ProductRelated_Duration",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        3075.4596581749433
+      ],
+      "target_share": 0.8886928146949764
+    },
+    {
+      "col": "BounceRates",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.10301112898019525
+      ],
+      "target_share": 0.8886928146949764
+    },
+    {
+      "col": "ExitRates",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0053893354030653835,
+        0.2
+      ],
+      "target_share": 0.8886928146949764
+    },
+    {
+      "col": "PageValues",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        52.319191108155415
+      ],
+      "target_share": 0.8886928146949764
+    },
+    {
+      "col": "SpecialDay",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.6
+      ],
+      "target_share": 0.8886928146949764
+    },
+    {
+      "col": "Month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "May",
+        "Nov",
+        "Mar",
+        "Dec",
+        "Oct",
+        "Sep"
+      ],
+      "target_share": 0.8886928146949764,
+      "form": "set",
+      "covered_train_prob": 0.8914588965655352
+    },
+    {
+      "col": "OperatingSystems",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2",
+        "1",
+        "3"
+      ],
+      "target_share": 0.8886928146949764,
+      "form": "set",
+      "covered_train_prob": 0.9519375187744067
+    },
+    {
+      "col": "Browser",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2",
+        "1",
+        "4"
+      ],
+      "target_share": 0.8886928146949764,
+      "form": "set",
+      "covered_train_prob": 0.9046760789025734
+    },
+    {
+      "col": "Region",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1",
+        "3",
+        "4",
+        "2",
+        "6",
+        "7"
+      ],
+      "target_share": 0.8886928146949764,
+      "form": "set",
+      "covered_train_prob": 0.8981676179032743
+    },
+    {
+      "col": "TrafficType",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2",
+        "1",
+        "3",
+        "4",
+        "13",
+        "10",
+        "6"
+      ],
+      "target_share": 0.8886928146949764,
+      "form": "set",
+      "covered_train_prob": 0.9031741263642736
+    },
+    {
+      "col": "VisitorType",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Returning_Visitor",
+        "New_Visitor"
+      ],
+      "target_share": 0.8886928146949764,
+      "form": "set",
+      "covered_train_prob": 0.993091018323821
+    },
+    {
+      "col": "Weekend",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "False",
+        "True"
+      ],
+      "target_share": 0.8886928146949764,
+      "form": "set",
+      "covered_train_prob": 1.0
+    },
+    {
+      "col": "Revenue",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "False",
+        "True"
+      ],
+      "target_share": 0.8886928146949764,
+      "form": "set",
+      "covered_train_prob": 1.0
+    }
+  ],
+  "counts": {
+    "train": 3967,
+    "val": 428,
+    "trainval": 4395,
+    "test": 481
+  },
+  "selectivity": {
+    "train": 0.3972163812956844,
+    "val": 0.3855855855855856,
+    "trainval": 0.3960529872938632,
+    "test": 0.39010543390105434
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

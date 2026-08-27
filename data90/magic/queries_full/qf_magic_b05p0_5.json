@@ -1,0 +1,148 @@
+{
+  "query_id": "qf_magic_b05p0_5",
+  "dataset": "magic",
+  "suite": "full_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 11,
+  "arity_tier": "extension",
+  "modality_mix": "all_columns",
+  "n_num_cols": 10,
+  "n_cat_cols": 1,
+  "per_predicate_share": 0.6402803079930741,
+  "calibration_exponent": 1.637109375,
+  "predicates": [
+    {
+      "col": "Length",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        20.048793977638326,
+        73.44830463055936
+      ],
+      "target_share": 0.6402803079930741
+    },
+    {
+      "col": "Width",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        10.07541273612892,
+        25.390171665058723
+      ],
+      "target_share": 0.6402803079930741
+    },
+    {
+      "col": "Size",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2.1575959022304554,
+        2.968464006367646
+      ],
+      "target_share": 0.6402803079930741
+    },
+    {
+      "col": "Conc",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.21301154038469328,
+        0.5817152827394494
+      ],
+      "target_share": 0.6402803079930741
+    },
+    {
+      "col": "Conc1",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.10013302898751877,
+        0.3015903810770405
+      ],
+      "target_share": 0.6402803079930741
+    },
+    {
+      "col": "Asym",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -104.3975358031575,
+        19.437137401073986
+      ],
+      "target_share": 0.6402803079930741
+    },
+    {
+      "col": "M3Long",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -47.092488231467236,
+        31.122003963060944
+      ],
+      "target_share": 0.6402803079930741
+    },
+    {
+      "col": "M3Trans",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -19.706136554615664,
+        10.310119876491587
+      ],
+      "target_share": 0.6402803079930741
+    },
+    {
+      "col": "Alpha",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        3.992790330677446,
+        59.31146790491657
+      ],
+      "target_share": 0.6402803079930741
+    },
+    {
+      "col": "Dist",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        163.52101997544898,
+        372.8998737238761
+      ],
+      "target_share": 0.6402803079930741
+    },
+    {
+      "col": "class",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "g"
+      ],
+      "target_share": 0.6402803079930741,
+      "form": "set",
+      "covered_train_prob": 0.6489451476793249
+    }
+  ],
+  "counts": {
+    "train": 749,
+    "val": 94,
+    "trainval": 843,
+    "test": 99
+  },
+  "selectivity": {
+    "train": 0.048620577734501784,
+    "val": 0.054906542056074766,
+    "trainval": 0.049249284337208626,
+    "test": 0.052050473186119876
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "5-10%"
+}

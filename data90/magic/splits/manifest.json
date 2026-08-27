@@ -1,0 +1,54 @@
+{
+  "dataset": "magic",
+  "root": "data90",
+  "layout": "train 81% (core) / val 9% / test 10%",
+  "trainval_test_from_provided_partitions": true,
+  "provided_partition_sizes": {
+    "train": 17117,
+    "test": 1902
+  },
+  "provided_split_is_tabsyn_90_10": true,
+  "seed_start": 1234,
+  "seed_final": 1234,
+  "seed_increments": 0,
+  "scheme": "provided train (17117) / test (1902) kept; val = seeded tabpc carve int(17117*0.9) -> 15405/1712 core/val",
+  "n_total": 19019,
+  "n_source_rows": 19019,
+  "guard_ok": true,
+  "sizes": {
+    "train": 15405,
+    "val": 1712,
+    "test": 1902
+  },
+  "n_trainval": 17117,
+  "fractions": {
+    "train": 0.809979,
+    "val": 0.090015,
+    "test": 0.100005
+  },
+  "cat_columns_checked": [
+    "class"
+  ],
+  "coverage_criterion": "the 81% CORE train must contain every level of the full table; only the train/val carve is retried, train+val vs test membership is the provided split",
+  "coverage": {
+    "class": {
+      "n_levels_full": 2,
+      "train": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "val": {
+        "n_levels": 2,
+        "covers_all": true
+      },
+      "test": {
+        "n_levels": 2,
+        "covers_all": true
+      }
+    }
+  },
+  "rare_levels": {},
+  "singleton_levels": {},
+  "train_level_gaps": 0,
+  "data_sha256": "7063bbdaef304c8b95b71cd1cac3f83bd165089e81d131dce63515f002228c06"
+}

@@ -1,0 +1,207 @@
+{
+  "query_id": "qf_adult_b05p0_8",
+  "dataset": "adult",
+  "suite": "full_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 15,
+  "arity_tier": "extension",
+  "modality_mix": "all_columns",
+  "n_num_cols": 6,
+  "n_cat_cols": 9,
+  "per_predicate_share": 0.6779064337058789,
+  "calibration_exponent": 1.9464990615844724,
+  "predicates": [
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        20.0,
+        47.62627352461189
+      ],
+      "target_share": 0.6779064337058789
+    },
+    {
+      "col": "fnlwgt",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        117857.0876579696,
+        352199.29170047416
+      ],
+      "target_share": 0.6779064337058789
+    },
+    {
+      "col": "education.num",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        5.497712398356862,
+        12.0
+      ],
+      "target_share": 0.6779064337058789
+    },
+    {
+      "col": "capital.gain",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        99999.0
+      ],
+      "target_share": 0.6779064337058789
+    },
+    {
+      "col": "capital.loss",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        4356.0
+      ],
+      "target_share": 0.6779064337058789
+    },
+    {
+      "col": "hours.per.week",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        18.769695279418997,
+        45.0
+      ],
+      "target_share": 0.6779064337058789
+    },
+    {
+      "col": "workclass",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Private"
+      ],
+      "target_share": 0.6779064337058789,
+      "form": "set",
+      "covered_train_prob": 0.6968331968331969
+    },
+    {
+      "col": "education",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " HS-grad",
+        " Some-college",
+        " Bachelors"
+      ],
+      "target_share": 0.6779064337058789,
+      "form": "set",
+      "covered_train_prob": 0.7103808353808354
+    },
+    {
+      "col": "marital.status",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Married-civ-spouse",
+        " Never-married"
+      ],
+      "target_share": 0.6779064337058789,
+      "form": "set",
+      "covered_train_prob": 0.7878787878787878
+    },
+    {
+      "col": "occupation",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Prof-specialty",
+        " Craft-repair",
+        " Exec-managerial",
+        " Adm-clerical",
+        " Sales",
+        " Other-service"
+      ],
+      "target_share": 0.6779064337058789,
+      "form": "set",
+      "covered_train_prob": 0.7071389571389571
+    },
+    {
+      "col": "relationship",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Husband",
+        " Not-in-family",
+        " Own-child"
+      ],
+      "target_share": 0.6779064337058789,
+      "form": "set",
+      "covered_train_prob": 0.8152470652470651
+    },
+    {
+      "col": "race",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " White"
+      ],
+      "target_share": 0.6779064337058789,
+      "form": "set",
+      "covered_train_prob": 0.8552074802074802
+    },
+    {
+      "col": "sex",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Male",
+        " Female"
+      ],
+      "target_share": 0.6779064337058789,
+      "form": "set",
+      "covered_train_prob": 1.0
+    },
+    {
+      "col": "native.country",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " United-States"
+      ],
+      "target_share": 0.6779064337058789,
+      "form": "set",
+      "covered_train_prob": 0.8959527709527709
+    },
+    {
+      "col": "income",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " <=50K"
+      ],
+      "target_share": 0.6779064337058789,
+      "form": "set",
+      "covered_train_prob": 0.7576098826098826
+    }
+  ],
+  "counts": {
+    "train": 1423,
+    "val": 175,
+    "trainval": 1598,
+    "test": 751
+  },
+  "selectivity": {
+    "train": 0.04855992355992356,
+    "val": 0.053730426773104085,
+    "trainval": 0.04907711679616719,
+    "test": 0.04612738775259505
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

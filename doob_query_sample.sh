@@ -22,18 +22,18 @@ if [ ! -e "${CKPT_CANDIDATES[0]}" ] || [ "${#CKPT_CANDIDATES[@]}" -ne 1 ]; then
     exit 1
 fi
 BASE_CKPT="${CKPT_CANDIDATES[0]}"
-GUIDE_DIR_ARG="${1:-${GUIDE_DIR_NAME:-doob_query_structured_d48_l2_6000}}"
+GUIDE_DIR_ARG="${1:-${GUIDE_DIR_NAME:-doob_query_curriculum_d48_l2_12000}}"
 if [[ "${GUIDE_DIR_ARG}" == */* ]]; then
     GUIDE_DIR="${GUIDE_DIR_ARG}"
 else
     GUIDE_DIR="${CKPT_DIR}/${GUIDE_DIR_ARG}"
 fi
 GUIDE_CKPT="${GUIDE_DIR}/best_guide.pt"
-QUERY_FILE="${QUERY_FILE:-data90/${DATANAME}/queries_full/qf_shoppers_b10p0_0.json}"
+QUERY_FILE="${QUERY_FILE:-data90/${DATANAME}/queries_full/qf_shoppers_b00p5_4.json}"
 QUERY_ID="$(basename "${QUERY_FILE}" .json)"
 NUM_SAMPLES="${NUM_SAMPLES:-1000}"
 BATCH_SIZE="${BATCH_SIZE:-1000}"
-OUTPUT="${OUTPUT:-conditional_samples/${DATANAME}/${MODEL_NAME}_${QUERY_ID}_structured.csv}"
+OUTPUT="${OUTPUT:-conditional_samples/${DATANAME}/${MODEL_NAME}_${QUERY_ID}_curriculum.csv}"
 
 echo "========================================"
 echo "Dataset         : ${DATANAME}"

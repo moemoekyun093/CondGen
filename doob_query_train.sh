@@ -6,7 +6,7 @@
 #SBATCH --gpus=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
-#SBATCH --time=06:00:00
+#SBATCH --time=12:00:00
 
 set -euo pipefail
 
@@ -23,14 +23,14 @@ if [ ! -e "${CKPT_CANDIDATES[0]}" ] || [ "${#CKPT_CANDIDATES[@]}" -ne 1 ]; then
     exit 1
 fi
 BASE_CKPT="${CKPT_CANDIDATES[0]}"
-GUIDE_DIR_ARG="${1:-${GUIDE_DIR_NAME:-doob_query_structured_d48_l2_6000}}"
+GUIDE_DIR_ARG="${1:-${GUIDE_DIR_NAME:-doob_query_curriculum_d48_l2_12000}}"
 if [[ "${GUIDE_DIR_ARG}" == */* ]]; then
     OUTPUT_DIR="${GUIDE_DIR_ARG}"
 else
     OUTPUT_DIR="${CKPT_DIR}/${GUIDE_DIR_ARG}"
 fi
 QUERY_DIR="${QUERY_DIR:-data90/${DATANAME}/queries_full}"
-STEPS="${STEPS:-6000}"
+STEPS="${STEPS:-12000}"
 BATCH_SIZE="${BATCH_SIZE:-1024}"
 LR="${LR:-1e-3}"
 D_TOKEN="${D_TOKEN:-48}"
@@ -39,6 +39,11 @@ N_HEAD="${N_HEAD:-4}"
 FACTOR="${FACTOR:-2}"
 BOUND_EMBEDDING_DIM="${BOUND_EMBEDDING_DIM:-8}"
 ACTIVE_EMBEDDING_DIM="${ACTIVE_EMBEDDING_DIM:-8}"
+QUERY_SAMPLING_MODE="${QUERY_SAMPLING_MODE:-curriculum}"
+CURRICULUM_WARMUP_STEPS="${CURRICULUM_WARMUP_STEPS:-2000}"
+CURRICULUM_TRANSITION_STEPS="${CURRICULUM_TRANSITION_STEPS:-4000}"
+CURRICULUM_WARMUP_PROBABILITIES="${CURRICULUM_WARMUP_PROBABILITIES:-0.70,0.25,0.05}"
+CURRICULUM_FINAL_PROBABILITIES="${CURRICULUM_FINAL_PROBABILITIES:-0.25,0.35,0.40}"
 
 echo "========================================"
 echo "Dataset          : ${DATANAME}"
@@ -49,6 +54,10 @@ echo "Output           : ${OUTPUT_DIR}"
 echo "Training steps   : ${STEPS}"
 echo "Batch size       : ${BATCH_SIZE}"
 echo "Learning rate    : ${LR}"
+echo "Query sampling   : ${QUERY_SAMPLING_MODE}"
+echo "Curriculum       : warmup=${CURRICULUM_WARMUP_STEPS}, transition=${CURRICULUM_TRANSITION_STEPS}"
+echo "Warm probabilities: ${CURRICULUM_WARMUP_PROBABILITIES} (broad,medium,tight)"
+echo "Final probabilities: ${CURRICULUM_FINAL_PROBABILITIES} (broad,medium,tight)"
 echo "State tokenizer  : frozen base FT-periodic tokenizer"
 echo "Numerical query  : monotone lower/upper embeddings after time fusion"
 echo "Categorical query: sum of ReLU-frozen base category lookups"
@@ -69,6 +78,11 @@ python -u train_doob_query_suite.py \
     --factor "${FACTOR}" \
     --bound-embedding-dim "${BOUND_EMBEDDING_DIM}" \
     --active-embedding-dim "${ACTIVE_EMBEDDING_DIM}" \
+    --query-sampling-mode "${QUERY_SAMPLING_MODE}" \
+    --curriculum-warmup-steps "${CURRICULUM_WARMUP_STEPS}" \
+    --curriculum-transition-steps "${CURRICULUM_TRANSITION_STEPS}" \
+    --curriculum-warmup-probabilities "${CURRICULUM_WARMUP_PROBABILITIES}" \
+    --curriculum-final-probabilities "${CURRICULUM_FINAL_PROBABILITIES}" \
     --checkpoint-warmup 200 \
     --device cuda
 

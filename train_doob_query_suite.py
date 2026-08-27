@@ -16,6 +16,11 @@ from tabdiff.doob_h_runtime import (
     load_doob_runtime,
     resolve_base_checkpoint,
 )
+from tabdiff.doob_query_curriculum import (
+    BUCKET_ORDER,
+    QueryCurriculumSampler,
+    parse_bucket_probabilities,
+)
 from tabdiff.doob_query_suite import load_structured_query_suite
 from tabdiff.models.doob_h_transform import (
     StructuredCategoricalHTransformGuide,
@@ -44,7 +49,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--steps", type=int, default=6000)
+    parser.add_argument("--steps", type=int, default=12000)
     parser.add_argument("--batch-size", type=int, default=1024)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--weight-decay", type=float, default=1e-4)
@@ -61,6 +66,26 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--log-every", type=int, default=10)
     parser.add_argument("--checkpoint-warmup", type=int, default=200)
     parser.add_argument("--checkpoint-every", type=int, default=500)
+    parser.add_argument(
+        "--query-sampling-mode",
+        choices=("curriculum", "uniform"),
+        default="curriculum",
+        help="Hybrid selectivity curriculum or legacy uniform-over-query sampling",
+    )
+    parser.add_argument("--curriculum-warmup-steps", type=int, default=2000)
+    parser.add_argument("--curriculum-transition-steps", type=int, default=4000)
+    parser.add_argument(
+        "--curriculum-warmup-probabilities",
+        default="0.70,0.25,0.05",
+        help="Broad,medium,tight probabilities during warm-up",
+    )
+    parser.add_argument(
+        "--curriculum-final-probabilities",
+        default="0.25,0.35,0.40",
+        help="Broad,medium,tight probabilities in the final mixture",
+    )
+    parser.add_argument("--curriculum-tight-max-band", type=float, default=0.01)
+    parser.add_argument("--curriculum-broad-min-band", type=float, default=0.10)
     return parser.parse_args()
 
 
@@ -170,6 +195,24 @@ def main() -> None:
         query_ids=args.query_id or None,
         target_band=args.target_band,
     )
+    curriculum = None
+    if args.query_sampling_mode == "curriculum":
+        warmup_probabilities = parse_bucket_probabilities(
+            args.curriculum_warmup_probabilities
+        )
+        final_probabilities = parse_bucket_probabilities(
+            args.curriculum_final_probabilities
+        )
+        curriculum = QueryCurriculumSampler(
+            queries,
+            total_steps=args.steps,
+            warmup_steps=args.curriculum_warmup_steps,
+            transition_steps=args.curriculum_transition_steps,
+            warmup_probabilities=warmup_probabilities,
+            final_probabilities=final_probabilities,
+            tight_max_band=args.curriculum_tight_max_band,
+            broad_min_band=args.curriculum_broad_min_band,
+        )
     x_all = runtime.dataset.X.float().to(device)
     architecture = {
         "d_numerical": runtime.dataset.d_numerical,
@@ -217,13 +260,26 @@ def main() -> None:
             "directory": str(Path(args.query_dir)),
             "query_ids": [query.query_id for query in queries],
             "target_band": args.target_band,
-            "sampling": "uniform_over_queries_then_uniform_support_with_replacement",
+            "sampling": (
+                "curriculum_bucket_then_uniform_band_then_uniform_query_then_"
+                "uniform_support_with_replacement"
+                if curriculum is not None
+                else "uniform_over_queries_then_uniform_support_with_replacement"
+            ),
+            "curriculum_buckets": (
+                curriculum.summary() if curriculum is not None else None
+            ),
         },
         "objective": {
             "numerical": "unchanged direct sigma^2 grad log-h correction MSE",
             "categorical": "unchanged conditional Generator Matching absorbed loss",
             "nested_query_auxiliary_loss": False,
         },
+        "checkpoint_selection": (
+            "minimum EMA-smoothed training loss during final curriculum mixture"
+            if curriculum is not None
+            else "minimum EMA-smoothed training loss after checkpoint warmup"
+        ),
         "training": vars(args),
     }
     with (output_dir / "metadata.json").open("w", encoding="utf-8") as stream:
@@ -239,7 +295,24 @@ def main() -> None:
             f"  {query.query_id}: target_band="
             f"{query.specification.get('target_band')} support={len(query.eligible_indices)}"
         )
-    print("Query sampling: uniform over queries; endpoint sampling: uniform with replacement")
+    if curriculum is None:
+        print("Query sampling: legacy uniform over queries")
+    else:
+        print(f"Query curriculum buckets: {curriculum.summary()}")
+        print(
+            "Warm-up probabilities (broad,medium,tight): "
+            f"{curriculum.warmup_probabilities} for "
+            f"{curriculum.warmup_steps} steps"
+        )
+        print(
+            "Linear transition to final probabilities: "
+            f"{curriculum.final_probabilities} over "
+            f"{curriculum.transition_steps} steps"
+        )
+        print(
+            f"Final stratified mixture begins at step {curriculum.final_phase_start}"
+        )
+    print("Endpoint sampling: uniform satisfying rows, with replacement")
     print("Frozen base tokenizer and ReLU category lookups shared by both guides")
     print(f"Combined trainable guide parameters: {guide_count:,} ({guide_count/base_count:.2%} of base)")
     print("No containment regularizer or BCE objective")
@@ -247,9 +320,28 @@ def main() -> None:
     best = float("inf")
     smoothed_loss = None
     query_counts = {query.query_id: 0 for query in queries}
+    band_counts = {}
+    bucket_counts = {bucket: 0 for bucket in BUCKET_ORDER}
+    phase_counts = {"warmup": 0, "transition": 0, "final_mixture": 0, "uniform": 0}
+    best_eligible_step = args.checkpoint_warmup
+    if curriculum is not None:
+        # Losses from different curriculum phases are not directly comparable.
+        # Select the best checkpoint only under the final target mixture.
+        best_eligible_step = max(best_eligible_step, curriculum.final_phase_start)
     for step in range(1, args.steps + 1):
-        query = random.choice(queries)
+        if curriculum is None:
+            query = random.choice(queries)
+            target_band = float(query.specification["target_band"])
+            bucket = "uniform"
+            phase = "uniform"
+        else:
+            query, bucket, target_band, phase = curriculum.sample(step, random)
         query_counts[query.query_id] += 1
+        band_key = str(target_band)
+        band_counts[band_key] = band_counts.get(band_key, 0) + 1
+        if bucket in bucket_counts:
+            bucket_counts[bucket] += 1
+        phase_counts[phase] += 1
         eligible = query.eligible_indices.to(device)
         x0 = sample_conditional_batch(x_all, eligible, args.batch_size)
         query_kwargs = expand_query(query, args.batch_size, device, x_all.dtype)
@@ -279,7 +371,7 @@ def main() -> None:
             if smoothed_loss is None
             else 0.99 * smoothed_loss + 0.01 * loss_value
         )
-        if step >= args.checkpoint_warmup and smoothed_loss < best:
+        if step >= best_eligible_step and smoothed_loss < best:
             best = smoothed_loss
             save_checkpoint(
                 output_dir / "best_guide.pt",
@@ -303,6 +395,7 @@ def main() -> None:
         if step == 1 or step % args.log_every == 0:
             print(
                 f"step={step:05d} query={query.query_id} support={len(eligible)} "
+                f"phase={phase} bucket={bucket} band={target_band:g} "
                 f"total={loss_value:.6f} gradient_mse={gradient_loss.item():.6f} "
                 f"categorical_loss={categorical_loss.item():.6f} "
                 f"smoothed_total={smoothed_loss:.6f}",
@@ -331,6 +424,17 @@ def main() -> None:
         best = smoothed_loss
     with (output_dir / "query_counts.json").open("w", encoding="utf-8") as stream:
         json.dump(query_counts, stream, indent=2)
+    with (output_dir / "sampling_counts.json").open("w", encoding="utf-8") as stream:
+        json.dump(
+            {
+                "queries": query_counts,
+                "bands": band_counts,
+                "buckets": bucket_counts,
+                "phases": phase_counts,
+            },
+            stream,
+            indent=2,
+        )
     print(f"Finished {args.steps} optimizer steps; best training loss={best:.6f}")
 
 

@@ -13,12 +13,12 @@ export PYTHONUNBUFFERED=1
 
 DATANAME="${DATANAME:-shoppers}"
 MODEL_NAME="${MODEL_NAME:-ft_periodic_seed0}"
-QUERY_FILE="${QUERY_FILE:-data90/${DATANAME}/queries_full/qf_shoppers_b10p0_0.json}"
+QUERY_FILE="${QUERY_FILE:-data90/${DATANAME}/queries_full/qf_shoppers_b00p5_4.json}"
 QUERY_ID="$(basename "${QUERY_FILE}" .json)"
-SAMPLES="${SAMPLES:-conditional_samples/${DATANAME}/${MODEL_NAME}_${QUERY_ID}_structured.csv}"
+SAMPLES="${SAMPLES:-conditional_samples/${DATANAME}/${MODEL_NAME}_${QUERY_ID}_curriculum.csv}"
 UNCONDITIONAL_SAMPLES="${UNCONDITIONAL_SAMPLES:-tabdiff/result/${DATANAME}/${MODEL_NAME}/8000/samples.csv}"
 REAL_DATA="${REAL_DATA:-synthetic/${DATANAME}/real.csv}"
-OUTPUT_DIR="${OUTPUT_DIR:-evaluations/${DATANAME}/${MODEL_NAME}_${QUERY_ID}_structured}"
+OUTPUT_DIR="${OUTPUT_DIR:-evaluations/${DATANAME}/${MODEL_NAME}_${QUERY_ID}_curriculum}"
 
 mkdir -p "${OUTPUT_DIR}"
 for path in "${SAMPLES}" "${UNCONDITIONAL_SAMPLES}" "${QUERY_FILE}" "${REAL_DATA}"; do

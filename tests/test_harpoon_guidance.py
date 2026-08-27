@@ -10,6 +10,10 @@ from sample_harpoon_fixed_box import (
     parse_bound_specs,
     summed_squared_relu_loss,
 )
+from sample_harpoon_full_query import (
+    categorical_allowed_set_loss,
+    full_query_guidance_loss,
+)
 
 
 class HarpoonConstraintTest(unittest.TestCase):
@@ -81,6 +85,28 @@ class HarpoonConstraintTest(unittest.TestCase):
         upper = torch.tensor([3.0, 7.0])
         loss = summed_squared_relu_loss(values, lower, upper)
         torch.testing.assert_close(loss, torch.tensor([1.0, 4.0]))
+
+    def test_uses_nearest_allowed_one_hot_target(self):
+        block = torch.tensor([[0.8, 0.1, 0.1], [0.0, 0.1, 0.9]])
+        allowed = torch.tensor([0, 2])
+        actual = categorical_allowed_set_loss(block, allowed)
+        torch.testing.assert_close(actual, torch.tensor([0.4, 0.2]))
+
+    def test_full_and_adds_numerical_and_categorical_terms(self):
+        x0_hat = torch.tensor([[2.0, 0.8, 0.1, 0.1]])
+        numerical_indices = torch.tensor([0])
+        lower = torch.tensor([0.0])
+        upper = torch.tensor([1.0])
+        categorical = [(1, 4, torch.tensor([0, 2]))]
+        actual = full_query_guidance_loss(
+            x0_hat,
+            numerical_indices,
+            lower,
+            upper,
+            categorical,
+        )
+        # Numeric upper violation: (2 - 1)^2 = 1; categorical min L1 = 0.4.
+        torch.testing.assert_close(actual, torch.tensor([1.4]))
 
 
 if __name__ == "__main__":

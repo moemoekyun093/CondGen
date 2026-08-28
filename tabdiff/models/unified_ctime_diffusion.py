@@ -7,6 +7,10 @@ from tabdiff.models.doob_h_transform import (
     categorical_candidate_log_h,
     guided_categorical_log_probs,
 )
+from tabdiff.models.harpoon_style import (
+    categorical_set_loss,
+    interval_relu_loss,
+)
 from tqdm import tqdm
 from itertools import chain
 
@@ -90,6 +94,8 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         self.h_guide_diagnostics_enabled = False
         self._h_guide_correction_chunks = []
         self._h_guide_time_diagnostics = []
+        self.harpoon_style_query = None
+        self.harpoon_style_strength = 0.2
         
         self.device = device
         
@@ -567,6 +573,8 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
         query_conditioning=None,
     ):
         """Install separate numerical-score and categorical-log-h guides."""
+        if self.harpoon_style_query is not None:
+            raise RuntimeError("Doob and HARPOON-style guidance cannot be enabled together")
         if strength < 0:
             raise ValueError("h-guide strength must be non-negative")
         if max_correction is not None and max_correction <= 0:
@@ -599,6 +607,111 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
                 name: torch.as_tensor(value, device=self.device, dtype=torch.float32).reshape(-1)
                 for name, value in query_conditioning.items()
             }
+
+    def set_harpoon_style_guidance(self, query_conditioning, strength=0.2):
+        """Install test-time manifold guidance through the frozen dirty estimate."""
+        if strength <= 0:
+            raise ValueError("HARPOON-style guidance strength must be positive")
+        if self.numerical_h_guide is not None or self.categorical_h_guide is not None:
+            raise RuntimeError("Doob and HARPOON-style guidance cannot be enabled together")
+        required = {
+            "query_lower",
+            "query_upper",
+            "query_numerical_active",
+            "query_categorical_allowed",
+            "query_categorical_active",
+        }
+        missing = required - set(query_conditioning)
+        if missing:
+            raise ValueError(f"HARPOON-style query is missing fields: {sorted(missing)}")
+        query = {
+            name: torch.as_tensor(value, device=self.device, dtype=torch.float32)
+            .detach()
+            .reshape(-1)
+            for name, value in query_conditioning.items()
+        }
+        expected = {
+            "query_lower": self.num_numerical_features,
+            "query_upper": self.num_numerical_features,
+            "query_numerical_active": self.num_numerical_features,
+            "query_categorical_allowed": int(np.asarray(self.num_classes).sum()),
+            "query_categorical_active": len(self.num_classes),
+        }
+        for name, width in expected.items():
+            if query[name].numel() != width:
+                raise ValueError(
+                    f"{name} has {query[name].numel()} values; expected {width}"
+                )
+        allowed_parts = torch.split(
+            query["query_categorical_allowed"], self.num_classes.tolist()
+        )
+        for column, (is_active, allowed) in enumerate(
+            zip(query["query_categorical_active"], allowed_parts)
+        ):
+            if is_active > 0 and allowed.sum() <= 0:
+                raise ValueError(f"active categorical column {column} has an empty set")
+        self.harpoon_style_query = query
+        self.harpoon_style_strength = float(strength)
+
+    def _harpoon_style_prediction(self, x_num_t, x_cat_t_soft, t, sigma):
+        """Denoise and differentiate the query loss through the frozen backbone."""
+        if self.harpoon_style_query is None:
+            denoised, raw_logits = self._denoise_fn(x_num_t, x_cat_t_soft, t, sigma=sigma)
+            return denoised, raw_logits, torch.zeros_like(x_num_t)
+
+        batch_size = x_num_t.shape[0]
+        query = {
+            name: value.to(device=x_num_t.device, dtype=x_num_t.dtype)[None, :]
+            .expand(batch_size, -1)
+            for name, value in self.harpoon_style_query.items()
+        }
+        with torch.enable_grad():
+            numerical_input = x_num_t.detach().requires_grad_(True)
+            categorical_input = x_cat_t_soft.detach().requires_grad_(True)
+            denoised, raw_logits = self._denoise_fn(
+                numerical_input,
+                categorical_input,
+                t,
+                sigma=sigma,
+            )
+            loss = interval_relu_loss(
+                denoised,
+                query["query_lower"],
+                query["query_upper"],
+                query["query_numerical_active"],
+            )
+            if len(self.num_classes) > 0:
+                loss = loss + categorical_set_loss(
+                    raw_logits,
+                    query["query_categorical_allowed"],
+                    query["query_categorical_active"],
+                    self.num_classes.tolist(),
+                )
+            numerical_gradient, categorical_gradient = torch.autograd.grad(
+                loss.sum(),
+                (numerical_input, categorical_input),
+            )
+
+            # A categorical state cannot be displaced continuously. Transfer the
+            # manifold gradient to the real-category logits used by MDLM instead.
+            categorical_logit_parts = []
+            for indices in self.slices_for_classes_with_mask:
+                state_gradient = categorical_gradient[:, indices]
+                categorical_logit_parts.append(
+                    torch.cat(
+                        (
+                            state_gradient[:, :-1],
+                            torch.zeros_like(state_gradient[:, -1:]),
+                        ),
+                        dim=1,
+                    )
+                )
+            guided_logits = raw_logits - self.harpoon_style_strength * torch.cat(
+                categorical_logit_parts, dim=1
+            ) if categorical_logit_parts else raw_logits
+            numerical_step = -self.harpoon_style_strength * numerical_gradient
+
+        return denoised.detach(), guided_logits.detach(), numerical_step.detach()
 
     def _guide_query_mask(self, batch_size, device, dtype):
         if self.h_guide_query_active_mask is None:
@@ -812,7 +925,7 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
 
         # Get predictions
         x_cat_hat_oh = self.to_one_hot(x_cat_hat).to(x_num_hat.dtype) if has_cat else x_cat_hat
-        denoised, raw_logits = self._denoise_fn(
+        denoised, raw_logits, harpoon_numerical_step = self._harpoon_style_prediction(
             x_num_hat.float(), x_cat_hat_oh,
             t_hat.squeeze().repeat(b), sigma=sigma_num_hat.unsqueeze(0).repeat(b,1)  # sigma accepts (bs, K_num)
         )
@@ -916,6 +1029,11 @@ class UnifiedCtimeDiffusion(torch.nn.Module):
                 
                 d_prime = (x_num_next - denoised) / sigma_num_next
                 x_num_next = x_num_hat + (sigma_num_next - sigma_num_hat) * (0.5 * d_cur + 0.5 * d_prime)
+
+        # HARPOON applies its manifold constraint step after the ordinary reverse
+        # diffusion update. Categorical coordinates were already transferred to
+        # the MDLM endpoint logits above.
+        x_num_next = x_num_next + harpoon_numerical_step
         
         return x_num_next, x_cat_next, q_xs
 

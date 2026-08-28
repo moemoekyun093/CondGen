@@ -20,6 +20,7 @@ GUIDE_SPECS="${GUIDE_SPECS:-curriculum=tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/do
 SUITE_SAMPLE_ROOT="${SUITE_SAMPLE_ROOT:-conditional_samples/${DATANAME}/query_suite}"
 NUM_SAMPLES="${NUM_SAMPLES:-1000}"
 BATCH_SIZE="${BATCH_SIZE:-1000}"
+NUM_TIMESTEPS="${NUM_TIMESTEPS:-}"
 SEED_BASE="${SEED_BASE:-10000}"
 SEED_BY_ARITY="${SEED_BY_ARITY:-0}"
 
@@ -87,12 +88,18 @@ echo "Guide ${GUIDE_CKPT}"
 echo "Output ${OUTPUT}"
 nvidia-smi
 
+TIMESTEP_ARGS=()
+if [ -n "${NUM_TIMESTEPS}" ]; then
+    TIMESTEP_ARGS+=(--num-timesteps "${NUM_TIMESTEPS}")
+fi
+
 python -u sample_doob_query.py \
     --guide-ckpt "${GUIDE_CKPT}" \
     --base-ckpt "${BASE_CKPT}" \
     --query-file "${QUERY_FILE}" \
     --num-samples "${NUM_SAMPLES}" \
     --batch-size "${BATCH_SIZE}" \
+    "${TIMESTEP_ARGS[@]}" \
     --seed "${SAMPLE_SEED}" \
     --output "${OUTPUT}" \
     --device cuda

@@ -40,6 +40,7 @@ QUERY_DIR="${QUERY_DIR:-data90/${DATANAME}/queries_fixed_box_permuted}"
 METHOD_SPECS="${METHOD_SPECS:?METHOD_SPECS must be comma-separated LABEL=SAMPLE_DIRECTORY entries}"
 BASELINE_LABEL="${BASELINE_LABEL:-}"
 OUTPUT_DIR="${OUTPUT_DIR:-evaluations/${DATANAME}/fixed_box_permuted_model_comparison}"
+EVAL_GROUP_BY="${EVAL_GROUP_BY:-arity}"
 
 IFS=',' read -r -a METHODS <<< "${METHOD_SPECS}"
 if [ "${#METHODS[@]}" -lt 2 ]; then
@@ -82,7 +83,7 @@ python -u evaluate_doob_query_suite.py \
     "${ARGS[@]}" \
     --real-data "synthetic/${DATANAME}/real.csv" \
     --info-file "data/${DATANAME}/info.json" \
-    --group-by arity \
+    --group-by "${EVAL_GROUP_BY}" \
     --alpha-beta-seed 0 \
     --alpha-beta-results "${ALPHA_RESULTS}" \
     --output-dir "${OUTPUT_DIR}"

@@ -380,7 +380,17 @@ def main() -> None:
             stream,
             indent=2,
         )
-    make_plots(grouped, output_dir, grouping_column)
+    try:
+        from tabdiff.query_suite_plots import make_query_suite_plots
+
+        make_query_suite_plots(grouped, output_dir, grouping_column)
+    except ModuleNotFoundError as error:
+        if error.name != "matplotlib":
+            raise
+        print(
+            "Matplotlib is unavailable; metrics and CSVs were saved. "
+            "Run plot_doob_query_suite_results.py in an environment with Matplotlib."
+        )
     print(f"Evaluated {len(queries)} queries for {len(methods)} model(s)")
     print(overall.to_string(index=False))
     print(f"Saved query-suite evaluation to {output_dir}")

@@ -11,13 +11,13 @@ cd /scratch/work/agrawaa4/TabDiff
 export PYTHONUNBUFFERED=1
 
 ALPHA_ENV="${ALPHA_ENV:-/scratch/work/agrawaa4/conda_envs/alpha}"
-TABDIFF_ENV="${CONDA_PREFIX:-}"
+NORMAL_EVAL_ENV="${NORMAL_EVAL_ENV:-/scratch/work/agrawaa4/conda_envs/relgdiff}"
 if [ ! -d "${ALPHA_ENV}" ]; then
     echo "ERROR: SynthCity evaluation environment not found: ${ALPHA_ENV}"
     exit 1
 fi
-if [ -z "${TABDIFF_ENV}" ]; then
-    echo "ERROR: no submitting Conda environment was inherited"
+if [ ! -d "${NORMAL_EVAL_ENV}" ]; then
+    echo "ERROR: normal evaluation environment not found: ${NORMAL_EVAL_ENV}"
     exit 1
 fi
 if [ -z "${CONDA_EXE:-}" ]; then
@@ -26,8 +26,7 @@ if [ -z "${CONDA_EXE:-}" ]; then
 fi
 CONDA_BASE="${CONDA_EXE%/bin/conda}"
 # Some site-provided Conda deactivate hooks read optional backup variables.
-# Temporarily disable nounset while Conda switches from the inherited submit
-# environment to the dedicated SynthCity environment.
+# Temporarily disable nounset while Conda switches environments.
 set +u
 source "${CONDA_BASE}/etc/profile.d/conda.sh"
 conda activate "${ALPHA_ENV}"
@@ -73,10 +72,10 @@ python -u evaluate_synthcity_alpha_suite.py \
     --output "${ALPHA_RESULTS}"
 
 set +u
-conda activate "${TABDIFF_ENV}"
+conda activate "${NORMAL_EVAL_ENV}"
 set -u
-echo "TabDiff metrics environment: ${CONDA_PREFIX}"
-python -c "import sdmetrics, xgboost; print('SDMetrics and XGBoost available')"
+echo "Normal evaluation environment: ${CONDA_PREFIX}"
+python -c "import matplotlib, sdmetrics, xgboost; print('Matplotlib, SDMetrics, and XGBoost available')"
 
 python -u evaluate_doob_query_suite.py \
     --query-dir "${QUERY_DIR}" \
@@ -87,5 +86,17 @@ python -u evaluate_doob_query_suite.py \
     --alpha-beta-seed 0 \
     --alpha-beta-results "${ALPHA_RESULTS}" \
     --output-dir "${OUTPUT_DIR}"
+
+PLOT_FILE="${OUTPUT_DIR}/query_suite_by_${EVAL_GROUP_BY}.png"
+if [ ! -f "${PLOT_FILE}" ]; then
+    set +u
+    conda activate "${NORMAL_EVAL_ENV}"
+    set -u
+    echo "Rendering plots in environment: ${CONDA_PREFIX}"
+    python -c "import matplotlib; print('Matplotlib available')"
+    python -u plot_doob_query_suite_results.py \
+        --output-dir "${OUTPUT_DIR}" \
+        --group-by "${EVAL_GROUP_BY}"
+fi
 
 echo "Saved list-driven fixed-query comparison to ${OUTPUT_DIR}"

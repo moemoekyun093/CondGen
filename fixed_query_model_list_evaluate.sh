@@ -10,6 +10,21 @@ set -euo pipefail
 cd /scratch/work/agrawaa4/TabDiff
 export PYTHONUNBUFFERED=1
 
+ALPHA_ENV="${ALPHA_ENV:-/scratch/work/agrawaa4/conda_envs/alpha}"
+if [ ! -d "${ALPHA_ENV}" ]; then
+    echo "ERROR: SynthCity evaluation environment not found: ${ALPHA_ENV}"
+    exit 1
+fi
+if [ -z "${CONDA_EXE:-}" ]; then
+    echo "ERROR: CONDA_EXE is unavailable; submit from a shell with Conda initialized"
+    exit 1
+fi
+CONDA_BASE="${CONDA_EXE%/bin/conda}"
+source "${CONDA_BASE}/etc/profile.d/conda.sh"
+conda activate "${ALPHA_ENV}"
+echo "Evaluation environment: ${CONDA_PREFIX}"
+python -c "from synthcity.metrics import eval_statistical; print('SynthCity AlphaPrecision available')"
+
 DATANAME="${DATANAME:-shoppers}"
 QUERY_DIR="${QUERY_DIR:-data90/${DATANAME}/queries_fixed_box_permuted}"
 METHOD_SPECS="${METHOD_SPECS:?METHOD_SPECS must be comma-separated LABEL=SAMPLE_DIRECTORY entries}"

@@ -3,7 +3,6 @@ import numpy as np
 import torch
 import pandas as pd
 # Metrics
-from eval.mle.mle import get_evaluator
 from eval.visualize_density import plot_density
 from sdmetrics.reports.single_table import QualityReport, DiagnosticReport
 from sdmetrics.single_table import LogisticDetection
@@ -87,6 +86,11 @@ class TabMetrics(object):
         return out_metrics, out_extras
     
     def evaluate_mle(self, syn_data):
+        # MLE is optional. Import its additional PRDC dependency only when the
+        # caller explicitly requests the MLE metric; density/C2ST evaluations
+        # should not require it merely to import TabMetrics.
+        from eval.mle.mle import get_evaluator
+
         train = syn_data.to_numpy()
         test = pd.read_csv(self.test_data_path).to_numpy()
         val = pd.read_csv(self.val_data_path).to_numpy() if self.val_data_path else None

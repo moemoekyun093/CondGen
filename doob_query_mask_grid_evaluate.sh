@@ -40,8 +40,10 @@ python -u evaluate_doob_query_suite.py \
     --group-by target_band \
     --output-dir "${SUITE_EVAL_DIR}"
 
-python -u plot_query_mask_grid_3d.py \
+python -u plot_query_mask_grid_2d.py \
     --per-query "${SUITE_EVAL_DIR}/per_query.csv" \
-    --output-dir "${SUITE_EVAL_DIR}"
+    --output-dir "${SUITE_EVAL_DIR}" \
+    --primary-method "${METHOD_LABEL}" \
+    --baseline-method "${HARPOON_LABEL}"
 
 echo "Finished selectivity-by-mask evaluation"

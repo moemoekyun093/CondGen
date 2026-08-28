@@ -20,7 +20,7 @@ SEED_BASE="${SEED_BASE:-10000}"
 # curriculum outputs separate so older curriculum samples cannot be reused by
 # mistake merely because they have matching query filenames.
 SUITE_SAMPLE_ROOT="${SUITE_SAMPLE_ROOT:-conditional_samples/${DATANAME}/doob_vs_harpoon_style_s50}"
-DOOB_SAMPLE_DIR="${DOOB_SAMPLE_DIR:-${SUITE_SAMPLE_ROOT}/${DOOB_LABEL}}"
+DOOB_SAMPLE_DIR="${DOOB_SAMPLE_DIR:-conditional_samples/${DATANAME}/query_suite_comparison/doob_tight_curriculum}"
 HARPOON_STYLE_SAMPLE_DIR="${HARPOON_STYLE_SAMPLE_DIR:-${SUITE_SAMPLE_ROOT}/${HARPOON_STYLE_LABEL}}"
 OUTPUT_DIR="${OUTPUT_DIR:-evaluations/${DATANAME}/doob_vs_harpoon_style_s50}"
 

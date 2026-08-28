@@ -38,10 +38,17 @@ def parse_methods(values: list[str]) -> dict[str, Path]:
     return methods
 
 
-def synthcity_features(real: pd.DataFrame, synthetic: pd.DataFrame, info: dict):
-    """Match the feature preparation in TabDiff's eval/eval_quality.py."""
+def synthcity_features(
+    schema_real: pd.DataFrame,
+    real: pd.DataFrame,
+    synthetic: pd.DataFrame,
+    info: dict,
+):
+    """Match TabDiff preprocessing with categories fitted on the full schema."""
+    schema_real = schema_real.copy()
     real = real.copy()
     synthetic = synthetic.copy()
+    schema_real.columns = range(len(schema_real.columns))
     real.columns = range(len(real.columns))
     synthetic.columns = range(len(synthetic.columns))
     numerical = list(info["num_col_idx"])
@@ -56,9 +63,13 @@ def synthcity_features(real: pd.DataFrame, synthetic: pd.DataFrame, info: dict):
     synthetic_num = synthetic[numerical].to_numpy()
     if categorical:
         encoder = OneHotEncoder()
+        schema_cat = schema_real[categorical].to_numpy().astype(str)
         real_cat = real[categorical].to_numpy().astype(str)
         synthetic_cat = synthetic[categorical].to_numpy().astype(str)
-        encoder.fit(real_cat)
+        # The conditional subset can omit valid categories. Fit the vocabulary
+        # on the full real table, but compute Alpha/Beta using only the filtered
+        # conditional rows and generated rows below.
+        encoder.fit(schema_cat)
         real_cat = encoder.transform(real_cat)
         synthetic_cat = encoder.transform(synthetic_cat)
         if hasattr(real_cat, "toarray"):
@@ -74,13 +85,14 @@ def synthcity_features(real: pd.DataFrame, synthetic: pd.DataFrame, info: dict):
 
 
 def evaluate_pair(
+    schema_real: pd.DataFrame,
     conditional_real: pd.DataFrame,
     synthetic: pd.DataFrame,
     info: dict,
     seed: int,
 ) -> tuple[float, float]:
     real_features, synthetic_features = synthcity_features(
-        conditional_real, synthetic, info
+        schema_real, conditional_real, synthetic, info
     )
     if not np.isfinite(real_features).all() or not np.isfinite(
         synthetic_features
@@ -132,6 +144,7 @@ def main() -> None:
                 raise FileNotFoundError(sample_path)
             samples = pd.read_csv(sample_path)
             alpha_precision, beta_recall = evaluate_pair(
+                real,
                 conditional_real,
                 samples,
                 info,

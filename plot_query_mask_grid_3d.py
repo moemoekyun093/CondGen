@@ -48,6 +48,46 @@ def plot_metric_group(frame: pd.DataFrame, output: Path, definitions, title: str
     plt.close(figure)
 
 
+def plot_method_comparison(
+    grouped: pd.DataFrame,
+    output: Path,
+    definitions,
+    title: str,
+) -> None:
+    """Place each method on a separate row with common metric scales."""
+    import matplotlib.pyplot as plt
+
+    methods = list(grouped["method"].unique())
+    figure = plt.figure(figsize=(6.0 * len(definitions), 5.0 * len(methods)))
+    for row, method in enumerate(methods):
+        selected = grouped[grouped["method"] == method]
+        for column, (metric, metric_title) in enumerate(definitions):
+            index = row * len(definitions) + column + 1
+            axis = figure.add_subplot(
+                len(methods), len(definitions), index, projection="3d"
+            )
+            x, y, z, selectivities = surface_data(selected, metric)
+            axis.plot_surface(
+                x, y, z, cmap="viridis", alpha=0.82, edgecolor="none",
+                vmin=0.0, vmax=1.0,
+            )
+            axis.scatter(x.ravel(), y.ravel(), z.ravel(), color="black", s=12)
+            axis.set_xticks(np.log10(selectivities))
+            axis.set_xticklabels(
+                [f"{value:g}" for value in selectivities], rotation=25
+            )
+            axis.set_xlabel("Parent-query selectivity")
+            axis.set_ylabel("Active predicates")
+            axis.set_zlabel("Score")
+            axis.set_zlim(0.0, 1.0)
+            axis.set_title(f"{method}: {metric_title}")
+            axis.view_init(elev=25, azim=-135)
+    figure.suptitle(title)
+    figure.tight_layout()
+    figure.savefig(output, dpi=200, bbox_inches="tight")
+    plt.close(figure)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--per-query", required=True)
@@ -95,6 +135,26 @@ def main() -> None:
                 ("categorical_joint_miss_rate_mean", "Categorical joint miss"),
             ),
             f"{method}: modality-specific constraint misses",
+        )
+    if grouped["method"].nunique() > 1:
+        plot_method_comparison(
+            grouped,
+            output_dir / "method_comparison_constraint_quality_surfaces_3d.png",
+            (
+                ("violation_rate_mean", "Joint violation"),
+                ("shape_mean", "Column Shape"),
+                ("trend_mean", "Column-pair Trend"),
+            ),
+            "Doob versus HARPOON: selectivity × mask arity",
+        )
+        plot_method_comparison(
+            grouped,
+            output_dir / "method_comparison_modality_miss_surfaces_3d.png",
+            (
+                ("numeric_joint_miss_rate_mean", "Numerical joint miss"),
+                ("categorical_joint_miss_rate_mean", "Categorical joint miss"),
+            ),
+            "Doob versus HARPOON: modality-specific misses",
         )
     print(f"Saved 3D query-mask surfaces to {output_dir}")
 

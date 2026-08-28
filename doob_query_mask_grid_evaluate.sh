@@ -25,6 +25,7 @@ echo "Normal evaluation environment: ${CONDA_PREFIX}"
 DATANAME="${DATANAME:-shoppers}"
 QUERY_DIR="${QUERY_DIR:-data90/${DATANAME}/queries_selectivity_mask_grid}"
 METHOD_LABEL="${METHOD_LABEL:-doob_masked_25000}"
+HARPOON_LABEL="${HARPOON_LABEL:-harpoon_style_tabdiff_eta02_s50}"
 SUITE_SAMPLE_ROOT="${SUITE_SAMPLE_ROOT:-conditional_samples/${DATANAME}/selectivity_mask_grid}"
 SUITE_EVAL_DIR="${SUITE_EVAL_DIR:-evaluations/${DATANAME}/selectivity_mask_grid}"
 mkdir -p evaluations/slurm "${SUITE_EVAL_DIR}"
@@ -32,6 +33,8 @@ mkdir -p evaluations/slurm "${SUITE_EVAL_DIR}"
 python -u evaluate_doob_query_suite.py \
     --query-dir "${QUERY_DIR}" \
     --method "${METHOD_LABEL}=${SUITE_SAMPLE_ROOT}/${METHOD_LABEL}" \
+    --method "${HARPOON_LABEL}=${SUITE_SAMPLE_ROOT}/${HARPOON_LABEL}" \
+    --baseline-method "${HARPOON_LABEL}" \
     --real-data "synthetic/${DATANAME}/real.csv" \
     --info-file "data/${DATANAME}/info.json" \
     --group-by target_band \

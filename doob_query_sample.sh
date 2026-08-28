@@ -33,13 +33,28 @@ QUERY_FILE="${QUERY_FILE:-data90/${DATANAME}/queries_full/qf_shoppers_b00p5_4.js
 QUERY_ID="$(basename "${QUERY_FILE}" .json)"
 NUM_SAMPLES="${NUM_SAMPLES:-1000}"
 BATCH_SIZE="${BATCH_SIZE:-1000}"
+NUM_TIMESTEPS="${NUM_TIMESTEPS:-50}"
+ACTIVE_COLUMNS="${ACTIVE_COLUMNS:-}"
+PREDICATE_MASK="${PREDICATE_MASK:-}"
 OUTPUT="${OUTPUT:-conditional_samples/${DATANAME}/${MODEL_NAME}_${QUERY_ID}_curriculum.csv}"
+
+if [ -n "${ACTIVE_COLUMNS}" ] && [ -n "${PREDICATE_MASK}" ]; then
+    echo "ERROR: set only one of ACTIVE_COLUMNS or PREDICATE_MASK"
+    exit 1
+fi
+MASK_ARGS=()
+if [ -n "${ACTIVE_COLUMNS}" ]; then
+    MASK_ARGS+=(--active-columns "${ACTIVE_COLUMNS}")
+elif [ -n "${PREDICATE_MASK}" ]; then
+    MASK_ARGS+=(--predicate-mask "${PREDICATE_MASK}")
+fi
 
 echo "========================================"
 echo "Dataset         : ${DATANAME}"
 echo "Base checkpoint : ${BASE_CKPT}"
 echo "Guide checkpoint: ${GUIDE_CKPT}"
 echo "Query           : ${QUERY_FILE}"
+echo "Active columns  : ${ACTIVE_COLUMNS:-${PREDICATE_MASK:-all}}"
 echo "Output          : ${OUTPUT}"
 echo "========================================"
 nvidia-smi
@@ -57,6 +72,8 @@ python -u sample_doob_query.py \
     --query-file "${QUERY_FILE}" \
     --num-samples "${NUM_SAMPLES}" \
     --batch-size "${BATCH_SIZE}" \
+    --num-timesteps "${NUM_TIMESTEPS}" \
+    "${MASK_ARGS[@]}" \
     --output "${OUTPUT}" \
     --device cuda
 

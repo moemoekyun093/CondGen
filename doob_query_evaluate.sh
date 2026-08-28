@@ -11,11 +11,31 @@ set -euo pipefail
 cd /scratch/work/agrawaa4/TabDiff
 export PYTHONUNBUFFERED=1
 
+NORMAL_EVAL_ENV="${NORMAL_EVAL_ENV:-/scratch/work/agrawaa4/conda_envs/relgdiff}"
+if [ ! -d "${NORMAL_EVAL_ENV}" ]; then
+    echo "ERROR: normal evaluation environment not found: ${NORMAL_EVAL_ENV}"
+    exit 1
+fi
+if [ -z "${CONDA_EXE:-}" ]; then
+    echo "ERROR: CONDA_EXE is unavailable; submit from a shell with Conda initialized"
+    exit 1
+fi
+CONDA_BASE="${CONDA_EXE%/bin/conda}"
+set +u
+source "${CONDA_BASE}/etc/profile.d/conda.sh"
+conda activate "${NORMAL_EVAL_ENV}"
+set -u
+echo "Normal evaluation environment: ${CONDA_PREFIX}"
+
 DATANAME="${DATANAME:-shoppers}"
 MODEL_NAME="${MODEL_NAME:-ft_periodic_seed0}"
 QUERY_FILE="${QUERY_FILE:-data90/${DATANAME}/queries_full/qf_shoppers_b00p5_4.json}"
 QUERY_ID="$(basename "${QUERY_FILE}" .json)"
 SAMPLES="${SAMPLES:-conditional_samples/${DATANAME}/${MODEL_NAME}_${QUERY_ID}_curriculum.csv}"
+SAVED_QUERY_FILE="${SAMPLES%.csv}.query.json"
+if [ -f "${SAVED_QUERY_FILE}" ]; then
+    QUERY_FILE="${SAVED_QUERY_FILE}"
+fi
 UNCONDITIONAL_SAMPLES="${UNCONDITIONAL_SAMPLES:-tabdiff/result/${DATANAME}/${MODEL_NAME}/8000/samples.csv}"
 REAL_DATA="${REAL_DATA:-synthetic/${DATANAME}/real.csv}"
 OUTPUT_DIR="${OUTPUT_DIR:-evaluations/${DATANAME}/${MODEL_NAME}_${QUERY_ID}_curriculum}"

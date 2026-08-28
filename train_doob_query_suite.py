@@ -8,6 +8,7 @@ import random
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import torch
 from torch.nn import functional as F
 
@@ -21,7 +22,13 @@ from tabdiff.doob_query_curriculum import (
     QueryCurriculumSampler,
     parse_bucket_probabilities,
 )
-from tabdiff.doob_query_suite import load_structured_query_suite
+from tabdiff.doob_query_masking import (
+    eligible_indices_for_predicate_mask,
+    mask_query_kwargs,
+    predicate_hit_matrix,
+    sample_predicate_mask,
+)
+from tabdiff.doob_query_suite import _model_column_names, load_structured_query_suite
 from tabdiff.models.doob_h_transform import (
     StructuredCategoricalHTransformGuide,
     StructuredNumericalHScoreGuide,
@@ -86,7 +93,45 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--curriculum-tight-max-band", type=float, default=0.01)
     parser.add_argument("--curriculum-broad-min-band", type=float, default=0.10)
+    parser.add_argument(
+        "--curriculum-reference-metadata",
+        default=None,
+        help="Reuse the selectivity schedule stored in an earlier metadata.json",
+    )
+    parser.add_argument(
+        "--predicate-mask-mode",
+        choices=("full", "mixed"),
+        default="full",
+        help="Legacy full queries or shared per-step predicate subsets",
+    )
+    parser.add_argument("--random-predicate-active-probability", type=float, default=0.5)
+    parser.add_argument("--all-active-query-probability", type=float, default=0.1)
+    parser.add_argument("--all-inactive-query-probability", type=float, default=0.1)
     return parser.parse_args()
+
+
+def apply_reference_curriculum(args):
+    if args.curriculum_reference_metadata is None:
+        return
+    with open(args.curriculum_reference_metadata, "r", encoding="utf-8") as stream:
+        metadata = json.load(stream)
+    training = metadata.get("training", {})
+    keys = (
+        "query_sampling_mode",
+        "curriculum_warmup_steps",
+        "curriculum_transition_steps",
+        "curriculum_warmup_probabilities",
+        "curriculum_final_probabilities",
+        "curriculum_tight_max_band",
+        "curriculum_broad_min_band",
+    )
+    missing = [key for key in keys if key not in training]
+    if missing:
+        raise ValueError(
+            "reference metadata is missing curriculum fields: " + ", ".join(missing)
+        )
+    for key in keys:
+        setattr(args, key, training[key])
 
 
 def expand_query(query, batch_size: int, device, dtype):
@@ -175,8 +220,19 @@ def save_checkpoint(path, numerical, categorical, metadata, step, loss, ema):
 
 def main() -> None:
     args = parse_args()
+    apply_reference_curriculum(args)
     if min(args.steps, args.batch_size, args.h_candidate_batch_size) <= 0:
         raise ValueError("steps and batch sizes must be positive")
+    if args.predicate_mask_mode == "mixed":
+        mask_probabilities = (
+            args.random_predicate_active_probability,
+            args.all_active_query_probability,
+            args.all_inactive_query_probability,
+        )
+        if any(value < 0 or value > 1 for value in mask_probabilities):
+            raise ValueError("predicate-mask probabilities must lie in [0, 1]")
+        if sum(mask_probabilities[1:]) > 1:
+            raise ValueError("all-active and all-inactive probabilities exceed one")
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -195,6 +251,28 @@ def main() -> None:
         query_ids=args.query_id or None,
         target_band=args.target_band,
     )
+    numerical_names, categorical_names = _model_column_names(runtime.info)
+    core_indices = None
+    query_hit_matrices = None
+    if args.predicate_mask_mode == "mixed":
+        core_indices_path = Path(args.query_dir).parent / "splits" / "train_idx.npy"
+        if not core_indices_path.is_file():
+            raise FileNotFoundError(
+                f"query-suite core split is missing: {core_indices_path}"
+            )
+        core_indices = np.load(core_indices_path).astype(np.int64)
+        real_path = Path("synthetic") / args.dataname / "real.csv"
+        if not real_path.is_file():
+            raise FileNotFoundError(f"raw training table is missing: {real_path}")
+        real_frame = pd.read_csv(real_path)
+        if len(real_frame) != len(runtime.dataset):
+            raise ValueError(
+                "raw real table and transformed training tensor are misaligned"
+            )
+        query_hit_matrices = {
+            query.query_id: predicate_hit_matrix(real_frame, query.specification)
+            for query in queries
+        }
     curriculum = None
     if args.query_sampling_mode == "curriculum":
         warmup_probabilities = parse_bucket_probabilities(
@@ -269,6 +347,20 @@ def main() -> None:
             "curriculum_buckets": (
                 curriculum.summary() if curriculum is not None else None
             ),
+            "predicate_masking": {
+                "mode": args.predicate_mask_mode,
+                "all_active_probability": args.all_active_query_probability,
+                "all_inactive_probability": args.all_inactive_query_probability,
+                "random_subset_probability": (
+                    1.0
+                    - args.all_active_query_probability
+                    - args.all_inactive_query_probability
+                ),
+                "random_predicate_active_probability": (
+                    args.random_predicate_active_probability
+                ),
+                "shared_by_optimizer_step_batch": True,
+            },
         },
         "objective": {
             "numerical": "unchanged direct sigma^2 grad log-h correction MSE",
@@ -313,6 +405,17 @@ def main() -> None:
             f"Final stratified mixture begins at step {curriculum.final_phase_start}"
         )
     print("Endpoint sampling: uniform satisfying rows, with replacement")
+    if args.predicate_mask_mode == "mixed":
+        print(
+            "Predicate masking: "
+            f"all-active={args.all_active_query_probability:.0%}, "
+            f"all-inactive={args.all_inactive_query_probability:.0%}, "
+            "random-subset="
+            f"{1-args.all_active_query_probability-args.all_inactive_query_probability:.0%} "
+            f"with per-predicate p={args.random_predicate_active_probability:g}"
+        )
+    else:
+        print("Predicate masking: full query on every optimizer step")
     print("Frozen base tokenizer and ReLU category lookups shared by both guides")
     print(f"Combined trainable guide parameters: {guide_count:,} ({guide_count/base_count:.2%} of base)")
     print("No containment regularizer or BCE objective")
@@ -323,6 +426,8 @@ def main() -> None:
     band_counts = {}
     bucket_counts = {bucket: 0 for bucket in BUCKET_ORDER}
     phase_counts = {"warmup": 0, "transition": 0, "final_mixture": 0, "uniform": 0}
+    mask_counts = {"all_active": 0, "all_inactive": 0, "random_subset": 0}
+    arity_counts = {}
     best_eligible_step = args.checkpoint_warmup
     if curriculum is not None:
         # Losses from different curriculum phases are not directly comparable.
@@ -342,9 +447,43 @@ def main() -> None:
         if bucket in bucket_counts:
             bucket_counts[bucket] += 1
         phase_counts[phase] += 1
-        eligible = query.eligible_indices.to(device)
+        if args.predicate_mask_mode == "mixed":
+            predicate_mask, mask_kind = sample_predicate_mask(
+                len(query.specification["predicates"]),
+                device=device,
+                random_active_probability=args.random_predicate_active_probability,
+                all_active_probability=args.all_active_query_probability,
+                all_inactive_probability=args.all_inactive_query_probability,
+            )
+            eligible = eligible_indices_for_predicate_mask(
+                query_hit_matrices[query.query_id],
+                core_indices,
+                predicate_mask,
+            ).to(device)
+        else:
+            predicate_mask = torch.ones(
+                len(query.specification["predicates"]),
+                dtype=torch.bool,
+                device=device,
+            )
+            mask_kind = "all_active"
+            # Preserve the original full-query training path exactly.
+            eligible = query.eligible_indices.to(device)
+        mask_counts[mask_kind] += 1
+        active_arity = int(predicate_mask.sum().item())
+        arity_counts[str(active_arity)] = arity_counts.get(str(active_arity), 0) + 1
         x0 = sample_conditional_batch(x_all, eligible, args.batch_size)
-        query_kwargs = expand_query(query, args.batch_size, device, x_all.dtype)
+        single_query_kwargs = mask_query_kwargs(
+            query.model_kwargs(device, x_all.dtype),
+            query.specification,
+            predicate_mask,
+            numerical_names,
+            categorical_names,
+        )
+        query_kwargs = {
+            name: value[None, :].expand(args.batch_size, -1)
+            for name, value in single_query_kwargs.items()
+        }
         optimizer.zero_grad(set_to_none=True)
         gradient_loss, categorical_loss = structured_joint_batch(
             runtime,
@@ -395,6 +534,7 @@ def main() -> None:
         if step == 1 or step % args.log_every == 0:
             print(
                 f"step={step:05d} query={query.query_id} support={len(eligible)} "
+                f"mask={mask_kind} arity={active_arity} "
                 f"phase={phase} bucket={bucket} band={target_band:g} "
                 f"total={loss_value:.6f} gradient_mse={gradient_loss.item():.6f} "
                 f"categorical_loss={categorical_loss.item():.6f} "
@@ -431,6 +571,8 @@ def main() -> None:
                 "bands": band_counts,
                 "buckets": bucket_counts,
                 "phases": phase_counts,
+                "predicate_masks": mask_counts,
+                "active_arities": arity_counts,
             },
             stream,
             indent=2,

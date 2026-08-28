@@ -16,6 +16,11 @@ from tabdiff.doob_h_runtime import (
     resolve_base_checkpoint,
 )
 from tabdiff.doob_h_evaluation import raw_constraint_report
+from tabdiff.doob_query_masking import (
+    mask_query_kwargs,
+    masked_query_specification,
+    parse_predicate_mask,
+)
 from tabdiff.doob_query_suite import load_structured_query_suite
 from tabdiff.doob_query_suite import _model_column_names
 from tabdiff.models.doob_h_transform import (
@@ -40,6 +45,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", required=True)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--seed", type=int, default=0)
+    mask_group = parser.add_mutually_exclusive_group()
+    mask_group.add_argument(
+        "--active-columns",
+        default=None,
+        help="Comma-separated constrained column names, or 'all'/'none'",
+    )
+    mask_group.add_argument(
+        "--predicate-mask",
+        default=None,
+        help="Binary mask in query predicate order, e.g. 101001",
+    )
     parser.add_argument(
         "--diagnose-guidance",
         action="store_true",
@@ -88,6 +104,24 @@ def main() -> None:
         runtime,
         query_ids=[query_id],
     )[0]
+    predicate_mask = parse_predicate_mask(
+        query.specification,
+        active_columns=args.active_columns,
+        predicate_mask=args.predicate_mask,
+        device=device,
+    )
+    numerical_names, categorical_names = _model_column_names(runtime.info)
+    active_query_kwargs = mask_query_kwargs(
+        query.model_kwargs(device, torch.float32),
+        query.specification,
+        predicate_mask,
+        numerical_names,
+        categorical_names,
+    )
+    active_specification = masked_query_specification(
+        query.specification,
+        predicate_mask,
+    )
 
     numerical_config = dict(metadata["numerical_guide"])
     categorical_config = dict(metadata["categorical_guide"])
@@ -110,7 +144,7 @@ def main() -> None:
         max_correction=args.max_correction,
         max_log_ratio=args.max_log_h_ratio,
         candidate_batch_size=args.h_candidate_batch_size,
-        query_conditioning=query.model_kwargs(device, torch.float32),
+        query_conditioning=active_query_kwargs,
     )
     if args.diagnose_guidance:
         runtime.diffusion.enable_numerical_h_guide_diagnostics()
@@ -120,6 +154,11 @@ def main() -> None:
         runtime.diffusion.num_timesteps = args.num_timesteps
 
     print(f"Query: {query_id}")
+    print(
+        "Active predicates: "
+        f"{int(predicate_mask.sum().item())}/{predicate_mask.numel()} "
+        f"({active_specification['active_columns']})"
+    )
     print("Numerical constraints: clean intervals with monotone endpoint encodings")
     print("Categorical constraints: sums of ReLU-frozen base category lookups")
     print("Categorical start: ordinary t=1 masked prior; no equality shortcut")
@@ -141,13 +180,13 @@ def main() -> None:
         int(key): value for key, value in runtime.info["idx_name_mapping"].items()
     }
     frame.rename(columns=index_to_name, inplace=True)
-    constraint_report, joint = raw_constraint_report(frame, query.specification)
+    constraint_report, joint = raw_constraint_report(frame, active_specification)
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     frame.to_csv(output, index=False)
     with output.with_suffix(".query.json").open("w", encoding="utf-8") as stream:
-        json.dump(query.specification, stream, indent=2)
+        json.dump(active_specification, stream, indent=2)
     report = {
         **constraint_report,
         "query_id": query_id,

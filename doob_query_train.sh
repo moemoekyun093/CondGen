@@ -44,6 +44,11 @@ CURRICULUM_WARMUP_STEPS="${CURRICULUM_WARMUP_STEPS:-2000}"
 CURRICULUM_TRANSITION_STEPS="${CURRICULUM_TRANSITION_STEPS:-4000}"
 CURRICULUM_WARMUP_PROBABILITIES="${CURRICULUM_WARMUP_PROBABILITIES:-0.70,0.25,0.05}"
 CURRICULUM_FINAL_PROBABILITIES="${CURRICULUM_FINAL_PROBABILITIES:-0.25,0.35,0.40}"
+CURRICULUM_REFERENCE_METADATA="${CURRICULUM_REFERENCE_METADATA:-}"
+PREDICATE_MASK_MODE="${PREDICATE_MASK_MODE:-full}"
+RANDOM_PREDICATE_ACTIVE_PROBABILITY="${RANDOM_PREDICATE_ACTIVE_PROBABILITY:-0.5}"
+ALL_ACTIVE_QUERY_PROBABILITY="${ALL_ACTIVE_QUERY_PROBABILITY:-0.1}"
+ALL_INACTIVE_QUERY_PROBABILITY="${ALL_INACTIVE_QUERY_PROBABILITY:-0.1}"
 
 echo "========================================"
 echo "Dataset          : ${DATANAME}"
@@ -58,11 +63,24 @@ echo "Query sampling   : ${QUERY_SAMPLING_MODE}"
 echo "Curriculum       : warmup=${CURRICULUM_WARMUP_STEPS}, transition=${CURRICULUM_TRANSITION_STEPS}"
 echo "Warm probabilities: ${CURRICULUM_WARMUP_PROBABILITIES} (broad,medium,tight)"
 echo "Final probabilities: ${CURRICULUM_FINAL_PROBABILITIES} (broad,medium,tight)"
+if [ -n "${CURRICULUM_REFERENCE_METADATA}" ]; then
+    echo "Curriculum source : ${CURRICULUM_REFERENCE_METADATA} (overrides values above)"
+fi
+echo "Predicate masks  : ${PREDICATE_MASK_MODE}"
+if [ "${PREDICATE_MASK_MODE}" = "mixed" ]; then
+    echo "Mask mixture     : all-active=${ALL_ACTIVE_QUERY_PROBABILITY}, all-inactive=${ALL_INACTIVE_QUERY_PROBABILITY}, random remainder"
+    echo "Random active p  : ${RANDOM_PREDICATE_ACTIVE_PROBABILITY}"
+fi
 echo "State tokenizer  : frozen base FT-periodic tokenizer"
 echo "Numerical query  : monotone lower/upper embeddings after time fusion"
 echo "Categorical query: sum of ReLU-frozen base category lookups"
 echo "========================================"
 nvidia-smi
+
+REFERENCE_ARGS=()
+if [ -n "${CURRICULUM_REFERENCE_METADATA}" ]; then
+    REFERENCE_ARGS+=(--curriculum-reference-metadata "${CURRICULUM_REFERENCE_METADATA}")
+fi
 
 python -u train_doob_query_suite.py \
     --dataname "${DATANAME}" \
@@ -83,6 +101,11 @@ python -u train_doob_query_suite.py \
     --curriculum-transition-steps "${CURRICULUM_TRANSITION_STEPS}" \
     --curriculum-warmup-probabilities "${CURRICULUM_WARMUP_PROBABILITIES}" \
     --curriculum-final-probabilities "${CURRICULUM_FINAL_PROBABILITIES}" \
+    "${REFERENCE_ARGS[@]}" \
+    --predicate-mask-mode "${PREDICATE_MASK_MODE}" \
+    --random-predicate-active-probability "${RANDOM_PREDICATE_ACTIVE_PROBABILITY}" \
+    --all-active-query-probability "${ALL_ACTIVE_QUERY_PROBABILITY}" \
+    --all-inactive-query-probability "${ALL_INACTIVE_QUERY_PROBABILITY}" \
     --checkpoint-warmup 200 \
     --device cuda
 

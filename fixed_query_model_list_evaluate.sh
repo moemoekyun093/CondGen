@@ -20,8 +20,13 @@ if [ -z "${CONDA_EXE:-}" ]; then
     exit 1
 fi
 CONDA_BASE="${CONDA_EXE%/bin/conda}"
+# Some site-provided Conda deactivate hooks read optional backup variables.
+# Temporarily disable nounset while Conda switches from the inherited submit
+# environment to the dedicated SynthCity environment.
+set +u
 source "${CONDA_BASE}/etc/profile.d/conda.sh"
 conda activate "${ALPHA_ENV}"
+set -u
 echo "Evaluation environment: ${CONDA_PREFIX}"
 python -c "from synthcity.metrics import eval_statistical; print('SynthCity AlphaPrecision available')"
 

@@ -105,7 +105,14 @@ def raw_modality_constraint_report(frame: pd.DataFrame, query: dict) -> dict:
     """Separate joint and per-predicate miss rates by query modality."""
     predicates = query.get("predicates", [])
     if not predicates:
-        raise ValueError("modality diagnostics require predicate-style query metadata")
+        empty = {
+            "num_constraints": 0,
+            "joint_hit_rate": 1.0,
+            "joint_miss_rate": 0.0,
+            "mean_per_constraint_hit_rate": 1.0,
+            "mean_per_constraint_miss_rate": 0.0,
+        }
+        return {"numeric": dict(empty), "categorical": dict(empty)}
     output = {}
     for modality in ("numeric", "categorical"):
         selected = [

@@ -61,6 +61,7 @@ nvidia-smi
 python -u sample_harpoon_full_query.py \
     --dataname "${DATANAME}" \
     --query-file "${QUERY_FILE}" \
+    --allow-partial-query \
     --harpoon-root "${HARPOON_ROOT}" \
     --runtime-root "${RUNTIME_ROOT}" \
     --checkpoint "${CHECKPOINT}" \

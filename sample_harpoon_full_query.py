@@ -27,6 +27,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataname", choices=("shoppers",), default="shoppers")
     parser.add_argument("--query-file", required=True)
+    parser.add_argument(
+        "--allow-partial-query",
+        action="store_true",
+        help="Permit omitted columns; omitted predicates contribute no HARPOON loss",
+    )
     parser.add_argument("--harpoon-root", default="baselines/harpoon")
     parser.add_argument("--runtime-root", required=True)
     parser.add_argument("--checkpoint", default=None)
@@ -170,15 +175,18 @@ def main() -> None:
             predicates_by_name[name] = predicate
         missing = sorted(set(table_names) - set(predicates_by_name))
         extra = sorted(set(predicates_by_name) - set(table_names))
-        if missing or extra:
+        if extra or (missing and not args.allow_partial_query):
             raise ValueError(
-                f"full query must constrain every table column; missing={missing}, extra={extra}"
+                f"query columns are incompatible with the table; missing={missing}, extra={extra}. "
+                "Use --allow-partial-query to relax omitted columns."
             )
 
         numerical_indices_list: list[int] = []
         standardized_lower: list[float] = []
         standardized_upper: list[float] = []
         for index, name in enumerate(numeric_names):
+            if name not in predicates_by_name:
+                continue
             predicate = predicates_by_name[name]
             if predicate.get("modality") != "numeric" or predicate.get("op") != "between":
                 raise ValueError(f"expected numeric between predicate for {name!r}")
@@ -204,6 +212,10 @@ def main() -> None:
         for column_index, (name, categories) in enumerate(
             zip(categorical_names, prepper.OneHotEncoder.categories_)
         ):
+            width = len(categories)
+            if name not in predicates_by_name:
+                ohe_offset += width
+                continue
             predicate = predicates_by_name[name]
             if predicate.get("modality") != "categorical" or predicate.get("op") != "in":
                 raise ValueError(f"expected categorical in predicate for {name!r}")
@@ -222,7 +234,6 @@ def main() -> None:
                 device=device,
                 dtype=torch.long,
             )
-            width = len(categories)
             categorical_constraints.append(
                 (ohe_offset, ohe_offset + width, allowed_indices)
             )
@@ -316,7 +327,8 @@ def main() -> None:
         "numerical_loss": "sum_j ReLU(lower_j-x0_hat_j)^2 + ReLU(x0_hat_j-upper_j)^2",
         "categorical_set_loss": "sum_j min_{k in S_j} ||x0_hat_j-e_{j,k}||_1",
         "constraint_combination": "full AND by addition",
-        "raw_full_query_hit_rate": generated_report["joint_hit_rate"],
+        "raw_query_hit_rate": generated_report["joint_hit_rate"],
+        "arity": len(query["predicates"]),
         "test_reference_rows_satisfying": reference_report["rows_satisfying"],
         "test_reference_rows": reference_report["num_rows"],
     }

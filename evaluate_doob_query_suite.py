@@ -31,6 +31,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--real-data", default="synthetic/shoppers/real.csv")
     parser.add_argument("--info-file", default="data/shoppers/info.json")
     parser.add_argument("--output-dir", required=True)
+    parser.add_argument(
+        "--group-by",
+        choices=("target_band", "arity"),
+        default="target_band",
+    )
     return parser.parse_args()
 
 
@@ -103,7 +108,7 @@ def aggregate(rows: pd.DataFrame, keys: list[str]) -> pd.DataFrame:
     return pd.concat((means, standard_deviations, counts), axis=1).reset_index()
 
 
-def make_plots(by_band: pd.DataFrame, output_dir: Path) -> None:
+def make_plots(grouped: pd.DataFrame, output_dir: Path, group_by: str) -> None:
     import matplotlib.pyplot as plt
     from matplotlib.ticker import PercentFormatter
 
@@ -113,9 +118,9 @@ def make_plots(by_band: pd.DataFrame, output_dir: Path) -> None:
         ("shape", "Column Shape (higher is better)", "Shape score"),
         ("trend", "Column-pair Trend (higher is better)", "Trend score"),
     )
-    for label in by_band["method"].unique():
-        selected = by_band[by_band["method"] == label].sort_values("target_band")
-        x = selected["target_band"].to_numpy(dtype=float)
+    for label in grouped["method"].unique():
+        selected = grouped[grouped["method"] == label].sort_values(group_by)
+        x = selected[group_by].to_numpy(dtype=float)
         for axis, (metric, _, _) in zip(axes, definitions):
             mean = selected[f"{metric}_mean"].to_numpy(dtype=float)
             std = selected[f"{metric}_std"].to_numpy(dtype=float)
@@ -127,16 +132,19 @@ def make_plots(by_band: pd.DataFrame, output_dir: Path) -> None:
                 alpha=0.14,
             )
     for axis, (_, title, ylabel) in zip(axes, definitions):
-        axis.set_xscale("log")
+        if group_by == "target_band":
+            axis.set_xscale("log")
         axis.set_ylim(0.0, 1.0)
-        axis.set_xlabel("Target selectivity band")
+        axis.set_xlabel(
+            "Target selectivity band" if group_by == "target_band" else "Active predicates"
+        )
         axis.set_ylabel(ylabel)
         axis.set_title(title)
         axis.grid(alpha=0.25)
     axes[0].yaxis.set_major_formatter(PercentFormatter(1.0))
     axes[0].legend()
     figure.tight_layout()
-    figure.savefig(output_dir / "query_suite_shape_trend_violation.png", dpi=180)
+    figure.savefig(output_dir / f"query_suite_by_{group_by}.png", dpi=180)
     plt.close(figure)
 
 
@@ -162,6 +170,7 @@ def main() -> None:
     for _, query in queries:
         query_id = query["query_id"]
         target_band = float(query["target_band"])
+        arity = int(query.get("arity", len(query["predicates"])))
         real_report, real_mask = raw_constraint_report(real, query)
         conditional_real = real.loc[real_mask].reset_index(drop=True)
         if len(conditional_real) < 2:
@@ -186,17 +195,14 @@ def main() -> None:
                     "method": label,
                     "query_id": query_id,
                     "target_band": target_band,
+                    "arity": arity,
+                    "num_numeric_constraints": modality_report["numeric"]["num_constraints"],
+                    "num_categorical_constraints": modality_report["categorical"]["num_constraints"],
                     "generated_rows": len(samples),
                     "conditional_real_rows": len(conditional_real),
                     "conditional_real_rate": real_report["joint_hit_rate"],
                     "raw_joint_hit_rate": hit_rate,
                     "violation_rate": 1.0 - hit_rate,
-                    "num_numeric_constraints": modality_report["numeric"][
-                        "num_constraints"
-                    ],
-                    "num_categorical_constraints": modality_report["categorical"][
-                        "num_constraints"
-                    ],
                     "numeric_joint_miss_rate": modality_report["numeric"][
                         "joint_miss_rate"
                     ],
@@ -219,10 +225,14 @@ def main() -> None:
             )
 
     per_query = pd.DataFrame(rows)
-    by_band = aggregate(per_query, ["method", "target_band"])
+    grouping_column = args.group_by
+    grouped = aggregate(per_query, ["method", grouping_column])
     overall = aggregate(per_query, ["method"])
     per_query.to_csv(output_dir / "per_query.csv", index=False)
-    by_band.to_csv(output_dir / "by_selectivity_band.csv", index=False)
+    grouped_filename = (
+        "by_selectivity_band.csv" if grouping_column == "target_band" else "by_arity.csv"
+    )
+    grouped.to_csv(output_dir / grouped_filename, index=False)
     overall.to_csv(output_dir / "overall.csv", index=False)
     with (output_dir / "summary.json").open("w", encoding="utf-8") as stream:
         json.dump(
@@ -231,12 +241,13 @@ def main() -> None:
                 "num_queries": len(queries),
                 "methods": list(methods),
                 "overall": overall.to_dict(orient="records"),
-                "by_selectivity_band": by_band.to_dict(orient="records"),
+                "group_by": grouping_column,
+                "grouped": grouped.to_dict(orient="records"),
             },
             stream,
             indent=2,
         )
-    make_plots(by_band, output_dir)
+    make_plots(grouped, output_dir, grouping_column)
     print(f"Evaluated {len(queries)} queries for {len(methods)} model(s)")
     print(overall.to_string(index=False))
     print(f"Saved query-suite evaluation to {output_dir}")

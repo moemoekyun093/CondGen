@@ -19,6 +19,7 @@ HARPOON_LABEL="${HARPOON_LABEL:-harpoon_eta02}"
 SUITE_EVAL_DIR="${SUITE_EVAL_DIR:-evaluations/${DATANAME}/doob_vs_harpoon_query_suite}"
 REAL_DATA="${REAL_DATA:-synthetic/${DATANAME}/real.csv}"
 INFO_FILE="${INFO_FILE:-data/${DATANAME}/info.json}"
+EVAL_GROUP_BY="${EVAL_GROUP_BY:-target_band}"
 
 mkdir -p evaluations/slurm "${SUITE_EVAL_DIR}"
 
@@ -28,8 +29,9 @@ python -u evaluate_doob_query_suite.py \
     --method "${HARPOON_LABEL}=${SUITE_SAMPLE_ROOT}/${HARPOON_LABEL}" \
     --real-data "${REAL_DATA}" \
     --info-file "${INFO_FILE}" \
+    --group-by "${EVAL_GROUP_BY}" \
     --output-dir "${SUITE_EVAL_DIR}"
 
-echo "Modality columns in by_selectivity_band.csv:"
+echo "Modality columns are included in the grouped evaluation CSV:"
 echo "  numeric_joint_miss_rate_mean / categorical_joint_miss_rate_mean"
 echo "  numeric_mean_column_miss_rate_mean / categorical_mean_column_miss_rate_mean"

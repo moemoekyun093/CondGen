@@ -21,6 +21,7 @@ SUITE_SAMPLE_ROOT="${SUITE_SAMPLE_ROOT:-conditional_samples/${DATANAME}/query_su
 NUM_SAMPLES="${NUM_SAMPLES:-1000}"
 BATCH_SIZE="${BATCH_SIZE:-1000}"
 SEED_BASE="${SEED_BASE:-10000}"
+SEED_BY_ARITY="${SEED_BY_ARITY:-0}"
 
 mapfile -t QUERY_FILES < <(python list_accepted_queries.py "${QUERY_DIR}")
 IFS=',' read -r -a MODEL_SPECS <<< "${GUIDE_SPECS}"
@@ -51,6 +52,15 @@ QUERY_ID="$(basename "${QUERY_FILE}" .json)"
 GUIDE_CKPT="${GUIDE_DIR}/best_guide.pt"
 OUTPUT_DIR="${SUITE_SAMPLE_ROOT}/${LABEL}"
 OUTPUT="${OUTPUT_DIR}/${QUERY_ID}.csv"
+SAMPLE_SEED="$((SEED_BASE + QUERY_INDEX))"
+if [ "${SEED_BY_ARITY}" = "1" ]; then
+    if [[ "${QUERY_ID}" =~ _k([0-9]+)$ ]]; then
+        SAMPLE_SEED="$((SEED_BASE + 10#${BASH_REMATCH[1]} - 1))"
+    else
+        echo "ERROR: SEED_BY_ARITY=1 requires a query id ending in _kNN"
+        exit 1
+    fi
+fi
 
 CKPT_DIR="tabdiff/ckpt/${DATANAME}/${MODEL_NAME}"
 CKPT_CANDIDATES=("${CKPT_DIR}"/best_ema_model_*.pt)
@@ -83,6 +93,6 @@ python -u sample_doob_query.py \
     --query-file "${QUERY_FILE}" \
     --num-samples "${NUM_SAMPLES}" \
     --batch-size "${BATCH_SIZE}" \
-    --seed "$((SEED_BASE + QUERY_INDEX))" \
+    --seed "${SAMPLE_SEED}" \
     --output "${OUTPUT}" \
     --device cuda

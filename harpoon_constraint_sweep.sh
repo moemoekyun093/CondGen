@@ -23,7 +23,28 @@ NUM_SAMPLES="${NUM_SAMPLES:-1000}"
 BATCH_SIZE="${BATCH_SIZE:-1000}"
 GUIDANCE_SCALE="${GUIDANCE_SCALE:-0.2}"
 COLUMN_ORDER_CSV="${COLUMN_ORDER_CSV:-0,1,2,3,4,5,6,7,8,9}"
-LEVEL="${SLURM_ARRAY_TASK_ID}"
+OUTPUT_ROOT="${OUTPUT_ROOT:-}"
+FIXED_QUERY_PREFIX="${FIXED_QUERY_PREFIX:-qf_fixed_box}"
+SEED_BASE="${SEED_BASE:-42}"
+ORDERINGS_FILE="${ORDERINGS_FILE:-}"
+if [ -n "${ORDERINGS_FILE}" ]; then
+    if [ ! -f "${ORDERINGS_FILE}" ]; then
+        echo "ERROR: orderings file not found: ${ORDERINGS_FILE}"
+        exit 1
+    fi
+    GLOBAL_TASK="${SLURM_ARRAY_TASK_ID}"
+    ORDERING_INDEX=$((GLOBAL_TASK / MAX_CONSTRAINTS))
+    LEVEL=$((GLOBAL_TASK % MAX_CONSTRAINTS + 1))
+    ORDERING_LINE=$(sed -n "$((ORDERING_INDEX + 1))p" "${ORDERINGS_FILE}")
+    if [ -z "${ORDERING_LINE}" ]; then
+        echo "ERROR: no ordering ${ORDERING_INDEX} in ${ORDERINGS_FILE}"
+        exit 1
+    fi
+    IFS='|' read -r ORDERING_ID COLUMN_ORDER_CSV <<< "${ORDERING_LINE}"
+    FIXED_QUERY_PREFIX="${FIXED_QUERY_PREFIX}_${ORDERING_ID}"
+else
+    LEVEL="${SLURM_ARRAY_TASK_ID}"
+fi
 
 if [ "${DATANAME}" != "shoppers" ]; then
     echo "ERROR: the HARPOON comparison is currently Shoppers-only"
@@ -68,7 +89,12 @@ for ((INDEX = 0; INDEX < MAX_CONSTRAINTS; INDEX++)); do
 done
 
 printf -v LEVEL_PADDED '%02d' "${LEVEL}"
-OUTPUT="conditional_samples/${DATANAME}/harpoon_constraint_sweep_${SWEEP_NAME}_k${LEVEL_PADDED}.csv"
+if [ -n "${OUTPUT_ROOT}" ]; then
+    mkdir -p "${OUTPUT_ROOT}"
+    OUTPUT="${OUTPUT_ROOT}/${FIXED_QUERY_PREFIX}_k${LEVEL_PADDED}.csv"
+else
+    OUTPUT="conditional_samples/${DATANAME}/harpoon_constraint_sweep_${SWEEP_NAME}_k${LEVEL_PADDED}.csv"
+fi
 
 echo "========================================"
 echo "Job ID            : ${SLURM_JOB_ID}"
@@ -96,6 +122,7 @@ python -u sample_harpoon_fixed_box.py \
     --num-samples "${NUM_SAMPLES}" \
     --batch-size "${BATCH_SIZE}" \
     --guidance-scale "${GUIDANCE_SCALE}" \
+    --seed "$((SEED_BASE + LEVEL - 1))" \
     --output "${OUTPUT}" \
     --device cuda
 

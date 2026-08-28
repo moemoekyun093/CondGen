@@ -30,7 +30,28 @@ MAX_CORRECTION="${MAX_CORRECTION:-5.0}"
 MAX_LOG_H_RATIO="${MAX_LOG_H_RATIO:-10.0}"
 H_CANDIDATE_BATCH_SIZE="${H_CANDIDATE_BATCH_SIZE:-65536}"
 COLUMN_ORDER_CSV="${COLUMN_ORDER_CSV:-0,1,2,3,4,5,6,7,8,9}"
-LEVEL="${SLURM_ARRAY_TASK_ID}"
+OUTPUT_ROOT="${OUTPUT_ROOT:-}"
+FIXED_QUERY_PREFIX="${FIXED_QUERY_PREFIX:-qf_fixed_box}"
+SEED_BASE="${SEED_BASE:-0}"
+ORDERINGS_FILE="${ORDERINGS_FILE:-}"
+if [ -n "${ORDERINGS_FILE}" ]; then
+    if [ ! -f "${ORDERINGS_FILE}" ]; then
+        echo "ERROR: orderings file not found: ${ORDERINGS_FILE}"
+        exit 1
+    fi
+    GLOBAL_TASK="${SLURM_ARRAY_TASK_ID}"
+    ORDERING_INDEX=$((GLOBAL_TASK / MAX_CONSTRAINTS))
+    LEVEL=$((GLOBAL_TASK % MAX_CONSTRAINTS + 1))
+    ORDERING_LINE=$(sed -n "$((ORDERING_INDEX + 1))p" "${ORDERINGS_FILE}")
+    if [ -z "${ORDERING_LINE}" ]; then
+        echo "ERROR: no ordering ${ORDERING_INDEX} in ${ORDERINGS_FILE}"
+        exit 1
+    fi
+    IFS='|' read -r ORDERING_ID COLUMN_ORDER_CSV <<< "${ORDERING_LINE}"
+    FIXED_QUERY_PREFIX="${FIXED_QUERY_PREFIX}_${ORDERING_ID}"
+else
+    LEVEL="${SLURM_ARRAY_TASK_ID}"
+fi
 
 if [ "${LEVEL}" -lt 1 ] || [ "${LEVEL}" -gt "${MAX_CONSTRAINTS}" ]; then
     echo "ERROR: array index ${LEVEL} must be in 1..${MAX_CONSTRAINTS}"
@@ -85,7 +106,12 @@ if [ ! -f "${GUIDE_CKPT}" ]; then
 fi
 
 printf -v LEVEL_PADDED '%02d' "${LEVEL}"
-OUTPUT="conditional_samples/${DATANAME}/${MODEL_NAME}_constraint_sweep_${SWEEP_NAME}_k${LEVEL_PADDED}.csv"
+if [ -n "${OUTPUT_ROOT}" ]; then
+    mkdir -p "${OUTPUT_ROOT}"
+    OUTPUT="${OUTPUT_ROOT}/${FIXED_QUERY_PREFIX}_k${LEVEL_PADDED}.csv"
+else
+    OUTPUT="conditional_samples/${DATANAME}/${MODEL_NAME}_constraint_sweep_${SWEEP_NAME}_k${LEVEL_PADDED}.csv"
+fi
 
 echo "========================================"
 echo "Job ID            : ${SLURM_JOB_ID}"
@@ -110,6 +136,7 @@ python -u sample_doob_h.py \
     --max-log-h-ratio "${MAX_LOG_H_RATIO}" \
     --h-candidate-batch-size "${H_CANDIDATE_BATCH_SIZE}" \
     --active-columns "${ACTIVE_COLUMNS}" \
+    --seed "$((SEED_BASE + LEVEL - 1))" \
     --categorical-start-mode section4_posterior \
     --output "${OUTPUT}" \
     --device cuda

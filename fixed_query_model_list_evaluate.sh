@@ -2,9 +2,9 @@
 #SBATCH --job-name=fixed_query_list_eval
 #SBATCH --output=evaluations/slurm/%x_%j.out
 #SBATCH --error=evaluations/slurm/%x_%j.err
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=32G
-#SBATCH --time=04:00:00
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=48G
+#SBATCH --time=12:00:00
 
 set -euo pipefail
 cd /scratch/work/agrawaa4/TabDiff
@@ -41,6 +41,7 @@ python -u evaluate_doob_query_suite.py \
     --real-data "synthetic/${DATANAME}/real.csv" \
     --info-file "data/${DATANAME}/info.json" \
     --group-by arity \
+    --alpha-beta-seed 0 \
     --output-dir "${OUTPUT_DIR}"
 
 echo "Saved list-driven fixed-query comparison to ${OUTPUT_DIR}"

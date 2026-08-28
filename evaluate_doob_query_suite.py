@@ -11,6 +11,10 @@ import numpy as np
 import pandas as pd
 import torch
 
+from alpha_precision_standalone import (
+    alpha_precision_beta_recall_authenticity,
+    build_features,
+)
 from tabdiff.doob_h_evaluation import (
     raw_constraint_report,
     raw_modality_constraint_report,
@@ -41,6 +45,7 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Optional method label used for paired per-query metric differences",
     )
+    parser.add_argument("--alpha-beta-seed", type=int, default=0)
     return parser.parse_args()
 
 
@@ -69,18 +74,48 @@ def load_queries(query_dir: Path) -> list[tuple[Path, dict]]:
     return queries
 
 
-def density_metrics(reference_path: Path, samples: pd.DataFrame, info: dict) -> dict:
+def tabular_metrics(reference_path: Path, samples: pd.DataFrame, info: dict) -> dict:
     evaluator = TabMetrics(
         str(reference_path),
         str(reference_path),
         None,
         info,
         torch.device("cpu"),
-        metric_list=["density"],
+        metric_list=["density", "c2st", "c2st_xgb"],
         include_density_diagnostic=False,
     )
     metrics, _ = evaluator.evaluate(samples.copy())
     return {name: float(value) for name, value in metrics.items()}
+
+
+def alpha_beta_metrics(
+    reference: pd.DataFrame,
+    samples: pd.DataFrame,
+    info: dict,
+    seed: int,
+) -> tuple[float, float]:
+    """Exact standalone port of SynthCity's naive Alpha/Beta metrics."""
+    real_features, synthetic_features = build_features(reference, samples, info)
+    if not np.isfinite(real_features).all() or not np.isfinite(
+        synthetic_features
+    ).all():
+        raise ValueError("Alpha Precision/Beta Recall inputs contain non-finite values")
+    random = np.random.RandomState(seed)
+    count = min(len(real_features), len(synthetic_features))
+    if len(real_features) > count:
+        real_features = real_features[
+            random.choice(len(real_features), count, replace=False)
+        ]
+    if len(synthetic_features) > count:
+        synthetic_features = synthetic_features[
+            random.choice(len(synthetic_features), count, replace=False)
+        ]
+    alpha_precision, beta_recall, _ = alpha_precision_beta_recall_authenticity(
+        real_features,
+        synthetic_features,
+        seed=seed,
+    )
+    return alpha_precision, beta_recall
 
 
 def confidence_interval(hit_rate: float, count: int) -> tuple[float, float]:
@@ -99,6 +134,11 @@ def aggregate(rows: pd.DataFrame, keys: list[str]) -> pd.DataFrame:
         "shape",
         "trend",
         "overall",
+        "c2st",
+        "c2st_xgb",
+        "c2st_xgb_auc",
+        "alpha_precision",
+        "beta_recall",
         "conditional_real_rate",
         "conditional_real_rows",
         "numeric_joint_miss_rate",
@@ -152,6 +192,41 @@ def make_plots(grouped: pd.DataFrame, output_dir: Path, group_by: str) -> None:
     figure.savefig(output_dir / f"query_suite_by_{group_by}.png", dpi=180)
     plt.close(figure)
 
+    quality_definitions = (
+        ("c2st", "Logistic C2ST similarity"),
+        ("c2st_xgb", "XGBoost C2ST similarity"),
+        ("alpha_precision", "Alpha Precision"),
+        ("beta_recall", "Beta Recall"),
+    )
+    figure, axes = plt.subplots(2, 2, figsize=(12.5, 9.0), sharex=True)
+    for label in grouped["method"].unique():
+        selected = grouped[grouped["method"] == label].sort_values(group_by)
+        x = selected[group_by].to_numpy(dtype=float)
+        for axis, (metric, _) in zip(axes.flat, quality_definitions):
+            mean = selected[f"{metric}_mean"].to_numpy(dtype=float)
+            std = selected[f"{metric}_std"].to_numpy(dtype=float)
+            axis.plot(x, mean, marker="o", linewidth=2, label=label)
+            axis.fill_between(
+                x,
+                np.clip(mean - std, 0.0, 1.0),
+                np.clip(mean + std, 0.0, 1.0),
+                alpha=0.14,
+            )
+    for axis, (_, title) in zip(axes.flat, quality_definitions):
+        if group_by == "target_band":
+            axis.set_xscale("log")
+        axis.set_ylim(0.0, 1.0)
+        axis.set_xlabel(
+            "Target selectivity band" if group_by == "target_band" else "Active predicates"
+        )
+        axis.set_ylabel("Score (higher is better)")
+        axis.set_title(title)
+        axis.grid(alpha=0.25)
+    axes.flat[0].legend()
+    figure.tight_layout()
+    figure.savefig(output_dir / f"quality_metrics_by_{group_by}.png", dpi=180)
+    plt.close(figure)
+
 
 def main() -> None:
     args = parse_args()
@@ -174,7 +249,7 @@ def main() -> None:
     reference_dir.mkdir(parents=True, exist_ok=True)
 
     rows = []
-    for _, query in queries:
+    for query_index, (_, query) in enumerate(queries):
         query_id = query["query_id"]
         target_band = float(query["target_band"])
         arity = int(query.get("arity", len(query["predicates"])))
@@ -194,7 +269,13 @@ def main() -> None:
                 raise ValueError(f"column mismatch for {samples_path}")
             constraint_report, _ = raw_constraint_report(samples, query)
             modality_report = raw_modality_constraint_report(samples, query)
-            metrics = density_metrics(reference_path, samples, info)
+            metrics = tabular_metrics(reference_path, samples, info)
+            alpha_precision, beta_recall = alpha_beta_metrics(
+                conditional_real,
+                samples,
+                info,
+                args.alpha_beta_seed + query_index,
+            )
             hit_rate = float(constraint_report["joint_hit_rate"])
             ci_low, ci_high = confidence_interval(hit_rate, len(samples))
             rows.append(
@@ -227,6 +308,11 @@ def main() -> None:
                     "shape": metrics["density/Shape"],
                     "trend": metrics["density/Trend"],
                     "overall": metrics["density/Overall"],
+                    "c2st": metrics["c2st"],
+                    "c2st_xgb": metrics["c2st_xgb"],
+                    "c2st_xgb_auc": metrics["c2st_xgb_auc"],
+                    "alpha_precision": alpha_precision,
+                    "beta_recall": beta_recall,
                     "samples": str(samples_path),
                 }
             )
@@ -251,6 +337,10 @@ def main() -> None:
             "shape",
             "trend",
             "overall",
+            "c2st",
+            "c2st_xgb",
+            "alpha_precision",
+            "beta_recall",
         ]
         baseline = per_query[per_query["method"] == args.baseline_method][
             ["query_id", *difference_metrics]

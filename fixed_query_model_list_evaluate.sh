@@ -11,8 +11,13 @@ cd /scratch/work/agrawaa4/TabDiff
 export PYTHONUNBUFFERED=1
 
 ALPHA_ENV="${ALPHA_ENV:-/scratch/work/agrawaa4/conda_envs/alpha}"
+TABDIFF_ENV="${CONDA_PREFIX:-}"
 if [ ! -d "${ALPHA_ENV}" ]; then
     echo "ERROR: SynthCity evaluation environment not found: ${ALPHA_ENV}"
+    exit 1
+fi
+if [ -z "${TABDIFF_ENV}" ]; then
+    echo "ERROR: no submitting Conda environment was inherited"
     exit 1
 fi
 if [ -z "${CONDA_EXE:-}" ]; then
@@ -27,7 +32,7 @@ set +u
 source "${CONDA_BASE}/etc/profile.d/conda.sh"
 conda activate "${ALPHA_ENV}"
 set -u
-echo "Evaluation environment: ${CONDA_PREFIX}"
+echo "SynthCity environment: ${CONDA_PREFIX}"
 python -c "from synthcity.metrics import eval_statistical; print('SynthCity AlphaPrecision available')"
 
 DATANAME="${DATANAME:-shoppers}"
@@ -43,18 +48,35 @@ if [ "${#METHODS[@]}" -lt 2 ]; then
 fi
 
 ARGS=()
+METHOD_ARGS=()
 for METHOD in "${METHODS[@]}"; do
     if [[ "${METHOD}" != *=* ]]; then
         echo "ERROR: invalid method specification: ${METHOD}"
         exit 1
     fi
     ARGS+=(--method "${METHOD}")
+    METHOD_ARGS+=(--method "${METHOD}")
 done
 if [ -n "${BASELINE_LABEL}" ]; then
     ARGS+=(--baseline-method "${BASELINE_LABEL}")
 fi
 
 mkdir -p evaluations/slurm "${OUTPUT_DIR}"
+ALPHA_RESULTS="${OUTPUT_DIR}/synthcity_alpha_beta_per_query.csv"
+python -u evaluate_synthcity_alpha_suite.py \
+    --query-dir "${QUERY_DIR}" \
+    "${METHOD_ARGS[@]}" \
+    --real-data "synthetic/${DATANAME}/real.csv" \
+    --info-file "data/${DATANAME}/info.json" \
+    --seed 0 \
+    --output "${ALPHA_RESULTS}"
+
+set +u
+conda activate "${TABDIFF_ENV}"
+set -u
+echo "TabDiff metrics environment: ${CONDA_PREFIX}"
+python -c "import sdmetrics, xgboost; print('SDMetrics and XGBoost available')"
+
 python -u evaluate_doob_query_suite.py \
     --query-dir "${QUERY_DIR}" \
     "${ARGS[@]}" \
@@ -62,6 +84,7 @@ python -u evaluate_doob_query_suite.py \
     --info-file "data/${DATANAME}/info.json" \
     --group-by arity \
     --alpha-beta-seed 0 \
+    --alpha-beta-results "${ALPHA_RESULTS}" \
     --output-dir "${OUTPUT_DIR}"
 
 echo "Saved list-driven fixed-query comparison to ${OUTPUT_DIR}"

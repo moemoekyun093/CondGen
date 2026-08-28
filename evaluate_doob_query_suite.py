@@ -11,9 +11,6 @@ import numpy as np
 import pandas as pd
 import torch
 
-from sklearn.preprocessing import OneHotEncoder
-from synthcity.metrics import eval_statistical
-from synthcity.plugins.core.dataloader import GenericDataLoader
 from tabdiff.doob_h_evaluation import (
     raw_constraint_report,
     raw_modality_constraint_report,
@@ -45,6 +42,11 @@ def parse_args() -> argparse.Namespace:
         help="Optional method label used for paired per-query metric differences",
     )
     parser.add_argument("--alpha-beta-seed", type=int, default=0)
+    parser.add_argument(
+        "--alpha-beta-results",
+        default=None,
+        help="CSV produced by evaluate_synthcity_alpha_suite.py",
+    )
     return parser.parse_args()
 
 
@@ -85,72 +87,6 @@ def tabular_metrics(reference_path: Path, samples: pd.DataFrame, info: dict) -> 
     )
     metrics, _ = evaluator.evaluate(samples.copy())
     return {name: float(value) for name, value in metrics.items()}
-
-
-def alpha_beta_metrics(
-    reference: pd.DataFrame,
-    samples: pd.DataFrame,
-    info: dict,
-    seed: int,
-) -> tuple[float, float]:
-    """Run SynthCity AlphaPrecision exactly as TabDiff's eval_quality.py does."""
-    real = reference.copy()
-    synthetic = samples.copy()
-    real.columns = range(len(real.columns))
-    synthetic.columns = range(len(synthetic.columns))
-    numerical_indices = list(info["num_col_idx"])
-    categorical_indices = list(info["cat_col_idx"])
-    target_indices = list(info["target_col_idx"])
-    if info["task_type"] == "regression":
-        numerical_indices += target_indices
-    else:
-        categorical_indices += target_indices
-
-    real_numerical = real[numerical_indices].to_numpy()
-    synthetic_numerical = synthetic[numerical_indices].to_numpy()
-    if categorical_indices:
-        real_categorical = real[categorical_indices].to_numpy().astype(str)
-        synthetic_categorical = synthetic[categorical_indices].to_numpy().astype(str)
-        encoder = OneHotEncoder()
-        encoder.fit(real_categorical)
-        real_categorical = encoder.transform(real_categorical)
-        synthetic_categorical = encoder.transform(synthetic_categorical)
-        if hasattr(real_categorical, "toarray"):
-            real_categorical = real_categorical.toarray()
-            synthetic_categorical = synthetic_categorical.toarray()
-    else:
-        real_categorical = np.zeros((len(real), 0))
-        synthetic_categorical = np.zeros((len(synthetic), 0))
-    real_features = np.concatenate((real_numerical, real_categorical), axis=1).astype(
-        float
-    )
-    synthetic_features = np.concatenate(
-        (synthetic_numerical, synthetic_categorical), axis=1
-    ).astype(float)
-    if not np.isfinite(real_features).all() or not np.isfinite(synthetic_features).all():
-        raise ValueError("Alpha Precision/Beta Recall inputs contain non-finite values")
-
-    # SynthCity expects aligned sample counts for this metric. Preserve its
-    # implementation while making the conditional-reference subsampling paired
-    # and reproducible across methods for a given query.
-    random = np.random.RandomState(seed)
-    count = min(len(real_features), len(synthetic_features))
-    if len(real_features) > count:
-        real_features = real_features[
-            random.choice(len(real_features), count, replace=False)
-        ]
-    if len(synthetic_features) > count:
-        synthetic_features = synthetic_features[
-            random.choice(len(synthetic_features), count, replace=False)
-        ]
-    result = eval_statistical.AlphaPrecision().evaluate(
-        GenericDataLoader(pd.DataFrame(real_features)),
-        GenericDataLoader(pd.DataFrame(synthetic_features)),
-    )
-    return (
-        float(result["delta_precision_alpha_naive"]),
-        float(result["delta_coverage_beta_naive"]),
-    )
 
 
 def confidence_interval(hit_rate: float, count: int) -> tuple[float, float]:
@@ -269,6 +205,20 @@ def main() -> None:
     real_path = Path(args.real_data)
     info_path = Path(args.info_file)
     methods = parse_methods(args.method)
+    alpha_beta_lookup = {}
+    if args.alpha_beta_results is not None:
+        alpha_beta_frame = pd.read_csv(args.alpha_beta_results)
+        required = {"method", "query_id", "alpha_precision", "beta_recall"}
+        if not required.issubset(alpha_beta_frame.columns):
+            raise ValueError("alpha-beta results CSV is missing required columns")
+        for row in alpha_beta_frame.itertuples(index=False):
+            key = (str(row.method), str(row.query_id))
+            if key in alpha_beta_lookup:
+                raise ValueError(f"duplicate Alpha/Beta result for {key}")
+            alpha_beta_lookup[key] = (
+                float(row.alpha_precision),
+                float(row.beta_recall),
+            )
     if args.baseline_method is not None and args.baseline_method not in methods:
         raise ValueError("baseline-method must match one of the supplied method labels")
     for path in (query_dir, real_path, info_path, *methods.values()):
@@ -305,11 +255,11 @@ def main() -> None:
             constraint_report, _ = raw_constraint_report(samples, query)
             modality_report = raw_modality_constraint_report(samples, query)
             metrics = tabular_metrics(reference_path, samples, info)
-            alpha_precision, beta_recall = alpha_beta_metrics(
-                conditional_real,
-                samples,
-                info,
-                args.alpha_beta_seed + query_index,
+            alpha_key = (label, query_id)
+            if args.alpha_beta_results is not None and alpha_key not in alpha_beta_lookup:
+                raise ValueError(f"missing official SynthCity result for {alpha_key}")
+            alpha_precision, beta_recall = alpha_beta_lookup.get(
+                alpha_key, (float("nan"), float("nan"))
             )
             hit_rate = float(constraint_report["joint_hit_rate"])
             ci_low, ci_high = confidence_interval(hit_rate, len(samples))
@@ -418,6 +368,8 @@ def main() -> None:
                 "baseline_method": args.baseline_method,
                 "alpha_precision_backend": (
                     "synthcity.metrics.eval_statistical.AlphaPrecision"
+                    if args.alpha_beta_results is not None
+                    else None
                 ),
                 "relative_to_baseline": (
                     None

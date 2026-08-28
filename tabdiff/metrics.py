@@ -5,8 +5,11 @@ import pandas as pd
 # Metrics
 from eval.visualize_density import plot_density
 from sdmetrics.reports.single_table import QualityReport, DiagnosticReport
-from sdmetrics.single_table import LogisticDetection
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 from sdmetrics.single_table.detection.sklearn import ScikitLearnClassifierDetectionMetric
 from xgboost import XGBClassifier
 
@@ -148,10 +151,16 @@ class TabMetrics(object):
 
         new_real_data, new_syn_data, metadata = reorder(real_data, syn_data, info)
 
-        score = LogisticDetection.compute(
-            real_data=new_real_data,
-            synthetic_data=new_syn_data,
-            metadata=metadata
+        real_features, synthetic_features = shared_detection_features(
+            new_real_data,
+            new_syn_data,
+            numerical_width=ordered_numerical_width(info),
+        )
+        score, _ = classifier_detection_score(
+            real_features,
+            synthetic_features,
+            LogisticRegression(max_iter=1000, solver="lbfgs", random_state=0),
+            scale=True,
         )
         
         out_metrics = {
@@ -430,15 +439,21 @@ class TabMetrics(object):
 
         new_real_data, new_syn_data, metadata = reorder(real_data, syn_data, info)
 
-        score = XGBoostDetection.compute(
-            real_data=new_real_data,
-            synthetic_data=new_syn_data,
-            metadata=metadata
+        real_features, synthetic_features = shared_detection_features(
+            new_real_data,
+            new_syn_data,
+            numerical_width=ordered_numerical_width(info),
+        )
+        score, detection_auc = classifier_detection_score(
+            real_features,
+            synthetic_features,
+            XGBoostDetection._get_classifier(),
+            scale=False,
         )
 
         out_metrics = {
             "c2st_xgb": score,
-            "c2st_xgb_auc": 1 - score / 2,   # convert detection score to an AUC-style number
+            "c2st_xgb_auc": detection_auc,
         }
         out_extras = {}
         return out_metrics, out_extras  
@@ -494,6 +509,74 @@ class TabMetrics(object):
         syn_data[target_col_idx] = syn_target_col
         return syn_data
         
+def ordered_numerical_width(info):
+    """Number of leading numerical columns after ``reorder``."""
+    width = len(info["num_col_idx"])
+    if info["task_type"] == "regression":
+        width += len(info["target_col_idx"])
+    return width
+
+
+def shared_detection_features(real_data, synthetic_data, numerical_width):
+    """Encode both tables with one categorical vocabulary.
+
+    SDMetrics' detector fits its encoder on real data alone. That is invalid for
+    conditional references whose small row set may omit legitimate categories
+    found in generated data. A joint vocabulary preserves those categories and
+    prevents the detector from crashing on them.
+    """
+    combined = pd.concat((real_data, synthetic_data), ignore_index=True)
+    numerical = combined.iloc[:, :numerical_width].apply(
+        pd.to_numeric, errors="coerce"
+    )
+    numerical = numerical.fillna(numerical.median()).fillna(0.0).to_numpy(
+        dtype=np.float32
+    )
+    categorical = combined.iloc[:, numerical_width:].fillna("__missing__").astype(str)
+    if categorical.shape[1] > 0:
+        try:
+            encoder = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
+        except TypeError:
+            encoder = OneHotEncoder(handle_unknown="ignore", sparse=False)
+        categorical = encoder.fit_transform(categorical).astype(np.float32)
+        features = np.concatenate((numerical, categorical), axis=1)
+    else:
+        features = numerical
+    split = len(real_data)
+    return features[:split], features[split:]
+
+
+def classifier_detection_score(real_features, synthetic_features, classifier, scale):
+    """Return SDMetrics-style similarity and orientation-free detection AUC."""
+    count = min(len(real_features), len(synthetic_features))
+    if count < 4:
+        raise ValueError("C2ST requires at least four rows in each table")
+    rng = np.random.default_rng(0)
+    real_indices = rng.choice(len(real_features), size=count, replace=False)
+    synthetic_indices = rng.choice(len(synthetic_features), size=count, replace=False)
+    features = np.concatenate(
+        (real_features[real_indices], synthetic_features[synthetic_indices]), axis=0
+    )
+    labels = np.concatenate((np.zeros(count), np.ones(count)))
+    train_x, test_x, train_y, test_y = train_test_split(
+        features,
+        labels,
+        test_size=0.3,
+        random_state=0,
+        stratify=labels,
+    )
+    if scale:
+        scaler = StandardScaler()
+        train_x = scaler.fit_transform(train_x)
+        test_x = scaler.transform(test_x)
+    classifier.fit(train_x, train_y)
+    probabilities = classifier.predict_proba(test_x)[:, 1]
+    auc = float(roc_auc_score(test_y, probabilities))
+    detection_auc = max(auc, 1.0 - auc)
+    similarity = max(0.0, min(1.0, 2.0 * (1.0 - detection_auc)))
+    return similarity, detection_auc
+
+
 class XGBoostDetection(ScikitLearnClassifierDetectionMetric):
     name = "XGBoost Detection"
 

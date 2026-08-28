@@ -36,6 +36,11 @@ def parse_args() -> argparse.Namespace:
         choices=("target_band", "arity"),
         default="target_band",
     )
+    parser.add_argument(
+        "--baseline-method",
+        default=None,
+        help="Optional method label used for paired per-query metric differences",
+    )
     return parser.parse_args()
 
 
@@ -154,6 +159,8 @@ def main() -> None:
     real_path = Path(args.real_data)
     info_path = Path(args.info_file)
     methods = parse_methods(args.method)
+    if args.baseline_method is not None and args.baseline_method not in methods:
+        raise ValueError("baseline-method must match one of the supplied method labels")
     for path in (query_dir, real_path, info_path, *methods.values()):
         if not path.exists():
             raise FileNotFoundError(path)
@@ -234,6 +241,45 @@ def main() -> None:
     )
     grouped.to_csv(output_dir / grouped_filename, index=False)
     overall.to_csv(output_dir / "overall.csv", index=False)
+    relative_grouped = None
+    if args.baseline_method is not None:
+        difference_metrics = [
+            "raw_joint_hit_rate",
+            "violation_rate",
+            "numeric_joint_miss_rate",
+            "categorical_joint_miss_rate",
+            "shape",
+            "trend",
+            "overall",
+        ]
+        baseline = per_query[per_query["method"] == args.baseline_method][
+            ["query_id", *difference_metrics]
+        ].set_index("query_id")
+        relative_parts = []
+        for method in methods:
+            if method == args.baseline_method:
+                continue
+            selected = per_query[per_query["method"] == method].copy()
+            selected = selected.set_index("query_id")
+            if set(selected.index) != set(baseline.index):
+                raise ValueError(f"{method} and baseline query sets differ")
+            for metric in difference_metrics:
+                selected[f"delta_{metric}"] = selected[metric] - baseline[metric]
+            selected["baseline_method"] = args.baseline_method
+            relative_parts.append(selected.reset_index())
+        if relative_parts:
+            relative = pd.concat(relative_parts, ignore_index=True)
+            relative.to_csv(output_dir / "relative_to_baseline_per_query.csv", index=False)
+            delta_columns = [f"delta_{metric}" for metric in difference_metrics]
+            grouped_delta = relative.groupby(
+                ["method", grouping_column], sort=True
+            )[delta_columns]
+            delta_means = grouped_delta.mean().add_suffix("_mean")
+            delta_stds = grouped_delta.std(ddof=0).add_suffix("_std")
+            relative_grouped = pd.concat((delta_means, delta_stds), axis=1).reset_index()
+            relative_grouped.to_csv(
+                output_dir / "relative_to_baseline_grouped.csv", index=False
+            )
     with (output_dir / "summary.json").open("w", encoding="utf-8") as stream:
         json.dump(
             {
@@ -243,6 +289,12 @@ def main() -> None:
                 "overall": overall.to_dict(orient="records"),
                 "group_by": grouping_column,
                 "grouped": grouped.to_dict(orient="records"),
+                "baseline_method": args.baseline_method,
+                "relative_to_baseline": (
+                    None
+                    if relative_grouped is None
+                    else relative_grouped.to_dict(orient="records")
+                ),
             },
             stream,
             indent=2,

@@ -25,7 +25,13 @@ BATCH_SIZE="${BATCH_SIZE:-1000}"
 GUIDANCE_SCALE="${HARPOON_GUIDANCE_SCALE:-0.2}"
 SEED_BASE="${SEED_BASE:-10000}"
 
-mapfile -t QUERY_FILES < <(python list_accepted_queries.py "${QUERY_DIR}")
+QUERY_LIST_ARGS=()
+if [ -n "${QUERY_TARGET_BAND:-}" ]; then
+    QUERY_LIST_ARGS+=(--target-band "${QUERY_TARGET_BAND}")
+fi
+mapfile -t QUERY_FILES < <(
+    python list_accepted_queries.py "${QUERY_DIR}" "${QUERY_LIST_ARGS[@]}"
+)
 QUERY_INDEX="${SLURM_ARRAY_TASK_ID:?submit this script as a Slurm array}"
 if [ "${QUERY_INDEX}" -lt 0 ] || [ "${QUERY_INDEX}" -ge "${#QUERY_FILES[@]}" ]; then
     echo "ERROR: query array index ${QUERY_INDEX} is out of range"

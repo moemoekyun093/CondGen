@@ -15,6 +15,12 @@ def main() -> None:
         action="store_true",
         help="Print the first accepted query at each target selectivity band",
     )
+    parser.add_argument(
+        "--target-band",
+        type=float,
+        default=None,
+        help="Print only accepted queries at this target selectivity band",
+    )
     args = parser.parse_args()
     query_dir = Path(args.query_dir)
     if not query_dir.is_dir():
@@ -26,6 +32,8 @@ def main() -> None:
             query = json.load(stream)
         if query.get("accepted", True):
             band = float(query["target_band"])
+            if args.target_band is not None and not abs(band - args.target_band) <= 1e-12:
+                continue
             if args.one_per_band and band in seen_bands:
                 continue
             print(path)

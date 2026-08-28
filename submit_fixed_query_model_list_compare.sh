@@ -17,13 +17,15 @@ SEED_BASE="${SEED_BASE:-73010}"
 NUM_ORDERINGS="${NUM_ORDERINGS:-12}"
 ORDERING_SEED="${ORDERING_SEED:-7301}"
 
-# List format: "LABEL|TYPE|CHECKPOINT_OR_GUIDE_DIR|OPTIONAL_GUIDANCE_SCALE"
+# List format:
+# "LABEL|TYPE|CHECKPOINT_OR_GUIDE_DIR|OPTIONAL_GUIDANCE_SCALE|OLD_SAMPLE_GLOBS"
+# Separate multiple old globs with a semicolon. Matching uses query contents.
 # Supported TYPE values: legacy_doob, structured_doob, harpoon.
 # Add, remove, or replace entries here; labels must be unique and shell-safe.
 MODELS=(
-    "old_h|legacy_doob|tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/doob_h_partial_masks_concat_d48_l2_h4_f2_lr1e3_6000_candidate_logh|"
-    "new_h_constraints|structured_doob|tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/doob_query_tight_curriculum_d48_l2_18000|"
-    "harpoon_eta02|harpoon|/scratch/work/agrawaa4/harpoon_runtime/saved_models/${DATANAME}/diffputer_selfmade.pt|0.2"
+    "old_h|legacy_doob|tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/doob_h_partial_masks_concat_d48_l2_h4_f2_lr1e3_6000_candidate_logh||conditional_samples/${DATANAME}/${MODEL_NAME}_constraint_sweep_d48_l2_lr1e3_6000_k*.csv;conditional_samples/${DATANAME}/fixed_box_model_comparison/old_h/*.csv"
+    "new_h_constraints|structured_doob|tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/doob_query_tight_curriculum_d48_l2_18000||conditional_samples/${DATANAME}/fixed_box_model_comparison/new_h_constraints/*.csv"
+    "harpoon_eta02|harpoon|/scratch/work/agrawaa4/harpoon_runtime/saved_models/${DATANAME}/diffputer_selfmade.pt|0.2|conditional_samples/${DATANAME}/harpoon_constraint_sweep_summed_relu_eta02_k*.csv;conditional_samples/${DATANAME}/fixed_box_model_comparison/harpoon_eta02/*.csv"
 )
 
 if [ "${#MODELS[@]}" -lt 2 ]; then
@@ -63,7 +65,7 @@ declare -A SEEN_LABELS=()
 JOB_IDS=()
 METHODS=()
 for SPEC in "${MODELS[@]}"; do
-    IFS='|' read -r LABEL TYPE CHECKPOINT EXTRA <<< "${SPEC}"
+    IFS='|' read -r LABEL TYPE CHECKPOINT EXTRA OLD_SAMPLE_GLOBS <<< "${SPEC}"
     if [[ ! "${LABEL}" =~ ^[A-Za-z0-9_.-]+$ ]]; then
         echo "ERROR: unsafe or empty model label: ${LABEL}"
         exit 1
@@ -75,6 +77,33 @@ for SPEC in "${MODELS[@]}"; do
     SEEN_LABELS[$LABEL]=1
     SAMPLE_DIR="${SAMPLE_ROOT}/${LABEL}"
     mkdir -p "${SAMPLE_DIR}"
+
+    CACHE_ARGS=(
+        --query-dir "${QUERY_DIR}"
+        --target-dir "${SAMPLE_DIR}"
+    )
+    if [ -n "${OLD_SAMPLE_GLOBS:-}" ]; then
+        IFS=';' read -r -a SOURCE_GLOBS <<< "${OLD_SAMPLE_GLOBS}"
+        for SOURCE_GLOB in "${SOURCE_GLOBS[@]}"; do
+            CACHE_ARGS+=(--source-glob "${SOURCE_GLOB}")
+        done
+    fi
+    python reuse_matching_query_samples.py "${CACHE_ARGS[@]}"
+    METHODS+=("${LABEL}=${SAMPLE_DIR}")
+
+    COMPLETE_COUNT=0
+    for QUERY_FILE in "${QUERY_FILES[@]}"; do
+        QUERY_ID="$(basename "${QUERY_FILE}" .json)"
+        SAMPLE_FILE="${SAMPLE_DIR}/${QUERY_ID}.csv"
+        if [ -f "${SAMPLE_FILE}" ] && [ -f "${SAMPLE_FILE%.csv}.constraints.json" ]; then
+            COMPLETE_COUNT=$((COMPLETE_COUNT + 1))
+        fi
+    done
+    if [ "${COMPLETE_COUNT}" -eq "${NUM_QUERIES}" ]; then
+        echo "Reusing all ${NUM_QUERIES} completed samples for ${LABEL}; no sampling job submitted"
+        continue
+    fi
+    echo "${LABEL}: ${COMPLETE_COUNT}/${NUM_QUERIES} samples cached; submitting only missing work"
 
     case "${TYPE}" in
         legacy_doob)
@@ -122,21 +151,28 @@ for SPEC in "${MODELS[@]}"; do
     esac
     JOB_ID="${SUBMISSION%%;*}"
     JOB_IDS+=("${JOB_ID}")
-    METHODS+=("${LABEL}=${SAMPLE_DIR}")
     echo "Submitted ${LABEL} (${TYPE}): ${JOB_ID}"
 done
 
-DEPENDENCY="afterok"
-for JOB_ID in "${JOB_IDS[@]}"; do
-    DEPENDENCY+=":${JOB_ID}"
-done
 METHOD_SPECS=$(IFS=','; echo "${METHODS[*]}")
 BASELINE_LABEL="${MODELS[0]%%|*}"
-EVAL_SUBMISSION=$(DATANAME="${DATANAME}" QUERY_DIR="${QUERY_DIR}" \
-    METHOD_SPECS="${METHOD_SPECS}" BASELINE_LABEL="${BASELINE_LABEL}" \
-    OUTPUT_DIR="${OUTPUT_DIR}" \
-    sbatch --parsable --dependency="${DEPENDENCY}" \
-    fixed_query_model_list_evaluate.sh)
+if [ "${#JOB_IDS[@]}" -gt 0 ]; then
+    DEPENDENCY="afterok"
+    for JOB_ID in "${JOB_IDS[@]}"; do
+        DEPENDENCY+=":${JOB_ID}"
+    done
+    EVAL_SUBMISSION=$(DATANAME="${DATANAME}" QUERY_DIR="${QUERY_DIR}" \
+        METHOD_SPECS="${METHOD_SPECS}" BASELINE_LABEL="${BASELINE_LABEL}" \
+        OUTPUT_DIR="${OUTPUT_DIR}" \
+        sbatch --parsable --dependency="${DEPENDENCY}" \
+        fixed_query_model_list_evaluate.sh)
+else
+    DEPENDENCY="all samples reused; no dependency"
+    EVAL_SUBMISSION=$(DATANAME="${DATANAME}" QUERY_DIR="${QUERY_DIR}" \
+        METHOD_SPECS="${METHOD_SPECS}" BASELINE_LABEL="${BASELINE_LABEL}" \
+        OUTPUT_DIR="${OUTPUT_DIR}" \
+        sbatch --parsable fixed_query_model_list_evaluate.sh)
+fi
 EVAL_JOB="${EVAL_SUBMISSION%%;*}"
 
 echo "========================================"

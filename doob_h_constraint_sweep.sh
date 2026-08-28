@@ -125,6 +125,10 @@ echo "Active columns    : ${ACTIVE_COLUMNS}"
 echo "Samples           : ${NUM_SAMPLES}"
 echo "Output            : ${OUTPUT}"
 echo "========================================"
+if [ -f "${OUTPUT}" ] && [ -f "${OUTPUT%.csv}.constraints.json" ]; then
+    echo "Existing completed sample found; skipping ${OUTPUT}"
+    exit 0
+fi
 nvidia-smi
 
 python -u sample_doob_h.py \

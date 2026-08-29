@@ -100,21 +100,6 @@ def tabular_metrics(reference_path: Path, samples: pd.DataFrame, info: dict) -> 
     return {name: float(value) for name, value in metrics.items()}
 
 
-def density_metrics(reference_path: Path, samples: pd.DataFrame, info: dict) -> dict:
-    """Evaluate Shape/Trend using all feasible generated rows."""
-    evaluator = TabMetrics(
-        str(reference_path),
-        str(reference_path),
-        None,
-        info,
-        torch.device("cpu"),
-        metric_list=["density"],
-        include_density_diagnostic=False,
-    )
-    metrics, _ = evaluator.evaluate(samples.copy())
-    return {name: float(value) for name, value in metrics.items()}
-
-
 def confidence_interval(hit_rate: float, count: int) -> tuple[float, float]:
     standard_error = math.sqrt(hit_rate * (1.0 - hit_rate) / count)
     violation = 1.0 - hit_rate
@@ -148,6 +133,9 @@ def aggregate(rows: pd.DataFrame, keys: list[str]) -> pd.DataFrame:
         "filtered_shape",
         "filtered_trend",
         "filtered_overall",
+        "filtered_c2st",
+        "filtered_c2st_xgb",
+        "filtered_c2st_xgb_auc",
     ]
     grouped = rows.groupby(keys, sort=True, dropna=False)
     means = grouped[metrics].mean().add_suffix("_mean")
@@ -356,6 +344,9 @@ def main() -> None:
             if not filtered_available:
                 filtered_reliability = "unavailable"
                 filtered_shape = filtered_trend = filtered_overall = float("nan")
+                filtered_c2st = filtered_c2st_xgb = filtered_c2st_xgb_auc = float(
+                    "nan"
+                )
                 print(
                     f"Filtered metrics unavailable for {label}/{query_id}: "
                     f"valid_generated={len(valid_samples)}, "
@@ -368,10 +359,13 @@ def main() -> None:
                     if minimum_side_rows < 200
                     else "preferred_200_plus_rows"
                 )
-                filtered = density_metrics(reference_path, valid_samples, info)
+                filtered = tabular_metrics(reference_path, valid_samples, info)
                 filtered_shape = filtered["density/Shape"]
                 filtered_trend = filtered["density/Trend"]
                 filtered_overall = filtered["density/Overall"]
+                filtered_c2st = filtered["c2st"]
+                filtered_c2st_xgb = filtered["c2st_xgb"]
+                filtered_c2st_xgb_auc = filtered["c2st_xgb_auc"]
             rows.append(
                 {
                     "method": label,
@@ -411,6 +405,9 @@ def main() -> None:
                     "filtered_shape": filtered_shape,
                     "filtered_trend": filtered_trend,
                     "filtered_overall": filtered_overall,
+                    "filtered_c2st": filtered_c2st,
+                    "filtered_c2st_xgb": filtered_c2st_xgb,
+                    "filtered_c2st_xgb_auc": filtered_c2st_xgb_auc,
                     "c2st": metrics["c2st"],
                     "c2st_xgb": metrics["c2st_xgb"],
                     "c2st_xgb_auc": metrics["c2st_xgb_auc"],
@@ -451,6 +448,9 @@ def main() -> None:
             "filtered_shape",
             "filtered_trend",
             "filtered_overall",
+            "filtered_c2st",
+            "filtered_c2st_xgb",
+            "filtered_c2st_xgb_auc",
             "c2st",
             "c2st_xgb",
             "alpha_precision",
@@ -500,6 +500,14 @@ def main() -> None:
                     "uses_all_conditional_real_rows": True,
                     "matched_across_methods": False,
                     "recommended_rows_for_trend": 200,
+                    "metrics": [
+                        "shape",
+                        "trend",
+                        "overall",
+                        "logistic_c2st_similarity",
+                        "xgboost_c2st_similarity",
+                        "xgboost_c2st_auc",
+                    ],
                 },
                 "alpha_precision_backend": (
                     "synthcity.metrics.eval_statistical.AlphaPrecision"

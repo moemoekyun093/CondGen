@@ -23,6 +23,10 @@ FILTERED_QUALITY_METRICS = (
     ("filtered_shape", "Feasible-only Column Shape", True),
     ("filtered_trend", "Feasible-only Column-pair Trend", True),
 )
+FILTERED_DETECTION_METRICS = (
+    ("filtered_c2st", "Feasible-only Logistic C2ST similarity", True),
+    ("filtered_c2st_xgb", "Feasible-only XGBoost C2ST similarity", True),
+)
 
 
 def safe_label(value: str) -> str:
@@ -253,7 +257,8 @@ def main() -> None:
     metrics = [
         "violation_rate", "shape", "trend", "numeric_joint_miss_rate",
         "categorical_joint_miss_rate", "conditional_real_rate",
-        "filtered_shape", "filtered_trend",
+        "filtered_shape", "filtered_trend", "filtered_c2st",
+        "filtered_c2st_xgb", "filtered_c2st_xgb_auc",
     ]
     required = {"method", "target_band", "arity", *metrics}
     if not required.issubset(per_query.columns):
@@ -295,6 +300,16 @@ def main() -> None:
         args.primary_method,
         args.baseline_method,
         "Shape and Trend after removing constraint-violating generations",
+        allow_missing=True,
+        show_advantage=False,
+    )
+    comparison_heatmaps(
+        grouped,
+        output_dir / "method_comparison_feasible_only_detection_heatmaps.png",
+        FILTERED_DETECTION_METRICS,
+        args.primary_method,
+        args.baseline_method,
+        "C2ST after removing constraint-violating generations",
         allow_missing=True,
         show_advantage=False,
     )

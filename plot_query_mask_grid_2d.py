@@ -35,7 +35,13 @@ def metric_matrix(frame: pd.DataFrame, metric: str, statistic: str = "mean"):
     return pivot.sort_index().sort_index(axis=1)
 
 
-def annotate_heatmap(axis, values: np.ndarray, *, percent: bool) -> None:
+def annotate_heatmap(
+    axis,
+    values: np.ndarray,
+    *,
+    percent: bool,
+    counts: np.ndarray | None = None,
+) -> None:
     for row in range(values.shape[0]):
         for column in range(values.shape[1]):
             value = values[row, column]
@@ -43,6 +49,8 @@ def annotate_heatmap(axis, values: np.ndarray, *, percent: bool) -> None:
                 label = "n/a"
             else:
                 label = f"{100 * value:.1f}%" if percent else f"{value:.3f}"
+                if counts is not None:
+                    label += f"\nn={int(counts[row, column])}"
             axis.text(column, row, label, ha="center", va="center", fontsize=8)
 
 
@@ -64,12 +72,14 @@ def comparison_heatmaps(
     baseline: str,
     figure_title: str,
     allow_missing: bool = False,
+    show_advantage: bool = True,
 ) -> None:
     import matplotlib.pyplot as plt
 
+    num_columns = 3 if show_advantage else 2
     figure, axes = plt.subplots(
-        len(definitions), 3,
-        figsize=(15.5, 4.2 * len(definitions)),
+        len(definitions), num_columns,
+        figsize=((15.5 if show_advantage else 11.0), 4.2 * len(definitions)),
         constrained_layout=True,
     )
     axes = np.atleast_2d(axes)
@@ -92,19 +102,28 @@ def comparison_heatmaps(
         for column, (method, pivot) in enumerate(
             ((primary, primary_pivot), (baseline, baseline_pivot))
         ):
+            count_values = None
+            if allow_missing:
+                count_values = metric_matrix(
+                    grouped[grouped["method"] == method], metric, "count"
+                ).to_numpy()
             image = axes[row, column].imshow(
                 np.ma.masked_invalid(pivot.to_numpy()),
                 vmin=0.0, vmax=1.0, cmap=absolute_cmap, aspect="auto"
             )
             absolute_images.append(image)
             annotate_heatmap(
-                axes[row, column], pivot.to_numpy(), percent=not higher_is_better
+                axes[row, column], pivot.to_numpy(),
+                percent=not higher_is_better, counts=count_values,
             )
             format_heatmap_axis(axes[row, column], pivot, f"{method}: {title}")
         figure.colorbar(
             absolute_images[0], ax=[axes[row, 0], axes[row, 1]],
             shrink=0.72, pad=0.015, label="Score",
         )
+
+        if not show_advantage:
+            continue
 
         # Positive always means that the primary method is better.
         advantage = (
@@ -277,6 +296,7 @@ def main() -> None:
         args.baseline_method,
         "Shape and Trend after removing constraint-violating generations",
         allow_missing=True,
+        show_advantage=False,
     )
     for definition in QUALITY_METRICS:
         metric_profiles(

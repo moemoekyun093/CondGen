@@ -51,21 +51,13 @@ def parse_args() -> argparse.Namespace:
         "--filtered-min-rows",
         type=int,
         default=50,
-        help="Minimum common feasible rows required for filtered Shape/Trend",
+        help="Minimum rows required on each side for filtered Shape/Trend",
     )
     parser.add_argument(
-        "--filtered-bootstrap-repeats",
-        type=int,
-        default=5,
-        help="Matched-size resampling repeats for feasible-only density metrics",
+        "--reuse-existing-full-metrics",
+        action="store_true",
+        help="Reuse Shape/Trend/C2ST values already present in output per_query.csv",
     )
-    parser.add_argument(
-        "--filtered-bootstrap-cap",
-        type=int,
-        default=1000,
-        help="Maximum matched rows used in each feasible-only repeat",
-    )
-    parser.add_argument("--filtered-bootstrap-seed", type=int, default=9321)
     return parser.parse_args()
 
 
@@ -109,7 +101,7 @@ def tabular_metrics(reference_path: Path, samples: pd.DataFrame, info: dict) -> 
 
 
 def density_metrics(reference_path: Path, samples: pd.DataFrame, info: dict) -> dict:
-    """Evaluate only Shape/Trend for the feasible-row matched-size diagnostic."""
+    """Evaluate Shape/Trend using all feasible generated rows."""
     evaluator = TabMetrics(
         str(reference_path),
         str(reference_path),
@@ -151,13 +143,11 @@ def aggregate(rows: pd.DataFrame, keys: list[str]) -> pd.DataFrame:
         "numeric_mean_column_miss_rate",
         "categorical_mean_column_miss_rate",
         "filtered_valid_rows",
-        "filtered_common_rows",
+        "filtered_reference_rows",
+        "filtered_minimum_side_rows",
         "filtered_shape",
         "filtered_trend",
         "filtered_overall",
-        "filtered_shape_resample_std",
-        "filtered_trend_resample_std",
-        "filtered_overall_resample_std",
     ]
     grouped = rows.groupby(keys, sort=True, dropna=False)
     means = grouped[metrics].mean().add_suffix("_mean")
@@ -248,12 +238,8 @@ def make_plots(grouped: pd.DataFrame, output_dir: Path, group_by: str) -> None:
 
 def main() -> None:
     args = parse_args()
-    if min(
-        args.filtered_min_rows,
-        args.filtered_bootstrap_repeats,
-        args.filtered_bootstrap_cap,
-    ) <= 0:
-        raise ValueError("filtered-evaluation row counts and repeats must be positive")
+    if args.filtered_min_rows <= 0:
+        raise ValueError("filtered-min-rows must be positive")
     query_dir = Path(args.query_dir)
     real_path = Path(args.real_data)
     info_path = Path(args.info_file)
@@ -283,10 +269,27 @@ def main() -> None:
     with info_path.open("r", encoding="utf-8") as stream:
         info = json.load(stream)
     output_dir = Path(args.output_dir)
+    existing_full_metrics = {}
+    existing_per_query_path = output_dir / "per_query.csv"
+    if args.reuse_existing_full_metrics and existing_per_query_path.is_file():
+        existing_frame = pd.read_csv(existing_per_query_path)
+        cache_columns = {
+            "method", "query_id", "samples", "shape", "trend", "overall",
+            "c2st", "c2st_xgb", "c2st_xgb_auc", "alpha_precision", "beta_recall",
+        }
+        if cache_columns.issubset(existing_frame.columns):
+            existing_full_metrics = {
+                (str(row.method), str(row.query_id)): row
+                for row in existing_frame.itertuples(index=False)
+            }
+            print(
+                f"Loaded {len(existing_full_metrics)} cached full-metric rows from "
+                f"{existing_per_query_path}"
+            )
+        else:
+            print("Existing per_query.csv is missing cache columns; recomputing full metrics")
     reference_dir = output_dir / "conditional_real_references"
-    filtered_reference_dir = reference_dir / "filtered_matched"
     reference_dir.mkdir(parents=True, exist_ok=True)
-    filtered_reference_dir.mkdir(parents=True, exist_ok=True)
 
     rows = []
     for query_index, (_, query) in enumerate(queries):
@@ -318,85 +321,57 @@ def main() -> None:
                 "modality_report": modality_report,
             }
 
-        common_filtered_rows = min(
-            len(conditional_real),
-            *(len(payload["valid_samples"]) for payload in payloads.values()),
-            args.filtered_bootstrap_cap,
-        )
-        filtered_available = common_filtered_rows >= args.filtered_min_rows
-        if not filtered_available:
-            filtered_reliability = "unavailable"
-        elif common_filtered_rows < 200:
-            filtered_reliability = "exploratory_below_200_rows"
-        else:
-            filtered_reliability = "preferred_200_plus_rows"
-        filtered_scores = {
-            label: {"shape": [], "trend": [], "overall": []}
-            for label in methods
-        }
-        if filtered_available:
-            for repeat in range(args.filtered_bootstrap_repeats):
-                real_rng = np.random.default_rng(
-                    args.filtered_bootstrap_seed + query_index * 10007 + repeat
-                )
-                real_positions = real_rng.choice(
-                    len(conditional_real), size=common_filtered_rows, replace=False
-                )
-                matched_real = conditional_real.iloc[real_positions].reset_index(drop=True)
-                matched_reference_path = filtered_reference_dir / (
-                    f"{query_id}_n{common_filtered_rows}_r{repeat:02d}.csv"
-                )
-                matched_real.to_csv(matched_reference_path, index=False)
-                for method_index, (label, payload) in enumerate(payloads.items()):
-                    valid_samples = payload["valid_samples"]
-                    sample_rng = np.random.default_rng(
-                        args.filtered_bootstrap_seed
-                        + query_index * 10007
-                        + repeat
-                        + (method_index + 1) * 1000003
-                    )
-                    sample_positions = sample_rng.choice(
-                        len(valid_samples), size=common_filtered_rows, replace=False
-                    )
-                    matched_samples = valid_samples.iloc[sample_positions].reset_index(
-                        drop=True
-                    )
-                    filtered = density_metrics(
-                        matched_reference_path, matched_samples, info
-                    )
-                    filtered_scores[label]["shape"].append(filtered["density/Shape"])
-                    filtered_scores[label]["trend"].append(filtered["density/Trend"])
-                    filtered_scores[label]["overall"].append(filtered["density/Overall"])
-        else:
-            print(
-                f"Filtered metrics unavailable for {query_id}: common feasible rows "
-                f"{common_filtered_rows} < minimum {args.filtered_min_rows}"
-            )
-
         for label, payload in payloads.items():
             samples_path = payload["samples_path"]
             samples = payload["samples"]
             constraint_report = payload["constraint_report"]
             modality_report = payload["modality_report"]
-            metrics = tabular_metrics(reference_path, samples, info)
+            cached = existing_full_metrics.get((label, query_id))
+            if cached is not None and str(cached.samples) == str(samples_path):
+                metrics = {
+                    "density/Shape": float(cached.shape),
+                    "density/Trend": float(cached.trend),
+                    "density/Overall": float(cached.overall),
+                    "c2st": float(cached.c2st),
+                    "c2st_xgb": float(cached.c2st_xgb),
+                    "c2st_xgb_auc": float(cached.c2st_xgb_auc),
+                }
+            else:
+                metrics = tabular_metrics(reference_path, samples, info)
             alpha_key = (label, query_id)
             if args.alpha_beta_results is not None and alpha_key not in alpha_beta_lookup:
                 raise ValueError(f"missing official SynthCity result for {alpha_key}")
-            alpha_precision, beta_recall = alpha_beta_lookup.get(
-                alpha_key, (float("nan"), float("nan"))
-            )
+            if alpha_key in alpha_beta_lookup:
+                alpha_precision, beta_recall = alpha_beta_lookup[alpha_key]
+            elif cached is not None and str(cached.samples) == str(samples_path):
+                alpha_precision = float(cached.alpha_precision)
+                beta_recall = float(cached.beta_recall)
+            else:
+                alpha_precision, beta_recall = float("nan"), float("nan")
             hit_rate = float(constraint_report["joint_hit_rate"])
             ci_low, ci_high = confidence_interval(hit_rate, len(samples))
-            scores = filtered_scores[label]
-            filtered_shape = (
-                float(np.mean(scores["shape"])) if scores["shape"] else float("nan")
-            )
-            filtered_trend = (
-                float(np.mean(scores["trend"])) if scores["trend"] else float("nan")
-            )
-            filtered_overall = (
-                float(np.mean(scores["overall"])) if scores["overall"] else float("nan")
-            )
+            valid_samples = payload["valid_samples"]
+            minimum_side_rows = min(len(conditional_real), len(valid_samples))
+            filtered_available = minimum_side_rows >= args.filtered_min_rows
+            if not filtered_available:
+                filtered_reliability = "unavailable"
+                filtered_shape = filtered_trend = filtered_overall = float("nan")
+                print(
+                    f"Filtered metrics unavailable for {label}/{query_id}: "
+                    f"valid_generated={len(valid_samples)}, "
+                    f"conditional_real={len(conditional_real)}, "
+                    f"minimum={args.filtered_min_rows}"
+                )
+            else:
+                filtered_reliability = (
+                    "exploratory_below_200_rows"
+                    if minimum_side_rows < 200
+                    else "preferred_200_plus_rows"
+                )
+                filtered = density_metrics(reference_path, valid_samples, info)
+                filtered_shape = filtered["density/Shape"]
+                filtered_trend = filtered["density/Trend"]
+                filtered_overall = filtered["density/Overall"]
             rows.append(
                 {
                     "method": label,
@@ -428,28 +403,14 @@ def main() -> None:
                     "trend": metrics["density/Trend"],
                     "overall": metrics["density/Overall"],
                     "filtered_valid_rows": len(payload["valid_samples"]),
-                    "filtered_common_rows": common_filtered_rows,
+                    "filtered_reference_rows": len(conditional_real),
+                    "filtered_minimum_side_rows": minimum_side_rows,
                     "filtered_min_rows": args.filtered_min_rows,
                     "filtered_metrics_available": filtered_available,
                     "filtered_reliability": filtered_reliability,
-                    "filtered_bootstrap_repeats": (
-                        args.filtered_bootstrap_repeats if filtered_available else 0
-                    ),
                     "filtered_shape": filtered_shape,
                     "filtered_trend": filtered_trend,
                     "filtered_overall": filtered_overall,
-                    "filtered_shape_resample_std": (
-                        float(np.std(scores["shape"], ddof=0))
-                        if scores["shape"] else float("nan")
-                    ),
-                    "filtered_trend_resample_std": (
-                        float(np.std(scores["trend"], ddof=0))
-                        if scores["trend"] else float("nan")
-                    ),
-                    "filtered_overall_resample_std": (
-                        float(np.std(scores["overall"], ddof=0))
-                        if scores["overall"] else float("nan")
-                    ),
                     "c2st": metrics["c2st"],
                     "c2st_xgb": metrics["c2st_xgb"],
                     "c2st_xgb_auc": metrics["c2st_xgb_auc"],
@@ -463,8 +424,7 @@ def main() -> None:
     per_query = pd.DataFrame(rows)
     print("Feasible-only Shape/Trend reliability:")
     print(
-        per_query[["query_id", "filtered_common_rows", "filtered_reliability"]]
-        .drop_duplicates()
+        per_query[["method", "query_id", "filtered_reliability"]]
         ["filtered_reliability"]
         .value_counts()
         .to_string()
@@ -535,10 +495,10 @@ def main() -> None:
                 "grouped": grouped.to_dict(orient="records"),
                 "baseline_method": args.baseline_method,
                 "filtered_feasible_evaluation": {
-                    "minimum_common_rows": args.filtered_min_rows,
-                    "bootstrap_repeats": args.filtered_bootstrap_repeats,
-                    "bootstrap_cap": args.filtered_bootstrap_cap,
-                    "matched_across_methods": True,
+                    "minimum_rows_per_side": args.filtered_min_rows,
+                    "uses_all_valid_generated_rows": True,
+                    "uses_all_conditional_real_rows": True,
+                    "matched_across_methods": False,
                     "recommended_rows_for_trend": 200,
                 },
                 "alpha_precision_backend": (

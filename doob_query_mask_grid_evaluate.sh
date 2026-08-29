@@ -29,8 +29,11 @@ HARPOON_LABEL="${HARPOON_LABEL:-harpoon_style_tabdiff_eta02_s50}"
 SUITE_SAMPLE_ROOT="${SUITE_SAMPLE_ROOT:-conditional_samples/${DATANAME}/selectivity_mask_grid}"
 SUITE_EVAL_DIR="${SUITE_EVAL_DIR:-evaluations/${DATANAME}/selectivity_mask_grid}"
 FILTERED_MIN_ROWS="${FILTERED_MIN_ROWS:-50}"
-FILTERED_BOOTSTRAP_REPEATS="${FILTERED_BOOTSTRAP_REPEATS:-5}"
-FILTERED_BOOTSTRAP_CAP="${FILTERED_BOOTSTRAP_CAP:-1000}"
+REUSE_EXISTING_FULL_METRICS="${REUSE_EXISTING_FULL_METRICS:-1}"
+CACHE_ARGS=()
+if [ "${REUSE_EXISTING_FULL_METRICS}" = "1" ]; then
+    CACHE_ARGS+=(--reuse-existing-full-metrics)
+fi
 mkdir -p evaluations/slurm "${SUITE_EVAL_DIR}"
 
 python -u evaluate_doob_query_suite.py \
@@ -39,8 +42,7 @@ python -u evaluate_doob_query_suite.py \
     --method "${HARPOON_LABEL}=${SUITE_SAMPLE_ROOT}/${HARPOON_LABEL}" \
     --baseline-method "${HARPOON_LABEL}" \
     --filtered-min-rows "${FILTERED_MIN_ROWS}" \
-    --filtered-bootstrap-repeats "${FILTERED_BOOTSTRAP_REPEATS}" \
-    --filtered-bootstrap-cap "${FILTERED_BOOTSTRAP_CAP}" \
+    "${CACHE_ARGS[@]}" \
     --real-data "synthetic/${DATANAME}/real.csv" \
     --info-file "data/${DATANAME}/info.json" \
     --group-by target_band \

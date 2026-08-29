@@ -47,6 +47,25 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="CSV produced by evaluate_synthcity_alpha_suite.py",
     )
+    parser.add_argument(
+        "--filtered-min-rows",
+        type=int,
+        default=50,
+        help="Minimum common feasible rows required for filtered Shape/Trend",
+    )
+    parser.add_argument(
+        "--filtered-bootstrap-repeats",
+        type=int,
+        default=5,
+        help="Matched-size resampling repeats for feasible-only density metrics",
+    )
+    parser.add_argument(
+        "--filtered-bootstrap-cap",
+        type=int,
+        default=1000,
+        help="Maximum matched rows used in each feasible-only repeat",
+    )
+    parser.add_argument("--filtered-bootstrap-seed", type=int, default=9321)
     return parser.parse_args()
 
 
@@ -89,6 +108,21 @@ def tabular_metrics(reference_path: Path, samples: pd.DataFrame, info: dict) -> 
     return {name: float(value) for name, value in metrics.items()}
 
 
+def density_metrics(reference_path: Path, samples: pd.DataFrame, info: dict) -> dict:
+    """Evaluate only Shape/Trend for the feasible-row matched-size diagnostic."""
+    evaluator = TabMetrics(
+        str(reference_path),
+        str(reference_path),
+        None,
+        info,
+        torch.device("cpu"),
+        metric_list=["density"],
+        include_density_diagnostic=False,
+    )
+    metrics, _ = evaluator.evaluate(samples.copy())
+    return {name: float(value) for name, value in metrics.items()}
+
+
 def confidence_interval(hit_rate: float, count: int) -> tuple[float, float]:
     standard_error = math.sqrt(hit_rate * (1.0 - hit_rate) / count)
     violation = 1.0 - hit_rate
@@ -116,12 +150,25 @@ def aggregate(rows: pd.DataFrame, keys: list[str]) -> pd.DataFrame:
         "categorical_joint_miss_rate",
         "numeric_mean_column_miss_rate",
         "categorical_mean_column_miss_rate",
+        "filtered_valid_rows",
+        "filtered_common_rows",
+        "filtered_shape",
+        "filtered_trend",
+        "filtered_overall",
+        "filtered_shape_resample_std",
+        "filtered_trend_resample_std",
+        "filtered_overall_resample_std",
     ]
     grouped = rows.groupby(keys, sort=True, dropna=False)
     means = grouped[metrics].mean().add_suffix("_mean")
     standard_deviations = grouped[metrics].std(ddof=0).add_suffix("_std")
     counts = grouped.size().rename("num_queries")
-    return pd.concat((means, standard_deviations, counts), axis=1).reset_index()
+    filtered_counts = grouped["filtered_shape"].count().rename(
+        "num_filtered_queries_available"
+    )
+    return pd.concat(
+        (means, standard_deviations, counts, filtered_counts), axis=1
+    ).reset_index()
 
 
 def make_plots(grouped: pd.DataFrame, output_dir: Path, group_by: str) -> None:
@@ -201,6 +248,12 @@ def make_plots(grouped: pd.DataFrame, output_dir: Path, group_by: str) -> None:
 
 def main() -> None:
     args = parse_args()
+    if min(
+        args.filtered_min_rows,
+        args.filtered_bootstrap_repeats,
+        args.filtered_bootstrap_cap,
+    ) <= 0:
+        raise ValueError("filtered-evaluation row counts and repeats must be positive")
     query_dir = Path(args.query_dir)
     real_path = Path(args.real_data)
     info_path = Path(args.info_file)
@@ -231,7 +284,9 @@ def main() -> None:
         info = json.load(stream)
     output_dir = Path(args.output_dir)
     reference_dir = output_dir / "conditional_real_references"
+    filtered_reference_dir = reference_dir / "filtered_matched"
     reference_dir.mkdir(parents=True, exist_ok=True)
+    filtered_reference_dir.mkdir(parents=True, exist_ok=True)
 
     rows = []
     for query_index, (_, query) in enumerate(queries):
@@ -245,6 +300,7 @@ def main() -> None:
         reference_path = reference_dir / f"{query_id}.csv"
         conditional_real.to_csv(reference_path, index=False)
 
+        payloads = {}
         for label, sample_dir in methods.items():
             samples_path = sample_dir / f"{query_id}.csv"
             if not samples_path.is_file():
@@ -252,8 +308,76 @@ def main() -> None:
             samples = pd.read_csv(samples_path)
             if list(samples.columns) != list(real.columns):
                 raise ValueError(f"column mismatch for {samples_path}")
-            constraint_report, _ = raw_constraint_report(samples, query)
+            constraint_report, joint_mask = raw_constraint_report(samples, query)
             modality_report = raw_modality_constraint_report(samples, query)
+            payloads[label] = {
+                "samples_path": samples_path,
+                "samples": samples,
+                "valid_samples": samples.loc[joint_mask].reset_index(drop=True),
+                "constraint_report": constraint_report,
+                "modality_report": modality_report,
+            }
+
+        common_filtered_rows = min(
+            len(conditional_real),
+            *(len(payload["valid_samples"]) for payload in payloads.values()),
+            args.filtered_bootstrap_cap,
+        )
+        filtered_available = common_filtered_rows >= args.filtered_min_rows
+        if not filtered_available:
+            filtered_reliability = "unavailable"
+        elif common_filtered_rows < 200:
+            filtered_reliability = "exploratory_below_200_rows"
+        else:
+            filtered_reliability = "preferred_200_plus_rows"
+        filtered_scores = {
+            label: {"shape": [], "trend": [], "overall": []}
+            for label in methods
+        }
+        if filtered_available:
+            for repeat in range(args.filtered_bootstrap_repeats):
+                real_rng = np.random.default_rng(
+                    args.filtered_bootstrap_seed + query_index * 10007 + repeat
+                )
+                real_positions = real_rng.choice(
+                    len(conditional_real), size=common_filtered_rows, replace=False
+                )
+                matched_real = conditional_real.iloc[real_positions].reset_index(drop=True)
+                matched_reference_path = filtered_reference_dir / (
+                    f"{query_id}_n{common_filtered_rows}_r{repeat:02d}.csv"
+                )
+                matched_real.to_csv(matched_reference_path, index=False)
+                for method_index, (label, payload) in enumerate(payloads.items()):
+                    valid_samples = payload["valid_samples"]
+                    sample_rng = np.random.default_rng(
+                        args.filtered_bootstrap_seed
+                        + query_index * 10007
+                        + repeat
+                        + (method_index + 1) * 1000003
+                    )
+                    sample_positions = sample_rng.choice(
+                        len(valid_samples), size=common_filtered_rows, replace=False
+                    )
+                    matched_samples = valid_samples.iloc[sample_positions].reset_index(
+                        drop=True
+                    )
+                    filtered = density_metrics(
+                        matched_reference_path, matched_samples, info
+                    )
+                    filtered_scores[label]["shape"].append(filtered["density/Shape"])
+                    filtered_scores[label]["trend"].append(filtered["density/Trend"])
+                    filtered_scores[label]["overall"].append(filtered["density/Overall"])
+        else:
+            print(
+                f"Filtered metrics unavailable for {query_id}: common feasible rows "
+                f"{common_filtered_rows} < minimum {args.filtered_min_rows}"
+            )
+
+        for label, payload in payloads.items():
+            samples_path = payload["samples_path"]
+            samples = payload["samples"]
+            constraint_report = payload["constraint_report"]
+            modality_report = payload["modality_report"]
             metrics = tabular_metrics(reference_path, samples, info)
             alpha_key = (label, query_id)
             if args.alpha_beta_results is not None and alpha_key not in alpha_beta_lookup:
@@ -263,6 +387,16 @@ def main() -> None:
             )
             hit_rate = float(constraint_report["joint_hit_rate"])
             ci_low, ci_high = confidence_interval(hit_rate, len(samples))
+            scores = filtered_scores[label]
+            filtered_shape = (
+                float(np.mean(scores["shape"])) if scores["shape"] else float("nan")
+            )
+            filtered_trend = (
+                float(np.mean(scores["trend"])) if scores["trend"] else float("nan")
+            )
+            filtered_overall = (
+                float(np.mean(scores["overall"])) if scores["overall"] else float("nan")
+            )
             rows.append(
                 {
                     "method": label,
@@ -293,6 +427,29 @@ def main() -> None:
                     "shape": metrics["density/Shape"],
                     "trend": metrics["density/Trend"],
                     "overall": metrics["density/Overall"],
+                    "filtered_valid_rows": len(payload["valid_samples"]),
+                    "filtered_common_rows": common_filtered_rows,
+                    "filtered_min_rows": args.filtered_min_rows,
+                    "filtered_metrics_available": filtered_available,
+                    "filtered_reliability": filtered_reliability,
+                    "filtered_bootstrap_repeats": (
+                        args.filtered_bootstrap_repeats if filtered_available else 0
+                    ),
+                    "filtered_shape": filtered_shape,
+                    "filtered_trend": filtered_trend,
+                    "filtered_overall": filtered_overall,
+                    "filtered_shape_resample_std": (
+                        float(np.std(scores["shape"], ddof=0))
+                        if scores["shape"] else float("nan")
+                    ),
+                    "filtered_trend_resample_std": (
+                        float(np.std(scores["trend"], ddof=0))
+                        if scores["trend"] else float("nan")
+                    ),
+                    "filtered_overall_resample_std": (
+                        float(np.std(scores["overall"], ddof=0))
+                        if scores["overall"] else float("nan")
+                    ),
                     "c2st": metrics["c2st"],
                     "c2st_xgb": metrics["c2st_xgb"],
                     "c2st_xgb_auc": metrics["c2st_xgb_auc"],
@@ -304,6 +461,14 @@ def main() -> None:
             )
 
     per_query = pd.DataFrame(rows)
+    print("Feasible-only Shape/Trend reliability:")
+    print(
+        per_query[["query_id", "filtered_common_rows", "filtered_reliability"]]
+        .drop_duplicates()
+        ["filtered_reliability"]
+        .value_counts()
+        .to_string()
+    )
     grouping_column = args.group_by
     grouped = aggregate(per_query, ["method", grouping_column])
     overall = aggregate(per_query, ["method"])
@@ -323,6 +488,9 @@ def main() -> None:
             "shape",
             "trend",
             "overall",
+            "filtered_shape",
+            "filtered_trend",
+            "filtered_overall",
             "c2st",
             "c2st_xgb",
             "alpha_precision",
@@ -366,6 +534,13 @@ def main() -> None:
                 "group_by": grouping_column,
                 "grouped": grouped.to_dict(orient="records"),
                 "baseline_method": args.baseline_method,
+                "filtered_feasible_evaluation": {
+                    "minimum_common_rows": args.filtered_min_rows,
+                    "bootstrap_repeats": args.filtered_bootstrap_repeats,
+                    "bootstrap_cap": args.filtered_bootstrap_cap,
+                    "matched_across_methods": True,
+                    "recommended_rows_for_trend": 200,
+                },
                 "alpha_precision_backend": (
                     "synthcity.metrics.eval_statistical.AlphaPrecision"
                     if args.alpha_beta_results is not None

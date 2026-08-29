@@ -19,6 +19,10 @@ MODALITY_METRICS = (
     ("numeric_joint_miss_rate", "Numerical joint miss", False),
     ("categorical_joint_miss_rate", "Categorical joint miss", False),
 )
+FILTERED_QUALITY_METRICS = (
+    ("filtered_shape", "Feasible-only Column Shape", True),
+    ("filtered_trend", "Feasible-only Column-pair Trend", True),
+)
 
 
 def safe_label(value: str) -> str:
@@ -28,17 +32,17 @@ def safe_label(value: str) -> str:
 def metric_matrix(frame: pd.DataFrame, metric: str, statistic: str = "mean"):
     column = f"{metric}_{statistic}"
     pivot = frame.pivot(index="arity", columns="target_band", values=column)
-    pivot = pivot.sort_index().sort_index(axis=1)
-    if pivot.isna().any().any():
-        raise ValueError(f"incomplete selectivity/arity grid for {column}")
-    return pivot
+    return pivot.sort_index().sort_index(axis=1)
 
 
 def annotate_heatmap(axis, values: np.ndarray, *, percent: bool) -> None:
     for row in range(values.shape[0]):
         for column in range(values.shape[1]):
             value = values[row, column]
-            label = f"{100 * value:.1f}%" if percent else f"{value:.3f}"
+            if not np.isfinite(value):
+                label = "n/a"
+            else:
+                label = f"{100 * value:.1f}%" if percent else f"{value:.3f}"
             axis.text(column, row, label, ha="center", va="center", fontsize=8)
 
 
@@ -59,6 +63,7 @@ def comparison_heatmaps(
     primary: str,
     baseline: str,
     figure_title: str,
+    allow_missing: bool = False,
 ) -> None:
     import matplotlib.pyplot as plt
 
@@ -75,13 +80,21 @@ def comparison_heatmaps(
             baseline_pivot.columns
         ):
             raise ValueError(f"methods have different grid cells for {metric}")
-        absolute_cmap = "RdYlGn" if higher_is_better else "RdYlGn_r"
+        if not allow_missing and (
+            primary_pivot.isna().any().any() or baseline_pivot.isna().any().any()
+        ):
+            raise ValueError(f"missing grid values for {metric}")
+        absolute_cmap = plt.get_cmap(
+            "RdYlGn" if higher_is_better else "RdYlGn_r"
+        ).copy()
+        absolute_cmap.set_bad("lightgray")
         absolute_images = []
         for column, (method, pivot) in enumerate(
             ((primary, primary_pivot), (baseline, baseline_pivot))
         ):
             image = axes[row, column].imshow(
-                pivot.to_numpy(), vmin=0.0, vmax=1.0, cmap=absolute_cmap, aspect="auto"
+                np.ma.masked_invalid(pivot.to_numpy()),
+                vmin=0.0, vmax=1.0, cmap=absolute_cmap, aspect="auto"
             )
             absolute_images.append(image)
             annotate_heatmap(
@@ -99,10 +112,18 @@ def comparison_heatmaps(
             if higher_is_better
             else baseline_pivot - primary_pivot
         )
-        limit = max(0.01, float(np.nanmax(np.abs(advantage.to_numpy()))))
+        finite_advantage = np.abs(advantage.to_numpy())[
+            np.isfinite(advantage.to_numpy())
+        ]
+        limit = max(
+            0.01,
+            float(finite_advantage.max()) if len(finite_advantage) else 0.01,
+        )
+        delta_cmap = plt.get_cmap("RdYlGn").copy()
+        delta_cmap.set_bad("lightgray")
         delta_image = axes[row, 2].imshow(
-            advantage.to_numpy(), vmin=-limit, vmax=limit,
-            cmap="RdYlGn", aspect="auto",
+            np.ma.masked_invalid(advantage.to_numpy()), vmin=-limit, vmax=limit,
+            cmap=delta_cmap, aspect="auto",
         )
         annotate_heatmap(axes[row, 2], advantage.to_numpy(), percent=True)
         format_heatmap_axis(
@@ -213,6 +234,7 @@ def main() -> None:
     metrics = [
         "violation_rate", "shape", "trend", "numeric_joint_miss_rate",
         "categorical_joint_miss_rate", "conditional_real_rate",
+        "filtered_shape", "filtered_trend",
     ]
     required = {"method", "target_band", "arity", *metrics}
     if not required.issubset(per_query.columns):
@@ -246,6 +268,15 @@ def main() -> None:
         args.primary_method,
         args.baseline_method,
         "Which modality causes constraint misses?",
+    )
+    comparison_heatmaps(
+        grouped,
+        output_dir / "method_comparison_feasible_only_quality_heatmaps.png",
+        FILTERED_QUALITY_METRICS,
+        args.primary_method,
+        args.baseline_method,
+        "Shape and Trend after removing constraint-violating generations",
+        allow_missing=True,
     )
     for definition in QUALITY_METRICS:
         metric_profiles(

@@ -1,0 +1,97 @@
+{
+  "query_id": "q_fb-comments_b10p0_k05_mix_1",
+  "dataset": "fb-comments",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.263671875,
+  "predicates": [
+    {
+      "col": "num_14",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        32.85673364168199
+      ],
+      "target_share": 0.6950899601519152,
+      "quantile_range": [
+        0.023477376264904704,
+        0.7185673364168199
+      ]
+    },
+    {
+      "col": "num_29",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.0,
+        24.0
+      ],
+      "target_share": 0.6950899601519152,
+      "quantile_range": [
+        0.1168416929836766,
+        0.8119316531355918
+      ]
+    },
+    {
+      "col": "cat_9",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.6950899601519152,
+      "form": "pin",
+      "covered_train_prob": 0.8651403849325671
+    },
+    {
+      "col": "cat_12",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.6950899601519152,
+      "form": "set",
+      "covered_train_prob": 0.8445298722389272
+    },
+    {
+      "col": "cat_0",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "9",
+        "24"
+      ],
+      "target_share": 0.23343397342786928,
+      "form": "set",
+      "covered_train_prob": 0.2929496694959337
+    }
+  ],
+  "counts": {
+    "train": 15416,
+    "val": 1863,
+    "trainval": 17279,
+    "test": 1994
+  },
+  "selectivity": {
+    "train": 0.09779367918902802,
+    "val": 0.09446303620322483,
+    "trainval": 0.0974233198015336,
+    "test": 0.10111561866125761
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "10-25%"
+}

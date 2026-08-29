@@ -1,0 +1,147 @@
+{
+  "query_id": "q_shoppers_b01p0_k09_mix_4",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 9,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.3336914062499998,
+  "predicates": [
+    {
+      "col": "Informational",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        24.0
+      ],
+      "target_share": 0.5053870762382462,
+      "quantile_range": [
+        0.07857944251339918,
+        0.5839665187516454
+      ]
+    },
+    {
+      "col": "ProductRelated",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        3.0,
+        24.880859861319948
+      ],
+      "target_share": 0.5053870762382462,
+      "quantile_range": [
+        0.1034215223749533,
+        0.6088085986131995
+      ]
+    },
+    {
+      "col": "PageValues",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        361.76373
+      ],
+      "target_share": 0.5053870762382462,
+      "quantile_range": [
+        0.19770426602537317,
+        0.7030913422636194
+      ]
+    },
+    {
+      "col": "SpecialDay",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1.0
+      ],
+      "target_share": 0.5053870762382462,
+      "quantile_range": [
+        0.10350062113793373,
+        0.6088876973761799
+      ]
+    },
+    {
+      "col": "VisitorType",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Returning_Visitor"
+      ],
+      "target_share": 0.5053870762382462,
+      "form": "set",
+      "covered_train_prob": 0.8578151597076199
+    },
+    {
+      "col": "Month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "May"
+      ],
+      "target_share": 0.5053870762382462,
+      "form": "pin",
+      "covered_train_prob": 0.26834885350956245
+    },
+    {
+      "col": "TrafficType",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.5053870762382462,
+      "form": "pin",
+      "covered_train_prob": 0.32041654150395515
+    },
+    {
+      "col": "Revenue",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "False"
+      ],
+      "target_share": 0.5053870762382462,
+      "form": "pin",
+      "covered_train_prob": 0.8444978472013618
+    },
+    {
+      "col": "Region",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1",
+        "3"
+      ],
+      "target_share": 0.5053870762382462,
+      "form": "set",
+      "covered_train_prob": 0.5805547211374787
+    }
+  ],
+  "counts": {
+    "train": 125,
+    "val": 11,
+    "trainval": 136,
+    "test": 10
+  },
+  "selectivity": {
+    "train": 0.012516271152498247,
+    "val": 0.00990990990990991,
+    "trainval": 0.01225556456700009,
+    "test": 0.008110300081103
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "1-2%",
+  "realized_band_test": "0.5-1%"
+}

@@ -1,0 +1,63 @@
+{
+  "query_id": "q_default_b01p0_k02_num_3",
+  "dataset": "default",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 2,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.9099273681640625,
+  "predicates": [
+    {
+      "col": "PAY_AMT5",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1217.389973372516,
+        2002.3293378257274
+      ],
+      "target_share": 0.12304745393765942,
+      "quantile_range": [
+        0.4586163587950029,
+        0.5816638127326623
+      ]
+    },
+    {
+      "col": "PAY_AMT4",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        3000.0,
+        5003.183893372761
+      ],
+      "target_share": 0.12304745393765941,
+      "quantile_range": [
+        0.6798469945830325,
+        0.8028944485206919
+      ]
+    }
+  ],
+  "counts": {
+    "train": 265,
+    "val": 40,
+    "trainval": 305,
+    "test": 28
+  },
+  "selectivity": {
+    "train": 0.010905349794238683,
+    "val": 0.014814814814814815,
+    "trainval": 0.011296296296296296,
+    "test": 0.009333333333333334
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "1-2%",
+  "realized_band_test": "0.5-1%"
+}

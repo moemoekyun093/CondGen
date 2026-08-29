@@ -1,0 +1,85 @@
+{
+  "query_id": "q_beijing_b40p0_k04_mix_5",
+  "dataset": "beijing",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.05291748046875,
+  "predicates": [
+    {
+      "col": "PRES",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        994.8270410631583,
+        1044.6637345631852
+      ],
+      "target_share": 0.9919512664320511,
+      "quantile_range": [
+        0.0063784017719304455,
+        0.9983296682039816
+      ]
+    },
+    {
+      "col": "Iws",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.4782048204151609,
+        246.19197469799445
+      ],
+      "target_share": 0.976047624218337,
+      "quantile_range": [
+        0.01064101864579911,
+        0.9866886428641362
+      ]
+    },
+    {
+      "col": "month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "7"
+      ],
+      "target_share": 0.9919512664320511,
+      "form": "pin",
+      "covered_train_prob": 0.08683697001951393
+    },
+    {
+      "col": "cbwd",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "SE"
+      ],
+      "target_share": 0.9919512664320511,
+      "form": "pin",
+      "covered_train_prob": 0.3495062385429602
+    }
+  ],
+  "counts": {
+    "train": 1538,
+    "val": 163,
+    "trainval": 1701,
+    "test": 186
+  },
+  "selectivity": {
+    "train": 0.0454733605345633,
+    "val": 0.04336259643522213,
+    "trainval": 0.04526223357547697,
+    "test": 0.04454022988505747
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

@@ -1,0 +1,96 @@
+{
+  "query_id": "q_diabetes_b05p0_k05_mix_5",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.637109375,
+  "predicates": [
+    {
+      "col": "number_diagnoses",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        5.0,
+        9.0
+      ],
+      "target_share": 0.5417001422315446,
+      "quantile_range": [
+        0.19739580694151962,
+        0.7390959491730642
+      ]
+    },
+    {
+      "col": "num_lab_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        28.542595338890678,
+        57.0
+      ],
+      "target_share": 0.5417001422315446,
+      "quantile_range": [
+        0.21542595338890677,
+        0.7571260956204514
+      ]
+    },
+    {
+      "col": "diabetesMed",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Yes"
+      ],
+      "target_share": 0.5417001422315446,
+      "form": "set",
+      "covered_train_prob": 0.7696326503873303
+    },
+    {
+      "col": "insulin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Up"
+      ],
+      "target_share": 0.08610647259861016,
+      "form": "pin",
+      "covered_train_prob": 0.1109418758905321
+    },
+    {
+      "col": "tolazamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.5417001422315446,
+      "form": "set",
+      "covered_train_prob": 0.9996069375522036
+    }
+  ],
+  "counts": {
+    "train": 3039,
+    "val": 1105,
+    "trainval": 4144,
+    "test": 1027
+  },
+  "selectivity": {
+    "train": 0.049771532452218346,
+    "val": 0.054291750601876874,
+    "trainval": 0.05090158698963298,
+    "test": 0.050456912646162914
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "5-10%"
+}

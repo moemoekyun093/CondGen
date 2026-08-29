@@ -1,0 +1,73 @@
+{
+  "query_id": "q_default_b40p0_k03_mix_6",
+  "dataset": "default",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.44069166183471675,
+  "predicates": [
+    {
+      "col": "BILL_AMT6",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        134145.83955890712
+      ],
+      "target_share": 0.874064976923047,
+      "quantile_range": [
+        0.05180059947164242,
+        0.9258655763946894
+      ]
+    },
+    {
+      "col": "PAY_4",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0",
+        "-1",
+        "-2"
+      ],
+      "target_share": 0.874064976923047,
+      "form": "set",
+      "covered_train_prob": 0.8838683127572018
+    },
+    {
+      "col": "PAY_0",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.874064976923047,
+      "form": "pin",
+      "covered_train_prob": 0.491440329218107
+    }
+  ],
+  "counts": {
+    "train": 9720,
+    "val": 1072,
+    "trainval": 10792,
+    "test": 1208
+  },
+  "selectivity": {
+    "train": 0.4,
+    "val": 0.397037037037037,
+    "trainval": 0.3997037037037037,
+    "test": 0.4026666666666667
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

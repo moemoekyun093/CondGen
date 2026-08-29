@@ -1,0 +1,91 @@
+{
+  "query_id": "q_shoppers_b10p0_k04_num_5",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.6487792968750001,
+  "predicates": [
+    {
+      "col": "Informational",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        24.0
+      ],
+      "target_share": 0.5311332017541228,
+      "quantile_range": [
+        0.18113887312652224,
+        0.712272074880645
+      ]
+    },
+    {
+      "col": "ProductRelated",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        7.0,
+        41.04445303158962
+      ],
+      "target_share": 0.5311332017541228,
+      "quantile_range": [
+        0.2440890634038253,
+        0.7752222651579481
+      ]
+    },
+    {
+      "col": "ExitRates",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.03302947446751426,
+        0.05
+      ],
+      "target_share": 0.14983399236587872,
+      "quantile_range": [
+        0.602386782670951,
+        0.7522207750368297
+      ]
+    },
+    {
+      "col": "SpecialDay",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1.0
+      ],
+      "target_share": 0.5311332017541228,
+      "quantile_range": [
+        0.17658692429595058,
+        0.7077201260500734
+      ]
+    }
+  ],
+  "counts": {
+    "train": 1002,
+    "val": 102,
+    "trainval": 1104,
+    "test": 113
+  },
+  "selectivity": {
+    "train": 0.10033042955842596,
+    "val": 0.0918918918918919,
+    "trainval": 0.09948634766153014,
+    "test": 0.09164639091646391
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "5-10%"
+}

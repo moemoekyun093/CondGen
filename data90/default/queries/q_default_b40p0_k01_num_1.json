@@ -1,0 +1,49 @@
+{
+  "query_id": "q_default_b40p0_k01_num_1",
+  "dataset": "default",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 1,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.999639892578125,
+  "predicates": [
+    {
+      "col": "PAY_AMT5",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1925.1168422780477,
+        13559.444034490201
+      ],
+      "target_share": 0.400132007014781,
+      "quantile_range": [
+        0.5385819630752856,
+        0.9387139700900666
+      ]
+    }
+  ],
+  "counts": {
+    "train": 9720,
+    "val": 1075,
+    "trainval": 10795,
+    "test": 1191
+  },
+  "selectivity": {
+    "train": 0.4,
+    "val": 0.39814814814814814,
+    "trainval": 0.3998148148148148,
+    "test": 0.397
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

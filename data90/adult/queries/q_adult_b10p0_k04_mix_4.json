@@ -1,0 +1,85 @@
+{
+  "query_id": "q_adult_b10p0_k04_mix_4",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 2.4800788879394533,
+  "predicates": [
+    {
+      "col": "fnlwgt",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        33824.96646879686,
+        123424.9330923516
+      ],
+      "target_share": 0.2398723986775813,
+      "quantile_range": [
+        0.03184939549046468,
+        0.271721794168046
+      ]
+    },
+    {
+      "col": "capital.gain",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        99999.0
+      ],
+      "target_share": 0.2398723986775813,
+      "quantile_range": [
+        0.1476647769544171,
+        0.3875371756319984
+      ]
+    },
+    {
+      "col": "marital.status",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Married-civ-spouse"
+      ],
+      "target_share": 0.2398723986775813,
+      "form": "set",
+      "covered_train_prob": 0.46133633633633636
+    },
+    {
+      "col": "relationship",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Husband"
+      ],
+      "target_share": 0.2398723986775813,
+      "form": "set",
+      "covered_train_prob": 0.40605378105378104
+    }
+  ],
+  "counts": {
+    "train": 2930,
+    "val": 340,
+    "trainval": 3270,
+    "test": 1648
+  },
+  "selectivity": {
+    "train": 0.09998634998634999,
+    "val": 0.10439054344488793,
+    "trainval": 0.1004268910659992,
+    "test": 0.10122228364351084
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "10-25%"
+}

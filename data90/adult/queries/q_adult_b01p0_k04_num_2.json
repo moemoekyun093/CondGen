@@ -1,0 +1,91 @@
+{
+  "query_id": "q_adult_b01p0_k04_num_2",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "equal",
+  "calibration_exponent": 3.94775390625,
+  "predicates": [
+    {
+      "col": "hours.per.week",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.0,
+        99.0
+      ],
+      "target_share": 0.010619964056651844,
+      "quantile_range": [
+        0.46851283530151927,
+        0.4791327993581711
+      ]
+    },
+    {
+      "col": "capital.loss",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        4356.0
+      ],
+      "target_share": 0.010619964056651844,
+      "quantile_range": [
+        0.2296340522766013,
+        0.24025401633325313
+      ]
+    },
+    {
+      "col": "education.num",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.0,
+        16.0
+      ],
+      "target_share": 0.010619964056651844,
+      "quantile_range": [
+        0.41917061747712203,
+        0.42979058153377386
+      ]
+    },
+    {
+      "col": "fnlwgt",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        226512.02089646415,
+        230198.50319008707
+      ],
+      "target_share": 0.010619964056651844,
+      "quantile_range": [
+        0.7202526593579036,
+        0.7308726234145555
+      ]
+    }
+  ],
+  "counts": {
+    "train": 294,
+    "val": 41,
+    "trainval": 335,
+    "test": 200
+  },
+  "selectivity": {
+    "train": 0.010032760032760032,
+    "val": 0.012588271415412957,
+    "trainval": 0.010288381806455575,
+    "test": 0.012284257723727043
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "1-2%",
+  "realized_band_test": "1-2%"
+}

@@ -1,0 +1,58 @@
+{
+  "query_id": "q_default_b25p0_k02_cat_4",
+  "dataset": "default",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 2,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.0769531250000002,
+  "predicates": [
+    {
+      "col": "EDUCATION",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2",
+        "1"
+      ],
+      "target_share": 0.47402888411651306,
+      "form": "set",
+      "covered_train_prob": 0.8206172839506173
+    },
+    {
+      "col": "default payment next month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1"
+      ],
+      "target_share": 0.47402888411651306,
+      "form": "pin",
+      "covered_train_prob": 0.22098765432098766
+    }
+  ],
+  "counts": {
+    "train": 4341,
+    "val": 488,
+    "trainval": 4829,
+    "test": 537
+  },
+  "selectivity": {
+    "train": 0.17864197530864198,
+    "val": 0.18074074074074073,
+    "trainval": 0.17885185185185185,
+    "test": 0.179
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "10-25%"
+}

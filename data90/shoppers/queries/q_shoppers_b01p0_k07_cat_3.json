@@ -1,0 +1,114 @@
+{
+  "query_id": "q_shoppers_b01p0_k07_cat_3",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 7,
+  "arity_tier": "extension",
+  "modality_mix": "categorical",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.1703125,
+  "predicates": [
+    {
+      "col": "Revenue",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "False"
+      ],
+      "target_share": 0.6381869461974746,
+      "form": "set",
+      "covered_train_prob": 0.8444978472013618
+    },
+    {
+      "col": "Browser",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.6381869461974746,
+      "form": "set",
+      "covered_train_prob": 0.6437368579152899
+    },
+    {
+      "col": "Month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "May",
+        "Nov",
+        "Mar"
+      ],
+      "target_share": 0.6381869461974746,
+      "form": "set",
+      "covered_train_prob": 0.6688695303895064
+    },
+    {
+      "col": "VisitorType",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Returning_Visitor"
+      ],
+      "target_share": 0.6381869461974746,
+      "form": "set",
+      "covered_train_prob": 0.8578151597076199
+    },
+    {
+      "col": "TrafficType",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "13"
+      ],
+      "target_share": 0.06755966695690595,
+      "form": "pin",
+      "covered_train_prob": 0.05967758085511164
+    },
+    {
+      "col": "Region",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1"
+      ],
+      "target_share": 0.6381869461974746,
+      "form": "pin",
+      "covered_train_prob": 0.386001802343046
+    },
+    {
+      "col": "Weekend",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "False"
+      ],
+      "target_share": 0.6381869461974746,
+      "form": "pin",
+      "covered_train_prob": 0.7676980074096326
+    }
+  ],
+  "counts": {
+    "train": 123,
+    "val": 15,
+    "trainval": 138,
+    "test": 20
+  },
+  "selectivity": {
+    "train": 0.012316010814058276,
+    "val": 0.013513513513513514,
+    "trainval": 0.012435793457691267,
+    "test": 0.016220600162206
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "1-2%",
+  "realized_band_test": "1-2%"
+}

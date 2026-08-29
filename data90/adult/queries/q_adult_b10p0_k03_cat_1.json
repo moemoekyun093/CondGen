@@ -1,0 +1,68 @@
+{
+  "query_id": "q_adult_b10p0_k03_cat_1",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "skewed",
+  "calibration_exponent": 3.0375,
+  "predicates": [
+    {
+      "col": "race",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Black"
+      ],
+      "target_share": 0.17403035255793636,
+      "form": "pin",
+      "covered_train_prob": 0.09572072072072071
+    },
+    {
+      "col": "workclass",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Private"
+      ],
+      "target_share": 0.17403035255793636,
+      "form": "set",
+      "covered_train_prob": 0.6968331968331969
+    },
+    {
+      "col": "sex",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Female"
+      ],
+      "target_share": 0.030286563611439637,
+      "form": "pin",
+      "covered_train_prob": 0.33104695604695605
+    }
+  ],
+  "counts": {
+    "train": 966,
+    "val": 108,
+    "trainval": 1074,
+    "test": 519
+  },
+  "selectivity": {
+    "train": 0.03296478296478297,
+    "val": 0.03315934909425852,
+    "trainval": 0.03298424495562176,
+    "test": 0.03187764879307168
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

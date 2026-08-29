@@ -1,0 +1,130 @@
+{
+  "query_id": "q_shoppers_b25p0_k07_mix_5",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 7,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.0558349609375,
+  "predicates": [
+    {
+      "col": "PageValues",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        358.6813268838701
+      ],
+      "target_share": 0.9935704509520946,
+      "quantile_range": [
+        0.006317424177949431,
+        0.9998878751300441
+      ]
+    },
+    {
+      "col": "SpecialDay",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.8
+      ],
+      "target_share": 0.9620375019593791,
+      "quantile_range": [
+        0.01783278808227037,
+        0.9798702900416495
+      ]
+    },
+    {
+      "col": "ProductRelated",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.13622154810471193,
+        459.741055364059
+      ],
+      "target_share": 0.9935704509520946,
+      "quantile_range": [
+        0.0013622154810471192,
+        0.9949326664331417
+      ]
+    },
+    {
+      "col": "Region",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1"
+      ],
+      "target_share": 0.9935704509520946,
+      "form": "pin",
+      "covered_train_prob": 0.386001802343046
+    },
+    {
+      "col": "TrafficType",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.9935704509520946,
+      "form": "pin",
+      "covered_train_prob": 0.32041654150395515
+    },
+    {
+      "col": "Browser",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.9935704509520946,
+      "form": "pin",
+      "covered_train_prob": 0.6437368579152899
+    },
+    {
+      "col": "Month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "May",
+        "Nov",
+        "Mar",
+        "Dec",
+        "Oct",
+        "Sep",
+        "Aug",
+        "Jul",
+        "June",
+        "Feb"
+      ],
+      "target_share": 0.9935704509520946,
+      "form": "set",
+      "covered_train_prob": 1.0
+    }
+  ],
+  "counts": {
+    "train": 801,
+    "val": 98,
+    "trainval": 899,
+    "test": 100
+  },
+  "selectivity": {
+    "train": 0.08020426554520878,
+    "val": 0.08828828828828829,
+    "trainval": 0.08101288636568442,
+    "test": 0.08110300081103
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "5-10%"
+}

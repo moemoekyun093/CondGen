@@ -1,0 +1,49 @@
+{
+  "query_id": "q_news_b00p5_k01_mix_5",
+  "dataset": "news",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.005,
+  "arity": 1,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.9485839843750001,
+  "predicates": [
+    {
+      "col": " abs_title_sentiment_polarity",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.4175377032560986,
+        0.43942331198756235
+      ],
+      "target_share": 0.006565681306302898,
+      "quantile_range": [
+        0.860261312924567,
+        0.8668269942308698
+      ]
+    }
+  ],
+  "counts": {
+    "train": 153,
+    "val": 13,
+    "trainval": 166,
+    "test": 12
+  },
+  "selectivity": {
+    "train": 0.004764722369281555,
+    "val": 0.0036434977578475337,
+    "trainval": 0.004652596765604417,
+    "test": 0.003026481715006305
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "<0.5%",
+  "realized_band_test": "<0.5%"
+}

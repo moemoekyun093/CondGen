@@ -1,0 +1,133 @@
+{
+  "query_id": "q_beijing_b01p0_k06_mix_4",
+  "dataset": "beijing",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 6,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.05291748046875,
+  "predicates": [
+    {
+      "col": "Is",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        27.0
+      ],
+      "target_share": 0.9601980946353398,
+      "quantile_range": [
+        0.018647961717700196,
+        0.97884605635304
+      ]
+    },
+    {
+      "col": "Ir",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1.0
+      ],
+      "target_share": 0.9601980946353398,
+      "quantile_range": [
+        0.004451499655249922,
+        0.9646495942905897
+      ]
+    },
+    {
+      "col": "Iws",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.89,
+        227.1408546005871
+      ],
+      "target_share": 0.9601980946353398,
+      "quantile_range": [
+        0.023672631161297954,
+        0.9838707257966377
+      ]
+    },
+    {
+      "col": "hour",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "18",
+        "20",
+        "13",
+        "6",
+        "2",
+        "10",
+        "21",
+        "23",
+        "15",
+        "3",
+        "14",
+        "1",
+        "19",
+        "7",
+        "17",
+        "16",
+        "9",
+        "12",
+        "11",
+        "8",
+        "5",
+        "22",
+        "4",
+        "0"
+      ],
+      "target_share": 0.9601980946353398,
+      "form": "set",
+      "covered_train_prob": 1.0
+    },
+    {
+      "col": "month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "7"
+      ],
+      "target_share": 0.9601980946353398,
+      "form": "pin",
+      "covered_train_prob": 0.08683697001951393
+    },
+    {
+      "col": "day",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "17"
+      ],
+      "target_share": 0.9601980946353398,
+      "form": "pin",
+      "covered_train_prob": 0.034060670569451834
+    }
+  ],
+  "counts": {
+    "train": 91,
+    "val": 8,
+    "trainval": 99,
+    "test": 15
+  },
+  "selectivity": {
+    "train": 0.0026905564425521848,
+    "val": 0.002128225591912743,
+    "trainval": 0.002634309890636226,
+    "test": 0.0035919540229885057
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "<0.5%",
+  "realized_band_test": "<0.5%"
+}

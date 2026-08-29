@@ -1,0 +1,133 @@
+{
+  "query_id": "q_shoppers_b40p0_k07_mix_2",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 7,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.33883056640625,
+  "predicates": [
+    {
+      "col": "ProductRelated",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.0,
+        153.81995642460114
+      ],
+      "target_share": 0.9566167169330265,
+      "quantile_range": [
+        0.02031077747578761,
+        0.9769274944088141
+      ]
+    },
+    {
+      "col": "ProductRelated_Duration",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        7251.6860424829465
+      ],
+      "target_share": 0.9566167169330265,
+      "quantile_range": [
+        0.025953965203877598,
+        0.9825706821369041
+      ]
+    },
+    {
+      "col": "Informational_Duration",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        265.4837649010955
+      ],
+      "target_share": 0.9566167169330265,
+      "quantile_range": [
+        0.0072456532092080896,
+        0.9638623701422346
+      ]
+    },
+    {
+      "col": "Month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "May",
+        "Nov",
+        "Mar",
+        "Dec",
+        "Oct",
+        "Sep",
+        "Aug",
+        "Jul"
+      ],
+      "target_share": 0.9566167169330265,
+      "form": "set",
+      "covered_train_prob": 0.9607489736657655
+    },
+    {
+      "col": "VisitorType",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Returning_Visitor"
+      ],
+      "target_share": 0.9566167169330265,
+      "form": "pin",
+      "covered_train_prob": 0.8578151597076199
+    },
+    {
+      "col": "Browser",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2",
+        "1",
+        "4",
+        "5",
+        "6",
+        "10"
+      ],
+      "target_share": 0.9566167169330265,
+      "form": "set",
+      "covered_train_prob": 0.9701612095724442
+    },
+    {
+      "col": "OperatingSystems",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.9566167169330265,
+      "form": "pin",
+      "covered_train_prob": 0.5336938019425252
+    }
+  ],
+  "counts": {
+    "train": 4008,
+    "val": 469,
+    "trainval": 4477,
+    "test": 486
+  },
+  "selectivity": {
+    "train": 0.40132171823370383,
+    "val": 0.42252252252252254,
+    "trainval": 0.4034423718122015,
+    "test": 0.39416058394160586
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

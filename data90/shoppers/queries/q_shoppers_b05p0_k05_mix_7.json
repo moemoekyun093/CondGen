@@ -1,0 +1,97 @@
+{
+  "query_id": "q_shoppers_b05p0_k05_mix_7",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.8705078124999999,
+  "predicates": [
+    {
+      "col": "ExitRates",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.021675751730206246,
+        0.10921403867233906
+      ],
+      "target_share": 0.49636557482199706,
+      "quantile_range": [
+        0.4183644984099169,
+        0.9147300732319139
+      ]
+    },
+    {
+      "col": "Informational_Duration",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        2549.375
+      ],
+      "target_share": 0.06070250514045775,
+      "quantile_range": [
+        0.0569626288122981,
+        0.11766513395275585
+      ]
+    },
+    {
+      "col": "TrafficType",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2",
+        "1"
+      ],
+      "target_share": 0.49636557482199706,
+      "form": "set",
+      "covered_train_prob": 0.5184740162210875
+    },
+    {
+      "col": "VisitorType",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "New_Visitor"
+      ],
+      "target_share": 0.49636557482199706,
+      "form": "pin",
+      "covered_train_prob": 0.13527585861620106
+    },
+    {
+      "col": "Browser",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.49636557482199706,
+      "form": "set",
+      "covered_train_prob": 0.6437368579152899
+    }
+  ],
+  "counts": {
+    "train": 121,
+    "val": 18,
+    "trainval": 139,
+    "test": 14
+  },
+  "selectivity": {
+    "train": 0.012115750475618303,
+    "val": 0.016216216216216217,
+    "trainval": 0.012525907903036856,
+    "test": 0.0113544201135442
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "1-2%",
+  "realized_band_test": "1-2%"
+}

@@ -1,0 +1,135 @@
+{
+  "query_id": "q_diabetes_b00p5_k08_mix_2",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.005,
+  "arity": 8,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.73046875,
+  "predicates": [
+    {
+      "col": "time_in_hospital",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2.415328419108002,
+        4.20363826178088
+      ],
+      "target_share": 0.31788309842672885,
+      "quantile_range": [
+        0.30415328419108,
+        0.6220363826178088
+      ]
+    },
+    {
+      "col": "number_outpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1.0
+      ],
+      "target_share": 0.31788309842672885,
+      "quantile_range": [
+        0.5316654977655892,
+        0.8495485961923182
+      ]
+    },
+    {
+      "col": "num_lab_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.0,
+        37.0
+      ],
+      "target_share": 0.31788309842672885,
+      "quantile_range": [
+        0.027348666138973313,
+        0.34523176456570215
+      ]
+    },
+    {
+      "col": "number_inpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        21.0
+      ],
+      "target_share": 0.31788309842672885,
+      "quantile_range": [
+        0.24664495727576158,
+        0.5645280557024904
+      ]
+    },
+    {
+      "col": "glimepiride",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.31788309842672885,
+      "form": "set",
+      "covered_train_prob": 0.9491966786223162
+    },
+    {
+      "col": "miglitol",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.31788309842672885,
+      "form": "set",
+      "covered_train_prob": 0.9995905599502121
+    },
+    {
+      "col": "readmitted",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1"
+      ],
+      "target_share": 0.31788309842672885,
+      "form": "pin",
+      "covered_train_prob": 0.4608820976432631
+    },
+    {
+      "col": "diag_3",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "250"
+      ],
+      "target_share": 0.31788309842672885,
+      "form": "pin",
+      "covered_train_prob": 0.11308734175142075
+    }
+  ],
+  "counts": {
+    "train": 301,
+    "val": 102,
+    "trainval": 403,
+    "test": 88
+  },
+  "selectivity": {
+    "train": 0.004929658199446437,
+    "val": 0.005011546209404019,
+    "trainval": 0.004950130201935832,
+    "test": 0.004323474501326521
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "<0.5%",
+  "realized_band_test": "<0.5%"
+}

@@ -1,0 +1,160 @@
+{
+  "query_id": "q_default_b00p5_k10_mix_7",
+  "dataset": "default",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.005,
+  "arity": 10,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 3.3175781250000003,
+  "predicates": [
+    {
+      "col": "PAY_AMT4",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        272.6435287728319,
+        2429.9915063871235
+      ],
+      "target_share": 0.37661481605128116,
+      "quantile_range": [
+        0.2468190149735851,
+        0.6234338310248663
+      ]
+    },
+    {
+      "col": "PAY_AMT6",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        196.79985892921718,
+        2550.1541728952866
+      ],
+      "target_share": 0.37661481605128116,
+      "quantile_range": [
+        0.2581910648317474,
+        0.6348058808830286
+      ]
+    },
+    {
+      "col": "PAY_AMT2",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2164.7680672707056,
+        10147.552432579609
+      ],
+      "target_share": 0.37661481605128116,
+      "quantile_range": [
+        0.5183035983680392,
+        0.8949184144193203
+      ]
+    },
+    {
+      "col": "PAY_AMT3",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        177.46405898603223,
+        2377.818725405039
+      ],
+      "target_share": 0.37661481605128116,
+      "quantile_range": [
+        0.21776871871148834,
+        0.5943835347627695
+      ]
+    },
+    {
+      "col": "PAY_AMT1",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        992.9175023743417,
+        3293.891143275484
+      ],
+      "target_share": 0.37661481605128116,
+      "quantile_range": [
+        0.25291750237434163,
+        0.6295323184256227
+      ]
+    },
+    {
+      "col": "PAY_2",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.37661481605128116,
+      "form": "pin",
+      "covered_train_prob": 0.5239917695473251
+    },
+    {
+      "col": "PAY_4",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.37661481605128116,
+      "form": "pin",
+      "covered_train_prob": 0.5502880658436214
+    },
+    {
+      "col": "PAY_5",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.37661481605128116,
+      "form": "pin",
+      "covered_train_prob": 0.5663786008230453
+    },
+    {
+      "col": "SEX",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1"
+      ],
+      "target_share": 0.37661481605128116,
+      "form": "pin",
+      "covered_train_prob": 0.3977366255144033
+    },
+    {
+      "col": "EDUCATION",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.00015243216244933275,
+      "form": "set",
+      "covered_train_prob": 0.4692181069958848
+    }
+  ],
+  "counts": {
+    "train": 122,
+    "val": 10,
+    "trainval": 132,
+    "test": 20
+  },
+  "selectivity": {
+    "train": 0.005020576131687242,
+    "val": 0.003703703703703704,
+    "trainval": 0.004888888888888889,
+    "test": 0.006666666666666667
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "0.5-1%",
+  "realized_band_test": "0.5-1%"
+}

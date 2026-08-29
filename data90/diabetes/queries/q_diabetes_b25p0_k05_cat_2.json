@@ -1,0 +1,102 @@
+{
+  "query_id": "q_diabetes_b25p0_k05_cat_2",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "equal",
+  "calibration_exponent": 2.489013671875,
+  "predicates": [
+    {
+      "col": "tolazamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.501525350445661,
+      "form": "set",
+      "covered_train_prob": 0.9996069375522036
+    },
+    {
+      "col": "glipizide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.501525350445661,
+      "form": "pin",
+      "covered_train_prob": 0.8751862952226535
+    },
+    {
+      "col": "diag_3",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "250",
+        "401",
+        "276",
+        "428",
+        "427",
+        "414",
+        "496",
+        "403",
+        "272",
+        "599",
+        "585",
+        "empty",
+        "V45"
+      ],
+      "target_share": 0.501525350445661,
+      "form": "set",
+      "covered_train_prob": 0.5025958499156554
+    },
+    {
+      "col": "chlorpropamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.501525350445661,
+      "form": "pin",
+      "covered_train_prob": 0.9991156094924581
+    },
+    {
+      "col": "max_glu_serum",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "empty"
+      ],
+      "target_share": 0.501525350445661,
+      "form": "pin",
+      "covered_train_prob": 0.9482140225028252
+    }
+  ],
+  "counts": {
+    "train": 25376,
+    "val": 8336,
+    "trainval": 33712,
+    "test": 8340
+  },
+  "selectivity": {
+    "train": 0.4155980281367202,
+    "val": 0.4095710706038422,
+    "trainval": 0.4140912887535007,
+    "test": 0.40974746978480886
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

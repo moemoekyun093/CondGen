@@ -1,0 +1,215 @@
+{
+  "query_id": "q_diabetes_b25p0_k07_mix_2",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 7,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.8435546875,
+  "predicates": [
+    {
+      "col": "num_lab_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        9.44278600826376,
+        69.0577292475592
+      ],
+      "target_share": 0.8461494323929544,
+      "quantile_range": [
+        0.07442786008263759,
+        0.920577292475592
+      ]
+    },
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        3.0,
+        8.0
+      ],
+      "target_share": 0.8461494323929544,
+      "quantile_range": [
+        0.03633893460506648,
+        0.8824883669980208
+      ]
+    },
+    {
+      "col": "number_inpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1.9542612789107054
+      ],
+      "target_share": 0.8461494323929544,
+      "quantile_range": [
+        0.01339318039615271,
+        0.859542612789107
+      ]
+    },
+    {
+      "col": "admission_source_id",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "7"
+      ],
+      "target_share": 0.8461494323929544,
+      "form": "pin",
+      "covered_train_prob": 0.5659771696228239
+    },
+    {
+      "col": "readmitted",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0",
+        "1"
+      ],
+      "target_share": 0.8461494323929544,
+      "form": "set",
+      "covered_train_prob": 1.0
+    },
+    {
+      "col": "diag_3",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "250",
+        "401",
+        "276",
+        "428",
+        "427",
+        "414",
+        "496",
+        "403",
+        "272",
+        "599",
+        "585",
+        "empty",
+        "V45",
+        "707",
+        "250.02",
+        "780",
+        "285",
+        "425",
+        "424",
+        "250.6",
+        "584",
+        "305",
+        "682",
+        "250.01",
+        "518",
+        "41",
+        "493",
+        "278",
+        "530",
+        "786",
+        "491",
+        "486",
+        "244",
+        "V58",
+        "250.4",
+        "411",
+        "280",
+        "357",
+        "785",
+        "197",
+        "287",
+        "402",
+        "511",
+        "593",
+        "412",
+        "788",
+        "787",
+        "438",
+        "V15",
+        "295",
+        "998",
+        "413",
+        "799",
+        "571",
+        "250.8",
+        "294",
+        "996",
+        "536",
+        "995",
+        "70",
+        "560",
+        "789",
+        "458",
+        "997",
+        "535",
+        "426",
+        "578",
+        "263",
+        "V10",
+        "300",
+        "784",
+        "396",
+        "198",
+        "V42",
+        "453",
+        "E849",
+        "715",
+        "296",
+        "410",
+        "440",
+        "V43",
+        "733",
+        "730",
+        "8",
+        "303",
+        "311",
+        "443",
+        "790",
+        "250.41",
+        "562",
+        "112",
+        "331",
+        "162",
+        "416"
+      ],
+      "target_share": 0.8461494323929544,
+      "form": "set",
+      "covered_train_prob": 0.8465254917374999
+    },
+    {
+      "col": "metformin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.8461494323929544,
+      "form": "pin",
+      "covered_train_prob": 0.8033541328878625
+    }
+  ],
+  "counts": {
+    "train": 15260,
+    "val": 5023,
+    "trainval": 20283,
+    "test": 5079
+  },
+  "selectivity": {
+    "train": 0.2499222063905403,
+    "val": 0.24679408441016065,
+    "trainval": 0.24914017589544538,
+    "test": 0.24953326127542497
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "10-25%"
+}

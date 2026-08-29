@@ -1,0 +1,119 @@
+{
+  "query_id": "q_diabetes_b25p0_k06_num_2",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 6,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.823828125,
+  "predicates": [
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        4.0,
+        7.0
+      ],
+      "target_share": 0.6561316827894896,
+      "quantile_range": [
+        0.07211692401968396,
+        0.7282486068091736
+      ]
+    },
+    {
+      "col": "num_lab_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        3.5647945383879756,
+        54.39556554814295
+      ],
+      "target_share": 0.6561316827894896,
+      "quantile_range": [
+        0.04782397269193988,
+        0.7039556554814295
+      ]
+    },
+    {
+      "col": "number_inpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        2.0590423826068447
+      ],
+      "target_share": 0.6561316827894896,
+      "quantile_range": [
+        0.2744587410365788,
+        0.9305904238260685
+      ]
+    },
+    {
+      "col": "num_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        2.8979476057122673
+      ],
+      "target_share": 0.6561316827894896,
+      "quantile_range": [
+        0.13284779326763313,
+        0.7889794760571227
+      ]
+    },
+    {
+      "col": "num_medications",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        9.0,
+        23.0
+      ],
+      "target_share": 0.6561316827894896,
+      "quantile_range": [
+        0.17901565177184312,
+        0.8351473345613327
+      ]
+    },
+    {
+      "col": "number_emergency",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1.0
+      ],
+      "target_share": 0.6561316827894896,
+      "quantile_range": [
+        0.24364856675857494,
+        0.8997802495480646
+      ]
+    }
+  ],
+  "counts": {
+    "train": 14905,
+    "val": 4985,
+    "trainval": 19890,
+    "test": 5046
+  },
+  "selectivity": {
+    "train": 0.24410815768355199,
+    "val": 0.2449270377831278,
+    "trainval": 0.24431287770844592,
+    "test": 0.24791195833742755
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "10-25%"
+}

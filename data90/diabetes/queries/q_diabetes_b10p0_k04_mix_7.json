@@ -1,0 +1,85 @@
+{
+  "query_id": "q_diabetes_b10p0_k04_mix_7",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 9.0125,
+  "predicates": [
+    {
+      "col": "number_outpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        42.0
+      ],
+      "target_share": 0.031471443755169595,
+      "quantile_range": [
+        0.30542089820194446,
+        0.33689234195711404
+      ]
+    },
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        5.737663551489936,
+        6.0
+      ],
+      "target_share": 0.031471443755169595,
+      "quantile_range": [
+        0.3273766355148994,
+        0.35884807927006895
+      ]
+    },
+    {
+      "col": "admission_source_id",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "7"
+      ],
+      "target_share": 0.031471443755169595,
+      "form": "set",
+      "covered_train_prob": 0.5659771696228239
+    },
+    {
+      "col": "diabetesMed",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Yes"
+      ],
+      "target_share": 0.0001,
+      "form": "set",
+      "covered_train_prob": 0.7696326503873303
+    }
+  ],
+  "counts": {
+    "train": 5443,
+    "val": 1854,
+    "trainval": 7297,
+    "test": 1952
+  },
+  "selectivity": {
+    "train": 0.08914328763982378,
+    "val": 0.09109222227681422,
+    "trainval": 0.08963052129907138,
+    "test": 0.09590252530215192
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "5-10%"
+}

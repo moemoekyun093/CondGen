@@ -1,0 +1,79 @@
+{
+  "query_id": "q_diabetes_b05p0_k04_cat_2",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.1703125,
+  "predicates": [
+    {
+      "col": "nateglinide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.41624313446619515,
+      "form": "set",
+      "covered_train_prob": 0.992957631143648
+    },
+    {
+      "col": "insulin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.41624313446619515,
+      "form": "pin",
+      "covered_train_prob": 0.46892350022109763
+    },
+    {
+      "col": "admission_source_id",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "7"
+      ],
+      "target_share": 0.41624313446619515,
+      "form": "set",
+      "covered_train_prob": 0.5659771696228239
+    },
+    {
+      "col": "race",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "AfricanAmerican"
+      ],
+      "target_share": 0.41624313446619515,
+      "form": "pin",
+      "covered_train_prob": 0.1903241127434121
+    }
+  ],
+  "counts": {
+    "train": 2973,
+    "val": 992,
+    "trainval": 3965,
+    "test": 918
+  },
+  "selectivity": {
+    "train": 0.048690610720778266,
+    "val": 0.04873974352675281,
+    "trainval": 0.0487028939222719,
+    "test": 0.0451016999115653
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

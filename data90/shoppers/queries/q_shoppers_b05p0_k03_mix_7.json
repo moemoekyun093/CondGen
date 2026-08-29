@@ -1,0 +1,71 @@
+{
+  "query_id": "q_shoppers_b05p0_k03_mix_7",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.46428222656250007,
+  "predicates": [
+    {
+      "col": "Administrative_Duration",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        515.4295001641277
+      ],
+      "target_share": 0.7062992160283159,
+      "quantile_range": [
+        0.26760881767789557,
+        0.9739080337062115
+      ]
+    },
+    {
+      "col": "Month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "May"
+      ],
+      "target_share": 0.7062992160283159,
+      "form": "pin",
+      "covered_train_prob": 0.26834885350956245
+    },
+    {
+      "col": "Revenue",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "True"
+      ],
+      "target_share": 0.4988585825622136,
+      "form": "pin",
+      "covered_train_prob": 0.15550215279863824
+    }
+  ],
+  "counts": {
+    "train": 286,
+    "val": 31,
+    "trainval": 317,
+    "test": 34
+  },
+  "selectivity": {
+    "train": 0.02863722839691599,
+    "val": 0.027927927927927927,
+    "trainval": 0.028566279174551682,
+    "test": 0.027575020275750203
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

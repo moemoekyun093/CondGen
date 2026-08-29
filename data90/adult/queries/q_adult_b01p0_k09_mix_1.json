@@ -1,0 +1,146 @@
+{
+  "query_id": "q_adult_b01p0_k09_mix_1",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 9,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 2.7107421875,
+  "predicates": [
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        35.0,
+        57.94126073309984
+      ],
+      "target_share": 0.45830777672087325,
+      "quantile_range": [
+        0.4411048306101251,
+        0.8994126073309984
+      ]
+    },
+    {
+      "col": "education.num",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.0,
+        16.0
+      ],
+      "target_share": 0.0019465152587242916,
+      "quantile_range": [
+        0.39911015717176157,
+        0.40105667243048587
+      ]
+    },
+    {
+      "col": "capital.loss",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        4356.0
+      ],
+      "target_share": 0.45830777672087325,
+      "quantile_range": [
+        0.08583898060164628,
+        0.5441467573225195
+      ]
+    },
+    {
+      "col": "capital.gain",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        99999.0
+      ],
+      "target_share": 0.45830777672087325,
+      "quantile_range": [
+        0.1891457391600242,
+        0.6474535158808974
+      ]
+    },
+    {
+      "col": "relationship",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Husband"
+      ],
+      "target_share": 0.45830777672087325,
+      "form": "pin",
+      "covered_train_prob": 0.40605378105378104
+    },
+    {
+      "col": "sex",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Male"
+      ],
+      "target_share": 0.45830777672087325,
+      "form": "set",
+      "covered_train_prob": 0.668953043953044
+    },
+    {
+      "col": "race",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Black"
+      ],
+      "target_share": 0.45830777672087325,
+      "form": "pin",
+      "covered_train_prob": 0.09572072072072071
+    },
+    {
+      "col": "native.country",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " United-States"
+      ],
+      "target_share": 0.45830777672087325,
+      "form": "pin",
+      "covered_train_prob": 0.8959527709527709
+    },
+    {
+      "col": "marital.status",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Married-civ-spouse"
+      ],
+      "target_share": 0.45830777672087325,
+      "form": "set",
+      "covered_train_prob": 0.46133633633633636
+    }
+  ],
+  "counts": {
+    "train": 340,
+    "val": 42,
+    "trainval": 382,
+    "test": 187
+  },
+  "selectivity": {
+    "train": 0.011602511602511602,
+    "val": 0.01289530242554498,
+    "trainval": 0.011731826418107553,
+    "test": 0.011485780971684786
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "1-2%",
+  "realized_band_test": "1-2%"
+}

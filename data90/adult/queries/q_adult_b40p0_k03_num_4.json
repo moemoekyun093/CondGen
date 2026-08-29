@@ -1,0 +1,77 @@
+{
+  "query_id": "q_adult_b40p0_k03_num_4",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.6790481567382813,
+  "predicates": [
+    {
+      "col": "fnlwgt",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        96390.17220993558,
+        240987.449417484
+      ],
+      "target_share": 0.598797328344056,
+      "quantile_range": [
+        0.16036465631226496,
+        0.7591619846563209
+      ]
+    },
+    {
+      "col": "capital.loss",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        4356.0
+      ],
+      "target_share": 0.598797328344056,
+      "quantile_range": [
+        0.054460713548234826,
+        0.6532580418922908
+      ]
+    },
+    {
+      "col": "hours.per.week",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        37.97289589847471,
+        50.0
+      ],
+      "target_share": 0.598797328344056,
+      "quantile_range": [
+        0.22972895898474713,
+        0.8285262873288031
+      ]
+    }
+  ],
+  "counts": {
+    "train": 11722,
+    "val": 1282,
+    "trainval": 13004,
+    "test": 6421
+  },
+  "selectivity": {
+    "train": 0.40001365001365,
+    "val": 0.39361375498925394,
+    "trainval": 0.39937348361536806,
+    "test": 0.3943860942202567
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

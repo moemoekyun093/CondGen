@@ -1,0 +1,115 @@
+{
+  "query_id": "q_adult_b05p0_k06_mix_5",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 6,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.2191802978515625,
+  "predicates": [
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        42.0,
+        50.0
+      ],
+      "target_share": 0.16102930969399926,
+      "quantile_range": [
+        0.6289927546954657,
+        0.7900220643894649
+      ]
+    },
+    {
+      "col": "capital.loss",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        4356.0
+      ],
+      "target_share": 0.6940343829440488,
+      "quantile_range": [
+        0.034175821933189326,
+        0.7282102048772382
+      ]
+    },
+    {
+      "col": "fnlwgt",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        127941.0241151341,
+        469926.44103247026
+      ],
+      "target_share": 0.6940343829440488,
+      "quantile_range": [
+        0.2893963095238656,
+        0.9834306924679144
+      ]
+    },
+    {
+      "col": "marital.status",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Married-civ-spouse"
+      ],
+      "target_share": 0.6940343829440488,
+      "form": "pin",
+      "covered_train_prob": 0.46133633633633636
+    },
+    {
+      "col": "sex",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Male"
+      ],
+      "target_share": 0.6940343829440488,
+      "form": "pin",
+      "covered_train_prob": 0.668953043953044
+    },
+    {
+      "col": "occupation",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Prof-specialty",
+        " Craft-repair",
+        " Exec-managerial",
+        " Adm-clerical",
+        " Sales",
+        " Other-service"
+      ],
+      "target_share": 0.6940343829440488,
+      "form": "set",
+      "covered_train_prob": 0.7071389571389571
+    }
+  ],
+  "counts": {
+    "train": 1523,
+    "val": 143,
+    "trainval": 1666,
+    "test": 827
+  },
+  "selectivity": {
+    "train": 0.051972426972426974,
+    "val": 0.04390543444887934,
+    "trainval": 0.05116550474494026,
+    "test": 0.050795405687611324
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "5-10%"
+}

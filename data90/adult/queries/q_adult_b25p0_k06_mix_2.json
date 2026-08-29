@@ -1,0 +1,116 @@
+{
+  "query_id": "q_adult_b25p0_k06_mix_2",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 6,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.09850311279296875,
+  "predicates": [
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        17.91233695240208,
+        84.59416234240426
+      ],
+      "target_share": 0.9774979819399818,
+      "quantile_range": [
+        0.01912336952402079,
+        0.9966213514640027
+      ]
+    },
+    {
+      "col": "fnlwgt",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        22638.149074327608,
+        476165.5431603821
+      ],
+      "target_share": 0.9774979819399818,
+      "quantile_range": [
+        0.006959108398888769,
+        0.9844570903388706
+      ]
+    },
+    {
+      "col": "capital.gain",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        12801.70197047898
+      ],
+      "target_share": 0.9774979819399818,
+      "quantile_range": [
+        0.0004971743615800061,
+        0.9779951563015619
+      ]
+    },
+    {
+      "col": "income",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " <=50K"
+      ],
+      "target_share": 0.9774979819399818,
+      "form": "pin",
+      "covered_train_prob": 0.7576098826098826
+    },
+    {
+      "col": "workclass",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Private",
+        " Self-emp-not-inc",
+        " Local-gov",
+        " ?",
+        " State-gov",
+        " Self-emp-inc",
+        " Federal-gov"
+      ],
+      "target_share": 0.9774979819399818,
+      "form": "set",
+      "covered_train_prob": 0.9993174993174995
+    },
+    {
+      "col": "marital.status",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Married-civ-spouse"
+      ],
+      "target_share": 0.9774979819399818,
+      "form": "pin",
+      "covered_train_prob": 0.46133633633633636
+    }
+  ],
+  "counts": {
+    "train": 7326,
+    "val": 802,
+    "trainval": 8128,
+    "test": 4024
+  },
+  "selectivity": {
+    "train": 0.25,
+    "val": 0.24623887012588272,
+    "trainval": 0.24962378305334604,
+    "test": 0.24715926540138813
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "10-25%"
+}

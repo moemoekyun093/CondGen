@@ -1,0 +1,90 @@
+{
+  "query_id": "q_diabetes_b10p0_k05_cat_6",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.796875,
+  "predicates": [
+    {
+      "col": "rosiglitazone",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.6928273124726764,
+      "form": "set",
+      "covered_train_prob": 0.9386331253377881
+    },
+    {
+      "col": "miglitol",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.6928273124726764,
+      "form": "pin",
+      "covered_train_prob": 0.9995905599502121
+    },
+    {
+      "col": "admission_type_id",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1"
+      ],
+      "target_share": 0.6928273124726764,
+      "form": "pin",
+      "covered_train_prob": 0.5319117574804697
+    },
+    {
+      "col": "discharge_disposition_id",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1"
+      ],
+      "target_share": 0.6928273124726764,
+      "form": "pin",
+      "covered_train_prob": 0.5923614864311567
+    },
+    {
+      "col": "insulin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.6928273124726764,
+      "form": "pin",
+      "covered_train_prob": 0.46892350022109763
+    }
+  ],
+  "counts": {
+    "train": 8102,
+    "val": 2634,
+    "trainval": 10736,
+    "test": 2633
+  },
+  "selectivity": {
+    "train": 0.1326913313352659,
+    "val": 0.1294158109369626,
+    "trainval": 0.13187245123569008,
+    "test": 0.12936032229537192
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "10-25%"
+}

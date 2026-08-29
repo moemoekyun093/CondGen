@@ -1,0 +1,68 @@
+{
+  "query_id": "q_adult_b02p0_k03_cat_5",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.02,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.4234375,
+  "predicates": [
+    {
+      "col": "native.country",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Mexico"
+      ],
+      "target_share": 0.43681364316789495,
+      "form": "pin",
+      "covered_train_prob": 0.019553644553644552
+    },
+    {
+      "col": "education",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " HS-grad"
+      ],
+      "target_share": 0.6609187871197905,
+      "form": "pin",
+      "covered_train_prob": 0.32036582036582034
+    },
+    {
+      "col": "income",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " <=50K"
+      ],
+      "target_share": 0.6609187871197905,
+      "form": "pin",
+      "covered_train_prob": 0.7576098826098826
+    }
+  ],
+  "counts": {
+    "train": 102,
+    "val": 19,
+    "trainval": 121,
+    "test": 46
+  },
+  "selectivity": {
+    "train": 0.003480753480753481,
+    "val": 0.005833589192508443,
+    "trainval": 0.00371610208531679,
+    "test": 0.0028253792764572202
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "<0.5%",
+  "realized_band_test": "<0.5%"
+}

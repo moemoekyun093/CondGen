@@ -1,0 +1,57 @@
+{
+  "query_id": "q_news_b02p0_k02_cat_0",
+  "dataset": "news",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.02,
+  "arity": 2,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.98359375,
+  "predicates": [
+    {
+      "col": "data_channel",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.14603328716237937,
+      "form": "pin",
+      "covered_train_prob": 0.15776525178287815
+    },
+    {
+      "col": "weekday",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "4"
+      ],
+      "target_share": 0.14603328716237937,
+      "form": "pin",
+      "covered_train_prob": 0.14381364641400143
+    }
+  ],
+  "counts": {
+    "train": 674,
+    "val": 79,
+    "trainval": 753,
+    "test": 79
+  },
+  "selectivity": {
+    "train": 0.020989692005854692,
+    "val": 0.022141255605381167,
+    "trainval": 0.021104851593374253,
+    "test": 0.01992433795712484
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "1-2%"
+}

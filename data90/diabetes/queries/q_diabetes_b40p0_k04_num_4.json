@@ -1,0 +1,91 @@
+{
+  "query_id": "q_diabetes_b40p0_k04_num_4",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "equal",
+  "calibration_exponent": 2.1039062499999996,
+  "predicates": [
+    {
+      "col": "number_diagnoses",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        6.385624568915555,
+        9.0
+      ],
+      "target_share": 0.6175795150849197,
+      "quantile_range": [
+        0.30385624568915554,
+        0.9214357607740753
+      ]
+    },
+    {
+      "col": "time_in_hospital",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        3.0,
+        13.06111478293198
+      ],
+      "target_share": 0.6175795150849197,
+      "quantile_range": [
+        0.36303163274440015,
+        0.9806111478293198
+      ]
+    },
+    {
+      "col": "number_emergency",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        76.0
+      ],
+      "target_share": 0.6175795150849197,
+      "quantile_range": [
+        0.06289982382483464,
+        0.6804793389097543
+      ]
+    },
+    {
+      "col": "num_medications",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        12.0,
+        33.41213450702815
+      ],
+      "target_share": 0.6175795150849197,
+      "quantile_range": [
+        0.34948115745022107,
+        0.9670606725351407
+      ]
+    }
+  ],
+  "counts": {
+    "train": 23762,
+    "val": 7905,
+    "trainval": 31667,
+    "test": 8041
+  },
+  "selectivity": {
+    "train": 0.38916457852241276,
+    "val": 0.38839483122881147,
+    "trainval": 0.38897214169901245,
+    "test": 0.3950574825587108
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

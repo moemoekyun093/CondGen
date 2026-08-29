@@ -1,0 +1,122 @@
+{
+  "query_id": "q_diabetes_b40p0_k07_mix_5",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 7,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 3.784375,
+  "predicates": [
+    {
+      "col": "num_medications",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        9.0,
+        28.677433633222254
+      ],
+      "target_share": 0.7490379382566167,
+      "quantile_range": [
+        0.18773639807560583,
+        0.9367743363322225
+      ]
+    },
+    {
+      "col": "num_lab_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        26.88113125989795,
+        72.78492508555964
+      ],
+      "target_share": 0.7490379382566167,
+      "quantile_range": [
+        0.1988113125989795,
+        0.9478492508555962
+      ]
+    },
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        4.197329044050395,
+        8.0
+      ],
+      "target_share": 0.7490379382566167,
+      "quantile_range": [
+        0.15197329044050395,
+        0.9010112286971206
+      ]
+    },
+    {
+      "col": "glipizide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.7490379382566167,
+      "form": "pin",
+      "covered_train_prob": 0.8751862952226535
+    },
+    {
+      "col": "race",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Caucasian",
+        "AfricanAmerican"
+      ],
+      "target_share": 0.7490379382566167,
+      "form": "set",
+      "covered_train_prob": 0.9372410291685092
+    },
+    {
+      "col": "tolazamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.17661309035866,
+      "form": "set",
+      "covered_train_prob": 0.9996069375522036
+    },
+    {
+      "col": "glyburide-metformin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.7490379382566167,
+      "form": "set",
+      "covered_train_prob": 0.9928593655316988
+    }
+  ],
+  "counts": {
+    "train": 24095,
+    "val": 8011,
+    "trainval": 32106,
+    "test": 8124
+  },
+  "selectivity": {
+    "train": 0.3946183199855877,
+    "val": 0.39360290866211367,
+    "trainval": 0.39436446715471923,
+    "test": 0.3991353050997347
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

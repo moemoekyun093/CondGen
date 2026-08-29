@@ -1,0 +1,111 @@
+{
+  "query_id": "q_shoppers_b10p0_k06_mix_5",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 6,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.602862548828125,
+  "predicates": [
+    {
+      "col": "ProductRelated",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        3.0,
+        156.56369908395203
+      ],
+      "target_share": 0.8703897041644485,
+      "quantile_range": [
+        0.10766783252581154,
+        0.9780575366902601
+      ]
+    },
+    {
+      "col": "BounceRates",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.09119787946769312
+      ],
+      "target_share": 0.8703897041644485,
+      "quantile_range": [
+        0.05608944762262875,
+        0.9264791517870773
+      ]
+    },
+    {
+      "col": "PageValues",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        146.6920412574941
+      ],
+      "target_share": 0.8703897041644485,
+      "quantile_range": [
+        0.12178689175019186,
+        0.9921765959146404
+      ]
+    },
+    {
+      "col": "Month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "May"
+      ],
+      "target_share": 0.8703897041644485,
+      "form": "pin",
+      "covered_train_prob": 0.26834885350956245
+    },
+    {
+      "col": "VisitorType",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Returning_Visitor",
+        "New_Visitor"
+      ],
+      "target_share": 0.8703897041644485,
+      "form": "set",
+      "covered_train_prob": 0.993091018323821
+    },
+    {
+      "col": "Revenue",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "True"
+      ],
+      "target_share": 0.49953822413429516,
+      "form": "pin",
+      "covered_train_prob": 0.15550215279863824
+    }
+  ],
+  "counts": {
+    "train": 288,
+    "val": 33,
+    "trainval": 321,
+    "test": 36
+  },
+  "selectivity": {
+    "train": 0.02883748873535596,
+    "val": 0.02972972972972973,
+    "trainval": 0.028926736955934035,
+    "test": 0.029197080291970802
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

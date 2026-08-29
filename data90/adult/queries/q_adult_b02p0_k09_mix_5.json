@@ -1,0 +1,146 @@
+{
+  "query_id": "q_adult_b02p0_k09_mix_5",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.02,
+  "arity": 9,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 3.0375,
+  "predicates": [
+    {
+      "col": "education.num",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.0,
+        16.0
+      ],
+      "target_share": 0.002628386972227236,
+      "quantile_range": [
+        0.6374307945599199,
+        0.6400591815321471
+      ]
+    },
+    {
+      "col": "capital.loss",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        4356.0
+      ],
+      "target_share": 0.4758402370985675,
+      "quantile_range": [
+        0.31583019863432366,
+        0.7916704357328912
+      ]
+    },
+    {
+      "col": "capital.gain",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        99999.0
+      ],
+      "target_share": 0.4758402370985675,
+      "quantile_range": [
+        0.3298581884861365,
+        0.805698425584704
+      ]
+    },
+    {
+      "col": "hours.per.week",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        37.42829683037737,
+        40.02464108046824
+      ],
+      "target_share": 0.4758402370985675,
+      "quantile_range": [
+        0.22428296830377373,
+        0.7001232054023412
+      ]
+    },
+    {
+      "col": "relationship",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Husband"
+      ],
+      "target_share": 0.4758402370985675,
+      "form": "pin",
+      "covered_train_prob": 0.40605378105378104
+    },
+    {
+      "col": "native.country",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " United-States"
+      ],
+      "target_share": 0.4758402370985675,
+      "form": "pin",
+      "covered_train_prob": 0.8959527709527709
+    },
+    {
+      "col": "marital.status",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Married-civ-spouse"
+      ],
+      "target_share": 0.4758402370985675,
+      "form": "pin",
+      "covered_train_prob": 0.46133633633633636
+    },
+    {
+      "col": "occupation",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Prof-specialty"
+      ],
+      "target_share": 0.4758402370985675,
+      "form": "pin",
+      "covered_train_prob": 0.12817362817362818
+    },
+    {
+      "col": "income",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " >50K"
+      ],
+      "target_share": 0.4758402370985675,
+      "form": "pin",
+      "covered_train_prob": 0.2423901173901174
+    }
+  ],
+  "counts": {
+    "train": 388,
+    "val": 44,
+    "trainval": 432,
+    "test": 227
+  },
+  "selectivity": {
+    "train": 0.01324051324051324,
+    "val": 0.013509364445809026,
+    "trainval": 0.0132674057922054,
+    "test": 0.013942632516430195
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "1-2%",
+  "realized_band_test": "1-2%"
+}

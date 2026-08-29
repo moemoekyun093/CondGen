@@ -1,0 +1,85 @@
+{
+  "query_id": "q_shoppers_b40p0_k04_mix_5",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.5123870849609375,
+  "predicates": [
+    {
+      "col": "ProductRelated_Duration",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        58.650320736603184,
+        3274.319570420486
+      ],
+      "target_share": 0.7937677409996491,
+      "quantile_range": [
+        0.12456290092075398,
+        0.918330641920403
+      ]
+    },
+    {
+      "col": "BounceRates",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.025311355826126983
+      ],
+      "target_share": 0.7937677409996491,
+      "quantile_range": [
+        0.01810039358348587,
+        0.811868134583135
+      ]
+    },
+    {
+      "col": "Revenue",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "False"
+      ],
+      "target_share": 0.7937677409996491,
+      "form": "set",
+      "covered_train_prob": 0.8444978472013618
+    },
+    {
+      "col": "Weekend",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "False"
+      ],
+      "target_share": 0.5001270391772227,
+      "form": "pin",
+      "covered_train_prob": 0.7676980074096326
+    }
+  ],
+  "counts": {
+    "train": 4321,
+    "val": 456,
+    "trainval": 4777,
+    "test": 534
+  },
+  "selectivity": {
+    "train": 0.4326624611995594,
+    "val": 0.41081081081081083,
+    "trainval": 0.4304767054158782,
+    "test": 0.43309002433090027
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

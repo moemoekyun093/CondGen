@@ -1,0 +1,127 @@
+{
+  "query_id": "q_beijing_b01p0_k06_mix_0",
+  "dataset": "beijing",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 6,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.7501953125,
+  "predicates": [
+    {
+      "col": "Ir",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        3.3249159418653775
+      ],
+      "target_share": 0.5622570321106526,
+      "quantile_range": [
+        0.41882602102889865,
+        0.9810830531395512
+      ]
+    },
+    {
+      "col": "TEMP",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -6.0,
+        19.0
+      ],
+      "target_share": 0.5622570321106526,
+      "quantile_range": [
+        0.0666297994460015,
+        0.628886831556654
+      ]
+    },
+    {
+      "col": "Is",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        27.0
+      ],
+      "target_share": 0.5622570321106526,
+      "quantile_range": [
+        0.36957600012634145,
+        0.9318330322369941
+      ]
+    },
+    {
+      "col": "day",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "17",
+        "4",
+        "18",
+        "3",
+        "2",
+        "13",
+        "26",
+        "12",
+        "10",
+        "9",
+        "14",
+        "16",
+        "25",
+        "11",
+        "6",
+        "7",
+        "28"
+      ],
+      "target_share": 0.5622570321106526,
+      "form": "set",
+      "covered_train_prob": 0.5651351191532138
+    },
+    {
+      "col": "cbwd",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "SE",
+        "NW"
+      ],
+      "target_share": 0.5622570321106526,
+      "form": "set",
+      "covered_train_prob": 0.6725799775294188
+    },
+    {
+      "col": "hour",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "18"
+      ],
+      "target_share": 0.5622570321106526,
+      "form": "pin",
+      "covered_train_prob": 0.04328543551534504
+    }
+  ],
+  "counts": {
+    "train": 333,
+    "val": 33,
+    "trainval": 366,
+    "test": 44
+  },
+  "selectivity": {
+    "train": 0.009845662586482172,
+    "val": 0.008778930566640064,
+    "trainval": 0.009738963838109684,
+    "test": 0.01053639846743295
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "0.5-1%",
+  "realized_band_test": "1-2%"
+}

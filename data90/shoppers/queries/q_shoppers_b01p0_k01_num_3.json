@@ -1,0 +1,49 @@
+{
+  "query_id": "q_shoppers_b01p0_k01_num_3",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 1,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.0020103454589844,
+  "predicates": [
+    {
+      "col": "PageValues",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        19.236668117429534,
+        21.419470782644886
+      ],
+      "target_share": 0.009907847402079539,
+      "quantile_range": [
+        0.9001470041249523,
+        0.9100548515270318
+      ]
+    }
+  ],
+  "counts": {
+    "train": 100,
+    "val": 7,
+    "trainval": 107,
+    "test": 8
+  },
+  "selectivity": {
+    "train": 0.010013016921998599,
+    "val": 0.006306306306306306,
+    "trainval": 0.009642245651978012,
+    "test": 0.006488240064882401
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "1-2%",
+  "realized_band_test": "0.5-1%"
+}

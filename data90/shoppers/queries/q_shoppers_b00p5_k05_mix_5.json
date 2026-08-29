@@ -1,0 +1,96 @@
+{
+  "query_id": "q_shoppers_b00p5_k05_mix_5",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.005,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.823828125,
+  "predicates": [
+    {
+      "col": "BounceRates",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.007817242681591735
+      ],
+      "target_share": 0.29882339611559616,
+      "quantile_range": [
+        0.31653776289465557,
+        0.6153611590102517
+      ]
+    },
+    {
+      "col": "Administrative",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2.0,
+        7.057552367811731
+      ],
+      "target_share": 0.29882339611559616,
+      "quantile_range": [
+        0.6117521275625212,
+        0.9105755236781173
+      ]
+    },
+    {
+      "col": "OperatingSystems",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1"
+      ],
+      "target_share": 0.29882339611559616,
+      "form": "pin",
+      "covered_train_prob": 0.21087413637729047
+    },
+    {
+      "col": "Weekend",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "True"
+      ],
+      "target_share": 0.29882339611559616,
+      "form": "pin",
+      "covered_train_prob": 0.2323019925903675
+    },
+    {
+      "col": "Region",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1"
+      ],
+      "target_share": 0.007973672401955527,
+      "form": "set",
+      "covered_train_prob": 0.386001802343046
+    }
+  ],
+  "counts": {
+    "train": 50,
+    "val": 10,
+    "trainval": 60,
+    "test": 7
+  },
+  "selectivity": {
+    "train": 0.005006508460999299,
+    "val": 0.009009009009009009,
+    "trainval": 0.005406866720735334,
+    "test": 0.0056772100567721
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "0.5-1%",
+  "realized_band_test": "0.5-1%"
+}

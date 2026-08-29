@@ -1,0 +1,119 @@
+{
+  "query_id": "q_adult_b05p0_k06_num_2",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 6,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "equal",
+  "calibration_exponent": 2.2308166503906253,
+  "predicates": [
+    {
+      "col": "hours.per.week",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        40.0,
+        60.0
+      ],
+      "target_share": 0.3283019310055836,
+      "quantile_range": [
+        0.6106695970693066,
+        0.9389715280748901
+      ]
+    },
+    {
+      "col": "capital.loss",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        4356.0
+      ],
+      "target_share": 0.3283019310055836,
+      "quantile_range": [
+        0.2743176374765825,
+        0.602619568482166
+      ]
+    },
+    {
+      "col": "capital.gain",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        99999.0
+      ],
+      "target_share": 0.3283019310055836,
+      "quantile_range": [
+        0.3815450141973727,
+        0.7098469452029563
+      ]
+    },
+    {
+      "col": "education.num",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        9.0,
+        10.0
+      ],
+      "target_share": 0.3283019310055836,
+      "quantile_range": [
+        0.18869032337132988,
+        0.5169922543769134
+      ]
+    },
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        37.0,
+        52.46805545817443
+      ],
+      "target_share": 0.3283019310055836,
+      "quantile_range": [
+        0.5063786235761607,
+        0.8346805545817443
+      ]
+    },
+    {
+      "col": "fnlwgt",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        76587.83132844871,
+        169081.3708797866
+      ],
+      "target_share": 0.3283019310055836,
+      "quantile_range": [
+        0.11863727783475575,
+        0.44693920884033933
+      ]
+    }
+  ],
+  "counts": {
+    "train": 1465,
+    "val": 156,
+    "trainval": 1621,
+    "test": 774
+  },
+  "selectivity": {
+    "train": 0.049993174993174995,
+    "val": 0.04789683758059564,
+    "trainval": 0.049783483308252205,
+    "test": 0.04754007739082366
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

@@ -1,0 +1,79 @@
+{
+  "query_id": "q_adult_b10p0_k04_cat_1",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "skewed",
+  "calibration_exponent": 3.0375,
+  "predicates": [
+    {
+      "col": "workclass",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Private"
+      ],
+      "target_share": 0.31170947235801266,
+      "form": "set",
+      "covered_train_prob": 0.6968331968331969
+    },
+    {
+      "col": "relationship",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Not-in-family"
+      ],
+      "target_share": 0.31170947235801266,
+      "form": "pin",
+      "covered_train_prob": 0.2538220038220038
+    },
+    {
+      "col": "marital.status",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Widowed"
+      ],
+      "target_share": 0.030286563611439637,
+      "form": "pin",
+      "covered_train_prob": 0.029995904995904994
+    },
+    {
+      "col": "sex",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Female"
+      ],
+      "target_share": 0.31170947235801266,
+      "form": "pin",
+      "covered_train_prob": 0.33104695604695605
+    }
+  ],
+  "counts": {
+    "train": 225,
+    "val": 27,
+    "trainval": 252,
+    "test": 127
+  },
+  "selectivity": {
+    "train": 0.007678132678132678,
+    "val": 0.00828983727356463,
+    "trainval": 0.007739320045453149,
+    "test": 0.007800503654566673
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "0.5-1%",
+  "realized_band_test": "0.5-1%"
+}

@@ -1,0 +1,121 @@
+{
+  "query_id": "q_fb-comments_b02p0_k07_mix_5",
+  "dataset": "fb-comments",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.02,
+  "arity": 7,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 2.12432861328125,
+  "predicates": [
+    {
+      "col": "num_34",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        20.525124828280845,
+        184.1388629182392
+      ],
+      "target_share": 0.5003060836687376,
+      "quantile_range": [
+        0.3981225308555933,
+        0.898428614524331
+      ]
+    },
+    {
+      "col": "num_35",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        197.0
+      ],
+      "target_share": 0.5003060836687376,
+      "quantile_range": [
+        0.08012806981086759,
+        0.5804341534796053
+      ]
+    },
+    {
+      "col": "num_9",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2.9239304775485366,
+        42.301061827507404
+      ],
+      "target_share": 0.5003060836687376,
+      "quantile_range": [
+        0.18102480654204028,
+        0.681330890210778
+      ]
+    },
+    {
+      "col": "cat_9",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.5003060836687376,
+      "form": "pin",
+      "covered_train_prob": 0.8651403849325671
+    },
+    {
+      "col": "cat_14",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1"
+      ],
+      "target_share": 0.015682478591373034,
+      "form": "pin",
+      "covered_train_prob": 0.1421738413326736
+    },
+    {
+      "col": "cat_7",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.5003060836687376,
+      "form": "set",
+      "covered_train_prob": 0.863015262817341
+    },
+    {
+      "col": "cat_6",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.5003060836687376,
+      "form": "set",
+      "covered_train_prob": 0.853855034953501
+    }
+  ],
+  "counts": {
+    "train": 3226,
+    "val": 358,
+    "trainval": 3584,
+    "test": 395
+  },
+  "selectivity": {
+    "train": 0.020464608787221356,
+    "val": 0.018152317209207992,
+    "trainval": 0.020207487595850247,
+    "test": 0.020030425963488845
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

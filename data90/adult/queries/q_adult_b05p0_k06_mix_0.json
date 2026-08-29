@@ -1,0 +1,110 @@
+{
+  "query_id": "q_adult_b05p0_k06_mix_0",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 6,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.378912353515625,
+  "predicates": [
+    {
+      "col": "education.num",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        3.0420321437663094,
+        10.0
+      ],
+      "target_share": 0.5023413685803971,
+      "quantile_range": [
+        0.010420321437663093,
+        0.5127616900180603
+      ]
+    },
+    {
+      "col": "hours.per.week",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        40.0,
+        52.83961850952853
+      ],
+      "target_share": 0.5023413685803971,
+      "quantile_range": [
+        0.390457359784698,
+        0.8927987283650951
+      ]
+    },
+    {
+      "col": "fnlwgt",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        15416.504991212587,
+        179454.3456802638
+      ],
+      "target_share": 0.5023413685803971,
+      "quantile_range": [
+        0.002104913445083852,
+        0.504446282025481
+      ]
+    },
+    {
+      "col": "income",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " <=50K"
+      ],
+      "target_share": 0.5023413685803971,
+      "form": "pin",
+      "covered_train_prob": 0.7576098826098826
+    },
+    {
+      "col": "marital.status",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Married-civ-spouse"
+      ],
+      "target_share": 0.5023413685803971,
+      "form": "pin",
+      "covered_train_prob": 0.46133633633633636
+    },
+    {
+      "col": "workclass",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Private"
+      ],
+      "target_share": 0.5023413685803971,
+      "form": "pin",
+      "covered_train_prob": 0.6968331968331969
+    }
+  ],
+  "counts": {
+    "train": 1465,
+    "val": 161,
+    "trainval": 1626,
+    "test": 790
+  },
+  "selectivity": {
+    "train": 0.049993174993174995,
+    "val": 0.04943199263125576,
+    "trainval": 0.049937041245661985,
+    "test": 0.048522818008721824
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

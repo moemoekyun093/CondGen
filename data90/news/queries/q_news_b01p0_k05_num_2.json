@@ -1,0 +1,105 @@
+{
+  "query_id": "q_news_b01p0_k05_num_2",
+  "dataset": "news",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.1513488769531248,
+  "predicates": [
+    {
+      "col": " kw_avg_max",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        263622.52959377435,
+        445987.8637645873
+      ],
+      "target_share": 0.34630634538599236,
+      "quantile_range": [
+        0.561122374029365,
+        0.9074287194153574
+      ]
+    },
+    {
+      "col": " num_hrefs",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.0,
+        6.0
+      ],
+      "target_share": 0.34630634538599236,
+      "quantile_range": [
+        0.04762306506526328,
+        0.3939294104512556
+      ]
+    },
+    {
+      "col": " kw_min_avg",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1112.9742885418127,
+        2571.869907635829
+      ],
+      "target_share": 0.34630634538599236,
+      "quantile_range": [
+        0.522883175231514,
+        0.8691895206175063
+      ]
+    },
+    {
+      "col": " self_reference_avg_sharess",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        2363.322412711421
+      ],
+      "target_share": 0.34630634538599236,
+      "quantile_range": [
+        0.17546997630886368,
+        0.5217763216948561
+      ]
+    },
+    {
+      "col": " kw_avg_avg",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        3153.637244789624,
+        5549.584683991611
+      ],
+      "target_share": 0.34630634538599236,
+      "quantile_range": [
+        0.6188665870434998,
+        0.9651729324294922
+      ]
+    }
+  ],
+  "counts": {
+    "train": 321,
+    "val": 41,
+    "trainval": 362,
+    "test": 44
+  },
+  "selectivity": {
+    "train": 0.009996574382610321,
+    "val": 0.01149103139013453,
+    "trainval": 0.010146024271980717,
+    "test": 0.011097099621689786
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "0.5-1%",
+  "realized_band_test": "1-2%"
+}

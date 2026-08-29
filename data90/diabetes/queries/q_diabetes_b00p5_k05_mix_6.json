@@ -1,0 +1,96 @@
+{
+  "query_id": "q_diabetes_b00p5_k05_mix_6",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.005,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 3.0375,
+  "predicates": [
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        9.0
+      ],
+      "target_share": 0.04000592142585853,
+      "quantile_range": [
+        0.6955757633020598,
+        0.7355816847279184
+      ]
+    },
+    {
+      "col": "number_inpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        21.0
+      ],
+      "target_share": 0.04000592142585853,
+      "quantile_range": [
+        0.05631442193423039,
+        0.09632034336008892
+      ]
+    },
+    {
+      "col": "max_glu_serum",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Norm"
+      ],
+      "target_share": 0.04000592142585853,
+      "form": "pin",
+      "covered_train_prob": 0.025712835126680753
+    },
+    {
+      "col": "nateglinide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.04000592142585853,
+      "form": "set",
+      "covered_train_prob": 0.992957631143648
+    },
+    {
+      "col": "rosiglitazone",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Steady"
+      ],
+      "target_share": 0.04000592142585853,
+      "form": "pin",
+      "covered_train_prob": 0.05882834635352692
+    }
+  ],
+  "counts": {
+    "train": 96,
+    "val": 34,
+    "trainval": 130,
+    "test": 15
+  },
+  "selectivity": {
+    "train": 0.0015722497911855747,
+    "val": 0.001670515403134673,
+    "trainval": 0.0015968161941728493,
+    "test": 0.0007369558809079297
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "<0.5%",
+  "realized_band_test": "<0.5%"
+}

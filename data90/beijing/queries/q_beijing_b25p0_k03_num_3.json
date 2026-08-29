@@ -1,0 +1,77 @@
+{
+  "query_id": "q_beijing_b25p0_k03_num_3",
+  "dataset": "beijing",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.0952101707458501,
+  "predicates": [
+    {
+      "col": "PRES",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1006.155391070944,
+        1022.0
+      ],
+      "target_share": 0.4680679309604559,
+      "quantile_range": [
+        0.20155391070943982,
+        0.6696218416698957
+      ]
+    },
+    {
+      "col": "Iws",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.8900402232939544,
+        36.42544189655848
+      ],
+      "target_share": 0.6841549027526266,
+      "quantile_range": [
+        0.15000089385097676,
+        0.8341557966036033
+      ]
+    },
+    {
+      "col": "pm2.5",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        16.0,
+        163.66130509955718
+      ],
+      "target_share": 0.6841549027526266,
+      "quantile_range": [
+        0.12999835999626644,
+        0.814153262748893
+      ]
+    }
+  ],
+  "counts": {
+    "train": 7884,
+    "val": 902,
+    "trainval": 8786,
+    "test": 992
+  },
+  "selectivity": {
+    "train": 0.233102714209686,
+    "val": 0.23995743548816176,
+    "trainval": 0.2337883504962614,
+    "test": 0.23754789272030652
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "10-25%"
+}

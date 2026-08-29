@@ -1,0 +1,91 @@
+{
+  "query_id": "q_beijing_b00p5_k04_num_6",
+  "dataset": "beijing",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.005,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.3336914062499998,
+  "predicates": [
+    {
+      "col": "DEWP",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -21.666430390280844,
+        -12.0
+      ],
+      "target_share": 0.17091651042500977,
+      "quantile_range": [
+        0.04333569609719156,
+        0.21425220652220134
+      ]
+    },
+    {
+      "col": "PRES",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1010.0,
+        1015.8701808519093
+      ],
+      "target_share": 0.17091651042500977,
+      "quantile_range": [
+        0.3177852980940828,
+        0.48870180851909256
+      ]
+    },
+    {
+      "col": "TEMP",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        4.291285797354945,
+        13.0
+      ],
+      "target_share": 0.17091651042500977,
+      "quantile_range": [
+        0.31291285797354945,
+        0.4838293683985592
+      ]
+    },
+    {
+      "col": "Is",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        27.0
+      ],
+      "target_share": 0.17091651042500977,
+      "quantile_range": [
+        0.8126435221676986,
+        0.9835600325927084
+      ]
+    }
+  ],
+  "counts": {
+    "train": 158,
+    "val": 26,
+    "trainval": 184,
+    "test": 14
+  },
+  "selectivity": {
+    "train": 0.004671515581574123,
+    "val": 0.006916733173716414,
+    "trainval": 0.004896091109869349,
+    "test": 0.003352490421455939
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "<0.5%",
+  "realized_band_test": "<0.5%"
+}

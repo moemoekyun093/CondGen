@@ -1,0 +1,71 @@
+{
+  "query_id": "q_diabetes_b25p0_k03_mix_7",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 2.0105468749999997,
+  "predicates": [
+    {
+      "col": "number_outpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        42.0
+      ],
+      "target_share": 0.24817903007618716,
+      "quantile_range": [
+        0.5060703539149419,
+        0.7542493839911291
+      ]
+    },
+    {
+      "col": "rosiglitazone",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Steady"
+      ],
+      "target_share": 0.498175702013042,
+      "form": "pin",
+      "covered_train_prob": 0.05882834635352692
+    },
+    {
+      "col": "glyburide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.498175702013042,
+      "form": "pin",
+      "covered_train_prob": 0.8959039617419218
+    }
+  ],
+  "counts": {
+    "train": 3065,
+    "val": 1062,
+    "trainval": 4127,
+    "test": 1079
+  },
+  "selectivity": {
+    "train": 0.05019735010399777,
+    "val": 0.05217903994497126,
+    "trainval": 0.050692772564241144,
+    "test": 0.05301169303331041
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "5-10%"
+}

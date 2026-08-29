@@ -1,0 +1,85 @@
+{
+  "query_id": "q_diabetes_b01p0_k04_mix_2",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.61015625,
+  "predicates": [
+    {
+      "col": "number_outpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        42.0
+      ],
+      "target_share": 0.4953610725532736,
+      "quantile_range": [
+        0.0769646853503538,
+        0.5723257579036274
+      ]
+    },
+    {
+      "col": "number_emergency",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        76.0
+      ],
+      "target_share": 0.4953610725532736,
+      "quantile_range": [
+        0.21377079448657546,
+        0.7091318670398491
+      ]
+    },
+    {
+      "col": "repaglinide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Steady"
+      ],
+      "target_share": 0.4953610725532736,
+      "form": "pin",
+      "covered_train_prob": 0.013593409652958613
+    },
+    {
+      "col": "max_glu_serum",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "empty"
+      ],
+      "target_share": 0.4953610725532736,
+      "form": "pin",
+      "covered_train_prob": 0.9482140225028252
+    }
+  ],
+  "counts": {
+    "train": 809,
+    "val": 244,
+    "trainval": 1053,
+    "test": 302
+  },
+  "selectivity": {
+    "train": 0.01324948001113677,
+    "val": 0.011988404657790006,
+    "trainval": 0.012934211172800079,
+    "test": 0.01483737840227965
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "1-2%",
+  "realized_band_test": "1-2%"
+}

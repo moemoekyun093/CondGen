@@ -1,0 +1,71 @@
+{
+  "query_id": "q_default_b01p0_k03_mix_3",
+  "dataset": "default",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 2.6640625,
+  "predicates": [
+    {
+      "col": "PAY_AMT2",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        354.9878101182045
+      ],
+      "target_share": 0.04655525931157958,
+      "quantile_range": [
+        0.15955449736822092,
+        0.2061097566798005
+      ]
+    },
+    {
+      "col": "PAY_0",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "3"
+      ],
+      "target_share": 0.04655525931157958,
+      "form": "pin",
+      "covered_train_prob": 0.010411522633744856
+    },
+    {
+      "col": "default payment next month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1"
+      ],
+      "target_share": 0.0021673921695684177,
+      "form": "pin",
+      "covered_train_prob": 0.22098765432098766
+    }
+  ],
+  "counts": {
+    "train": 97,
+    "val": 15,
+    "trainval": 112,
+    "test": 14
+  },
+  "selectivity": {
+    "train": 0.003991769547325103,
+    "val": 0.005555555555555556,
+    "trainval": 0.004148148148148148,
+    "test": 0.004666666666666667
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "<0.5%",
+  "realized_band_test": "<0.5%"
+}

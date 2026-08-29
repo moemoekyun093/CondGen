@@ -1,0 +1,110 @@
+{
+  "query_id": "q_shoppers_b05p0_k06_mix_4",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 6,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.4503906249999998,
+  "predicates": [
+    {
+      "col": "Informational",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1.0
+      ],
+      "target_share": 0.48472979479558964,
+      "quantile_range": [
+        0.36065128819526754,
+        0.8453810829908572
+      ]
+    },
+    {
+      "col": "Administrative",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        4.0
+      ],
+      "target_share": 0.48472979479558964,
+      "quantile_range": [
+        0.2623115768707746,
+        0.7470413716663642
+      ]
+    },
+    {
+      "col": "BounceRates",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.026199441370843065
+      ],
+      "target_share": 0.48472979479558964,
+      "quantile_range": [
+        0.33246685199013937,
+        0.817196646785729
+      ]
+    },
+    {
+      "col": "VisitorType",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "New_Visitor"
+      ],
+      "target_share": 0.48472979479558964,
+      "form": "pin",
+      "covered_train_prob": 0.13527585861620106
+    },
+    {
+      "col": "Browser",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.48472979479558964,
+      "form": "set",
+      "covered_train_prob": 0.6437368579152899
+    },
+    {
+      "col": "Region",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1"
+      ],
+      "target_share": 0.48472979479558964,
+      "form": "pin",
+      "covered_train_prob": 0.386001802343046
+    }
+  ],
+  "counts": {
+    "train": 235,
+    "val": 18,
+    "trainval": 253,
+    "test": 34
+  },
+  "selectivity": {
+    "train": 0.023530589766696707,
+    "val": 0.016216216216216217,
+    "trainval": 0.02279895467243399,
+    "test": 0.027575020275750203
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

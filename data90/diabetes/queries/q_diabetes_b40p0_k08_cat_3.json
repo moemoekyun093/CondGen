@@ -1,0 +1,131 @@
+{
+  "query_id": "q_diabetes_b40p0_k08_cat_3",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 8,
+  "arity_tier": "extension",
+  "modality_mix": "categorical",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.07333984375,
+  "predicates": [
+    {
+      "col": "diag_3",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "250"
+      ],
+      "target_share": 0.9952114575800525,
+      "form": "pin",
+      "covered_train_prob": 0.11308734175142075
+    },
+    {
+      "col": "tolazamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.9952114575800525,
+      "form": "pin",
+      "covered_train_prob": 0.9996069375522036
+    },
+    {
+      "col": "metformin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No",
+        "Steady"
+      ],
+      "target_share": 0.9669579112509998,
+      "form": "set",
+      "covered_train_prob": 0.9840973484662375
+    },
+    {
+      "col": "max_glu_serum",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "empty",
+        "Norm",
+        ">200",
+        ">300"
+      ],
+      "target_share": 0.9952114575800525,
+      "form": "set",
+      "covered_train_prob": 1.0
+    },
+    {
+      "col": "glipizide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No",
+        "Steady",
+        "Up",
+        "Down"
+      ],
+      "target_share": 0.9952114575800525,
+      "form": "set",
+      "covered_train_prob": 1.0
+    },
+    {
+      "col": "miglitol",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.9952114575800525,
+      "form": "pin",
+      "covered_train_prob": 0.9995905599502121
+    },
+    {
+      "col": "glyburide-metformin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No",
+        "Steady"
+      ],
+      "target_share": 0.9952114575800525,
+      "form": "set",
+      "covered_train_prob": 0.9998198463780933
+    },
+    {
+      "col": "glimepiride",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.9952114575800525,
+      "form": "pin",
+      "covered_train_prob": 0.9491966786223162
+    }
+  ],
+  "counts": {
+    "train": 6395,
+    "val": 2145,
+    "trainval": 8540,
+    "test": 2151
+  },
+  "selectivity": {
+    "train": 0.10473476473574739,
+    "val": 0.10538986881540804,
+    "trainval": 0.10489854075566256,
+    "test": 0.10567947332219711
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "10-25%"
+}

@@ -1,0 +1,77 @@
+{
+  "query_id": "q_diabetes_b02p0_k03_num_7",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.02,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 2.1039062499999996,
+  "predicates": [
+    {
+      "col": "num_medications",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        3.9306748947792705,
+        8.0
+      ],
+      "target_share": 0.12775608578221823,
+      "quantile_range": [
+        0.019306748947792704,
+        0.14706283473001092
+      ]
+    },
+    {
+      "col": "number_diagnoses",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.0,
+        16.0
+      ],
+      "target_share": 0.0163216174543935,
+      "quantile_range": [
+        0.35750090877385743,
+        0.3738225262282509
+      ]
+    },
+    {
+      "col": "number_inpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.0,
+        3.916517629341217
+      ],
+      "target_share": 0.12775608578221823,
+      "quantile_range": [
+        0.841409090511194,
+        0.9691651762934121
+      ]
+    }
+  ],
+  "counts": {
+    "train": 1868,
+    "val": 668,
+    "trainval": 2536,
+    "test": 627
+  },
+  "selectivity": {
+    "train": 0.03059336052015264,
+    "val": 0.03282071439099887,
+    "trainval": 0.031150198987864197,
+    "test": 0.030804755821951458
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

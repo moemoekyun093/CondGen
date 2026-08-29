@@ -1,0 +1,91 @@
+{
+  "query_id": "q_beijing_b10p0_k04_num_6",
+  "dataset": "beijing",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.1177978515625,
+  "predicates": [
+    {
+      "col": "PRES",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1008.0,
+        1025.0
+      ],
+      "target_share": 0.5254731587592918,
+      "quantile_range": [
+        0.24077098063685565,
+        0.7662441393961474
+      ]
+    },
+    {
+      "col": "TEMP",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -2.0,
+        21.0
+      ],
+      "target_share": 0.5254731587592918,
+      "quantile_range": [
+        0.15487075996255892,
+        0.6803439187218507
+      ]
+    },
+    {
+      "col": "pm2.5",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        31.090989381976904,
+        151.5532210316243
+      ],
+      "target_share": 0.5254731587592918,
+      "quantile_range": [
+        0.26090989381976903,
+        0.7863830525790608
+      ]
+    },
+    {
+      "col": "Iws",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2.9441560136836986,
+        47.157133513549525
+      ],
+      "target_share": 0.5254731587592918,
+      "quantile_range": [
+        0.3460035457655386,
+        0.8714767045248304
+      ]
+    }
+  ],
+  "counts": {
+    "train": 3369,
+    "val": 376,
+    "trainval": 3745,
+    "test": 430
+  },
+  "selectivity": {
+    "train": 0.09960972148305837,
+    "val": 0.1000266028198989,
+    "trainval": 0.09965141960032996,
+    "test": 0.10296934865900383
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "10-25%"
+}

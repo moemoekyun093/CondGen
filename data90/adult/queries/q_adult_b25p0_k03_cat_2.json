@@ -1,0 +1,68 @@
+{
+  "query_id": "q_adult_b25p0_k03_cat_2",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.796875,
+  "predicates": [
+    {
+      "col": "occupation",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Prof-specialty"
+      ],
+      "target_share": 0.691954940981916,
+      "form": "pin",
+      "covered_train_prob": 0.12817362817362818
+    },
+    {
+      "col": "sex",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Male"
+      ],
+      "target_share": 0.691954940981916,
+      "form": "pin",
+      "covered_train_prob": 0.668953043953044
+    },
+    {
+      "col": "workclass",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Private"
+      ],
+      "target_share": 0.691954940981916,
+      "form": "pin",
+      "covered_train_prob": 0.6968331968331969
+    }
+  ],
+  "counts": {
+    "train": 1359,
+    "val": 128,
+    "trainval": 1487,
+    "test": 723
+  },
+  "selectivity": {
+    "train": 0.04637592137592138,
+    "val": 0.03929996929689899,
+    "trainval": 0.04566813058566997,
+    "test": 0.04440759167127326
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

@@ -1,0 +1,140 @@
+{
+  "query_id": "q_adult_b02p0_k08_cat_6",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.02,
+  "arity": 8,
+  "arity_tier": "extension",
+  "modality_mix": "categorical",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.0558349609375,
+  "predicates": [
+    {
+      "col": "relationship",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Husband"
+      ],
+      "target_share": 0.9730659135777494,
+      "form": "pin",
+      "covered_train_prob": 0.40605378105378104
+    },
+    {
+      "col": "marital.status",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Married-civ-spouse"
+      ],
+      "target_share": 0.9730659135777494,
+      "form": "pin",
+      "covered_train_prob": 0.46133633633633636
+    },
+    {
+      "col": "income",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " <=50K"
+      ],
+      "target_share": 0.9730659135777494,
+      "form": "pin",
+      "covered_train_prob": 0.7576098826098826
+    },
+    {
+      "col": "workclass",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Private"
+      ],
+      "target_share": 0.9730659135777494,
+      "form": "pin",
+      "covered_train_prob": 0.6968331968331969
+    },
+    {
+      "col": "occupation",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Prof-specialty"
+      ],
+      "target_share": 0.9730659135777494,
+      "form": "pin",
+      "covered_train_prob": 0.12817362817362818
+    },
+    {
+      "col": "native.country",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " United-States",
+        " Mexico",
+        " ?",
+        " Philippines",
+        " Germany",
+        " Canada",
+        " Puerto-Rico",
+        " El-Salvador",
+        " India",
+        " Cuba",
+        " England",
+        " Jamaica",
+        " Italy",
+        " China",
+        " South",
+        " Dominican-Republic"
+      ],
+      "target_share": 0.9730659135777494,
+      "form": "set",
+      "covered_train_prob": 0.9748157248157248
+    },
+    {
+      "col": "sex",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Male"
+      ],
+      "target_share": 0.9730659135777494,
+      "form": "pin",
+      "covered_train_prob": 0.668953043953044
+    },
+    {
+      "col": "race",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " White",
+        " Black",
+        " Asian-Pac-Islander"
+      ],
+      "target_share": 0.9730659135777494,
+      "form": "set",
+      "covered_train_prob": 0.9823232323232323
+    }
+  ],
+  "counts": {
+    "train": 262,
+    "val": 21,
+    "trainval": 283,
+    "test": 138
+  },
+  "selectivity": {
+    "train": 0.008940758940758941,
+    "val": 0.00644765121277249,
+    "trainval": 0.008691379257393815,
+    "test": 0.00847613782937166
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "0.5-1%",
+  "realized_band_test": "0.5-1%"
+}

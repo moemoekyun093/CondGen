@@ -1,0 +1,91 @@
+{
+  "query_id": "q_shoppers_b40p0_k04_num_7",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.3206083297729492,
+  "predicates": [
+    {
+      "col": "PageValues",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        8.853303970114196
+      ],
+      "target_share": 0.8173590048902872,
+      "quantile_range": [
+        0.026999722222091755,
+        0.844358727112379
+      ]
+    },
+    {
+      "col": "BounceRates",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.2
+      ],
+      "target_share": 0.8173590048902872,
+      "quantile_range": [
+        0.15989185548892731,
+        0.9772508603792145
+      ]
+    },
+    {
+      "col": "SpecialDay",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.7705805161413475
+      ],
+      "target_share": 0.8173590048902872,
+      "quantile_range": [
+        0.15117002091678008,
+        0.9685290258070673
+      ]
+    },
+    {
+      "col": "ProductRelated_Duration",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        457.2358986015475,
+        6625.398830575794
+      ],
+      "target_share": 0.546057724387846,
+      "quantile_range": [
+        0.4336349956958144,
+        0.9796927200836605
+      ]
+    }
+  ],
+  "counts": {
+    "train": 3995,
+    "val": 445,
+    "trainval": 4440,
+    "test": 530
+  },
+  "selectivity": {
+    "train": 0.400020026033844,
+    "val": 0.4009009009009009,
+    "trainval": 0.4001081373344147,
+    "test": 0.42984590429845904
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

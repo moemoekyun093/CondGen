@@ -1,0 +1,63 @@
+{
+  "query_id": "q_beijing_b40p0_k02_num_2",
+  "dataset": "beijing",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 2,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "equal",
+  "calibration_exponent": 2.290625,
+  "predicates": [
+    {
+      "col": "Ir",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        36.0
+      ],
+      "target_share": 0.35013403913703445,
+      "quantile_range": [
+        0.21025931076490728,
+        0.5603933499019418
+      ]
+    },
+    {
+      "col": "PRES",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1002.0,
+        1014.0
+      ],
+      "target_share": 0.35013403913703445,
+      "quantile_range": [
+        0.07679225324627334,
+        0.4269262923833078
+      ]
+    }
+  ],
+  "counts": {
+    "train": 13026,
+    "val": 1474,
+    "trainval": 14500,
+    "test": 1592
+  },
+  "selectivity": {
+    "train": 0.38513393649104133,
+    "val": 0.3921255653099229,
+    "trainval": 0.3858332668103563,
+    "test": 0.38122605363984674
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

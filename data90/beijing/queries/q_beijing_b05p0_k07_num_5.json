@@ -1,0 +1,133 @@
+{
+  "query_id": "q_beijing_b05p0_k07_num_5",
+  "dataset": "beijing",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 7,
+  "arity_tier": "extension",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.29576416015625,
+  "predicates": [
+    {
+      "col": "Iws",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.9993501339214196,
+        49.19504536230614
+      ],
+      "target_share": 0.7236262787370159,
+      "quantile_range": [
+        0.15243000297603154,
+        0.8760562817130475
+      ]
+    },
+    {
+      "col": "pm2.5",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        26.19528480237627,
+        47.955378949904706
+      ],
+      "target_share": 0.14357736548716565,
+      "quantile_range": [
+        0.22597642401188137,
+        0.36955378949904705
+      ]
+    },
+    {
+      "col": "PRES",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1007.0,
+        1033.1293042432692
+      ],
+      "target_share": 0.7236262787370159,
+      "quantile_range": [
+        0.2276667636956768,
+        0.9512930424326926
+      ]
+    },
+    {
+      "col": "Ir",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        36.0
+      ],
+      "target_share": 0.7236262787370159,
+      "quantile_range": [
+        0.11218804537666995,
+        0.8358143241136858
+      ]
+    },
+    {
+      "col": "DEWP",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -19.53818946619035,
+        17.0
+      ],
+      "target_share": 0.7236262787370159,
+      "quantile_range": [
+        0.07461810533809651,
+        0.7982443840751124
+      ]
+    },
+    {
+      "col": "TEMP",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.4603850587588633,
+        30.0
+      ],
+      "target_share": 0.7236262787370159,
+      "quantile_range": [
+        0.22460385058758864,
+        0.9482301293246045
+      ]
+    },
+    {
+      "col": "Is",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        27.0
+      ],
+      "target_share": 0.7236262787370159,
+      "quantile_range": [
+        0.11516047790657,
+        0.8387867566435859
+      ]
+    }
+  ],
+  "counts": {
+    "train": 1668,
+    "val": 195,
+    "trainval": 1863,
+    "test": 232
+  },
+  "selectivity": {
+    "train": 0.049317012595352136,
+    "val": 0.05187549880287311,
+    "trainval": 0.04957292248742716,
+    "test": 0.05555555555555555
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "5-10%"
+}

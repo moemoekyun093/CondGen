@@ -1,0 +1,146 @@
+{
+  "query_id": "q_diabetes_b40p0_k09_mix_4",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 9,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 2.68740234375,
+  "predicates": [
+    {
+      "col": "time_in_hospital",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2.0,
+        12.909755419866242
+      ],
+      "target_share": 0.760632731096705,
+      "quantile_range": [
+        0.2184648231019573,
+        0.9790975541986624
+      ]
+    },
+    {
+      "col": "number_emergency",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1.0
+      ],
+      "target_share": 0.760632731096705,
+      "quantile_range": [
+        0.17768818755169488,
+        0.9383209186484
+      ]
+    },
+    {
+      "col": "number_diagnoses",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        5.0,
+        9.0
+      ],
+      "target_share": 0.760632731096705,
+      "quantile_range": [
+        0.19999225174155486,
+        0.9606249828382599
+      ]
+    },
+    {
+      "col": "num_lab_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        23.05767838477089,
+        69.12095149444139
+      ],
+      "target_share": 0.760632731096705,
+      "quantile_range": [
+        0.1605767838477089,
+        0.9212095149444139
+      ]
+    },
+    {
+      "col": "metformin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.760632731096705,
+      "form": "pin",
+      "covered_train_prob": 0.8033541328878625
+    },
+    {
+      "col": "miglitol",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.760632731096705,
+      "form": "pin",
+      "covered_train_prob": 0.9995905599502121
+    },
+    {
+      "col": "nateglinide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.760632731096705,
+      "form": "pin",
+      "covered_train_prob": 0.992957631143648
+    },
+    {
+      "col": "glipizide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.760632731096705,
+      "form": "pin",
+      "covered_train_prob": 0.8751862952226535
+    },
+    {
+      "col": "tolazamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.760632731096705,
+      "form": "pin",
+      "covered_train_prob": 0.9996069375522036
+    }
+  ],
+  "counts": {
+    "train": 24524,
+    "val": 8272,
+    "trainval": 32796,
+    "test": 8180
+  },
+  "selectivity": {
+    "train": 0.40164431123994826,
+    "val": 0.40642657102147106,
+    "trainval": 0.40283987618532896,
+    "test": 0.4018866070551243
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

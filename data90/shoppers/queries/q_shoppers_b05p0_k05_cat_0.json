@@ -1,0 +1,92 @@
+{
+  "query_id": "q_shoppers_b05p0_k05_cat_0",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.158642578125,
+  "predicates": [
+    {
+      "col": "TrafficType",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2",
+        "1"
+      ],
+      "target_share": 0.49947556902000123,
+      "form": "set",
+      "covered_train_prob": 0.5184740162210875
+    },
+    {
+      "col": "Browser",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.49947556902000123,
+      "form": "pin",
+      "covered_train_prob": 0.6437368579152899
+    },
+    {
+      "col": "Weekend",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "True"
+      ],
+      "target_share": 0.49947556902000123,
+      "form": "pin",
+      "covered_train_prob": 0.2323019925903675
+    },
+    {
+      "col": "Month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "May",
+        "Nov"
+      ],
+      "target_share": 0.49947556902000123,
+      "form": "set",
+      "covered_train_prob": 0.514368679283068
+    },
+    {
+      "col": "VisitorType",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Returning_Visitor"
+      ],
+      "target_share": 0.49947556902000123,
+      "form": "pin",
+      "covered_train_prob": 0.8578151597076199
+    }
+  ],
+  "counts": {
+    "train": 314,
+    "val": 28,
+    "trainval": 342,
+    "test": 45
+  },
+  "selectivity": {
+    "train": 0.0314408731350756,
+    "val": 0.025225225225225224,
+    "trainval": 0.030819140308191405,
+    "test": 0.0364963503649635
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

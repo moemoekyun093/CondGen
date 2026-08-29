@@ -1,0 +1,105 @@
+{
+  "query_id": "q_default_b00p5_k05_num_2",
+  "dataset": "default",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.005,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.8400901794433593,
+  "predicates": [
+    {
+      "col": "BILL_AMT2",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        371.39688053053277,
+        27549.666958034417
+      ],
+      "target_share": 0.41056834271020104,
+      "quantile_range": [
+        0.13679256560871256,
+        0.5473609083189136
+      ]
+    },
+    {
+      "col": "LIMIT_BAL",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        80000.0,
+        247494.89491227063
+      ],
+      "target_share": 0.41056834271020104,
+      "quantile_range": [
+        0.3569265522020696,
+        0.7674948949122706
+      ]
+    },
+    {
+      "col": "PAY_AMT5",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1872.714376665085,
+        15015.473381596243
+      ],
+      "target_share": 0.41056834271020104,
+      "quantile_range": [
+        0.5349292051209456,
+        0.9454975478311466
+      ]
+    },
+    {
+      "col": "BILL_AMT4",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        23506.931428621763,
+        202124.13014656887
+      ],
+      "target_share": 0.41056834271020104,
+      "quantile_range": [
+        0.5549107016511404,
+        0.9654790443613415
+      ]
+    },
+    {
+      "col": "BILL_AMT1",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        6877.223508777924,
+        59154.73231666446
+      ],
+      "target_share": 0.41056834271020104,
+      "quantile_range": [
+        0.31312603060383914,
+        0.7236943733140402
+      ]
+    }
+  ],
+  "counts": {
+    "train": 122,
+    "val": 9,
+    "trainval": 131,
+    "test": 17
+  },
+  "selectivity": {
+    "train": 0.005020576131687242,
+    "val": 0.0033333333333333335,
+    "trainval": 0.004851851851851852,
+    "test": 0.005666666666666667
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "0.5-1%",
+  "realized_band_test": "0.5-1%"
+}

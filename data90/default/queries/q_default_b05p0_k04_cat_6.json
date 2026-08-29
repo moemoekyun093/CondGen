@@ -1,0 +1,79 @@
+{
+  "query_id": "q_default_b05p0_k04_cat_6",
+  "dataset": "default",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.54375,
+  "predicates": [
+    {
+      "col": "default payment next month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.31469057506087555,
+      "form": "set",
+      "covered_train_prob": 0.7790123456790123
+    },
+    {
+      "col": "MARRIAGE",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.31469057506087555,
+      "form": "set",
+      "covered_train_prob": 0.5312345679012346
+    },
+    {
+      "col": "PAY_6",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "-1"
+      ],
+      "target_share": 0.31469057506087555,
+      "form": "pin",
+      "covered_train_prob": 0.1902880658436214
+    },
+    {
+      "col": "PAY_4",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "-1"
+      ],
+      "target_share": 0.31469057506087555,
+      "form": "pin",
+      "covered_train_prob": 0.1882716049382716
+    }
+  ],
+  "counts": {
+    "train": 1154,
+    "val": 142,
+    "trainval": 1296,
+    "test": 157
+  },
+  "selectivity": {
+    "train": 0.04748971193415638,
+    "val": 0.052592592592592594,
+    "trainval": 0.048,
+    "test": 0.052333333333333336
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "5-10%"
+}

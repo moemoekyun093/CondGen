@@ -1,0 +1,49 @@
+{
+  "query_id": "q_adult_b25p0_k01_num_3",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 1,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.0010986328125,
+  "predicates": [
+    {
+      "col": "fnlwgt",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        154957.5873094052,
+        203069.69568043973
+      ],
+      "target_share": 0.24961953268659298,
+      "quantile_range": [
+        0.3853607061100871,
+        0.6349802387966801
+      ]
+    }
+  ],
+  "counts": {
+    "train": 7324,
+    "val": 758,
+    "trainval": 8082,
+    "test": 3959
+  },
+  "selectivity": {
+    "train": 0.24993174993174994,
+    "val": 0.2327295056800737,
+    "trainval": 0.248211050029176,
+    "test": 0.24316688164117684
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "10-25%"
+}

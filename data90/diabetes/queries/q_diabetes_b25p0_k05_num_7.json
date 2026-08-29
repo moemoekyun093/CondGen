@@ -1,0 +1,105 @@
+{
+  "query_id": "q_diabetes_b25p0_k05_num_7",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 2.85078125,
+  "predicates": [
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        5.0,
+        7.0
+      ],
+      "target_share": 0.6101791072572929,
+      "quantile_range": [
+        0.16729393050238606,
+        0.7774730377596789
+      ]
+    },
+    {
+      "col": "time_in_hospital",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2.0,
+        7.0
+      ],
+      "target_share": 0.6101791072572929,
+      "quantile_range": [
+        0.22960743101610465,
+        0.8397865382733976
+      ]
+    },
+    {
+      "col": "number_outpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.6555522151556076
+      ],
+      "target_share": 0.13862109741198073,
+      "quantile_range": [
+        0.6979344247395753,
+        0.836555522151556
+      ]
+    },
+    {
+      "col": "number_diagnoses",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        4.0,
+        9.0
+      ],
+      "target_share": 0.6101791072572929,
+      "quantile_range": [
+        0.0410178285392134,
+        0.6511969357965063
+      ]
+    },
+    {
+      "col": "num_medications",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        5.858160385161219,
+        18.0
+      ],
+      "target_share": 0.6101791072572929,
+      "quantile_range": [
+        0.04858160385161219,
+        0.658760711108905
+      ]
+    }
+  ],
+  "counts": {
+    "train": 14739,
+    "val": 4877,
+    "trainval": 19616,
+    "test": 4820
+  },
+  "selectivity": {
+    "train": 0.24138947575296024,
+    "val": 0.23962069473787648,
+    "trainval": 0.24094728049918931,
+    "test": 0.23680848973174806
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "10-25%"
+}

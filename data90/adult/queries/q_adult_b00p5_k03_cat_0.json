@@ -1,0 +1,68 @@
+{
+  "query_id": "q_adult_b00p5_k03_cat_0",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.005,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.61015625,
+  "predicates": [
+    {
+      "col": "education",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " HS-grad"
+      ],
+      "target_share": 0.34041136854746434,
+      "form": "pin",
+      "covered_train_prob": 0.32036582036582034
+    },
+    {
+      "col": "workclass",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Self-emp-not-inc"
+      ],
+      "target_share": 0.34041136854746434,
+      "form": "pin",
+      "covered_train_prob": 0.07794157794157794
+    },
+    {
+      "col": "marital.status",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Never-married"
+      ],
+      "target_share": 0.34041136854746434,
+      "form": "pin",
+      "covered_train_prob": 0.32654245154245154
+    }
+  ],
+  "counts": {
+    "train": 101,
+    "val": 16,
+    "trainval": 117,
+    "test": 60
+  },
+  "selectivity": {
+    "train": 0.0034466284466284467,
+    "val": 0.004912496162112374,
+    "trainval": 0.0035932557353889625,
+    "test": 0.0036852773171181133
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "<0.5%",
+  "realized_band_test": "<0.5%"
+}

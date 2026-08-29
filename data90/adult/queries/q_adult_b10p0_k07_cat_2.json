@@ -1,0 +1,126 @@
+{
+  "query_id": "q_adult_b10p0_k07_cat_2",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 7,
+  "arity_tier": "extension",
+  "modality_mix": "categorical",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.051458740234375,
+  "predicates": [
+    {
+      "col": "sex",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Male",
+        " Female"
+      ],
+      "target_share": 0.9832155792005132,
+      "form": "set",
+      "covered_train_prob": 1.0
+    },
+    {
+      "col": "income",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " <=50K"
+      ],
+      "target_share": 0.9832155792005132,
+      "form": "pin",
+      "covered_train_prob": 0.7576098826098826
+    },
+    {
+      "col": "native.country",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " United-States"
+      ],
+      "target_share": 0.9832155792005132,
+      "form": "pin",
+      "covered_train_prob": 0.8959527709527709
+    },
+    {
+      "col": "marital.status",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Married-civ-spouse"
+      ],
+      "target_share": 0.9832155792005132,
+      "form": "pin",
+      "covered_train_prob": 0.46133633633633636
+    },
+    {
+      "col": "education",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " HS-grad",
+        " Some-college",
+        " Bachelors",
+        " Masters",
+        " Assoc-voc",
+        " 11th",
+        " Assoc-acdm",
+        " 10th",
+        " 7th-8th",
+        " Prof-school",
+        " 9th",
+        " 12th",
+        " Doctorate",
+        " 5th-6th"
+      ],
+      "target_share": 0.9832155792005132,
+      "form": "set",
+      "covered_train_prob": 0.9931408681408682
+    },
+    {
+      "col": "relationship",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Husband"
+      ],
+      "target_share": 0.9832155792005132,
+      "form": "pin",
+      "covered_train_prob": 0.40605378105378104
+    },
+    {
+      "col": "occupation",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Prof-specialty"
+      ],
+      "target_share": 0.9832155792005132,
+      "form": "pin",
+      "covered_train_prob": 0.12817362817362818
+    }
+  ],
+  "counts": {
+    "train": 420,
+    "val": 37,
+    "trainval": 457,
+    "test": 232
+  },
+  "selectivity": {
+    "train": 0.014332514332514333,
+    "val": 0.011360147374884864,
+    "trainval": 0.014035195479254322,
+    "test": 0.01424973895952337
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "1-2%",
+  "realized_band_test": "1-2%"
+}

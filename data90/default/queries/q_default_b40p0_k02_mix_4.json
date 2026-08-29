@@ -1,0 +1,60 @@
+{
+  "query_id": "q_default_b40p0_k02_mix_4",
+  "dataset": "default",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 2,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.4234375,
+  "predicates": [
+    {
+      "col": "BILL_AMT5",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        326.03878674107136,
+        251019.5627902836
+      ],
+      "target_share": 0.8236612578900029,
+      "quantile_range": [
+        0.1600060604282924,
+        0.9836673183182953
+      ]
+    },
+    {
+      "col": "EDUCATION",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.8236612578900029,
+      "form": "pin",
+      "covered_train_prob": 0.4692181069958848
+    }
+  ],
+  "counts": {
+    "train": 9712,
+    "val": 1072,
+    "trainval": 10784,
+    "test": 1181
+  },
+  "selectivity": {
+    "train": 0.3996707818930041,
+    "val": 0.397037037037037,
+    "trainval": 0.39940740740740743,
+    "test": 0.39366666666666666
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

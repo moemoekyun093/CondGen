@@ -1,0 +1,135 @@
+{
+  "query_id": "q_adult_b40p0_k08_cat_2",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 8,
+  "arity_tier": "extension",
+  "modality_mix": "categorical",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.143359375,
+  "predicates": [
+    {
+      "col": "sex",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Male"
+      ],
+      "target_share": 0.9837142127315516,
+      "form": "pin",
+      "covered_train_prob": 0.668953043953044
+    },
+    {
+      "col": "marital.status",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Married-civ-spouse"
+      ],
+      "target_share": 0.9837142127315516,
+      "form": "pin",
+      "covered_train_prob": 0.46133633633633636
+    },
+    {
+      "col": "occupation",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Prof-specialty",
+        " Craft-repair",
+        " Exec-managerial",
+        " Adm-clerical",
+        " Sales",
+        " Other-service",
+        " Machine-op-inspct",
+        " ?",
+        " Transport-moving",
+        " Handlers-cleaners",
+        " Farming-fishing",
+        " Tech-support",
+        " Protective-serv"
+      ],
+      "target_share": 0.9837142127315516,
+      "form": "set",
+      "covered_train_prob": 0.9950177450177449
+    },
+    {
+      "col": "native.country",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " United-States"
+      ],
+      "target_share": 0.9837142127315516,
+      "form": "pin",
+      "covered_train_prob": 0.8959527709527709
+    },
+    {
+      "col": "race",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " White"
+      ],
+      "target_share": 0.9837142127315516,
+      "form": "pin",
+      "covered_train_prob": 0.8552074802074802
+    },
+    {
+      "col": "workclass",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Private"
+      ],
+      "target_share": 0.9837142127315516,
+      "form": "pin",
+      "covered_train_prob": 0.6968331968331969
+    },
+    {
+      "col": "income",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " <=50K"
+      ],
+      "target_share": 0.9837142127315516,
+      "form": "pin",
+      "covered_train_prob": 0.7576098826098826
+    },
+    {
+      "col": "education",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " HS-grad"
+      ],
+      "target_share": 0.9837142127315516,
+      "form": "pin",
+      "covered_train_prob": 0.32036582036582034
+    }
+  ],
+  "counts": {
+    "train": 1511,
+    "val": 191,
+    "trainval": 1702,
+    "test": 834
+  },
+  "selectivity": {
+    "train": 0.05156292656292656,
+    "val": 0.05864292293521646,
+    "trainval": 0.052271121894290715,
+    "test": 0.051225354707941775
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "5-10%"
+}

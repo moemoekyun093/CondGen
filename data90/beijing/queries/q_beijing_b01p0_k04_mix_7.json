@@ -1,0 +1,92 @@
+{
+  "query_id": "q_beijing_b01p0_k04_mix_7",
+  "dataset": "beijing",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.516796875,
+  "predicates": [
+    {
+      "col": "TEMP",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2.0,
+        29.114951700723577
+      ],
+      "target_share": 0.6725651733479148,
+      "quantile_range": [
+        0.25858434365932104,
+        0.9311495170072358
+      ]
+    },
+    {
+      "col": "Iws",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.78,
+        43.88594310074696
+      ],
+      "target_share": 0.6725651733479148,
+      "quantile_range": [
+        0.1891098046799417,
+        0.8616749780278565
+      ]
+    },
+    {
+      "col": "month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "7",
+        "12",
+        "10",
+        "5",
+        "3",
+        "11",
+        "1",
+        "4"
+      ],
+      "target_share": 0.6725651733479148,
+      "form": "set",
+      "covered_train_prob": 0.6772219265566792
+    },
+    {
+      "col": "day",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "17"
+      ],
+      "target_share": 0.3042307618565234,
+      "form": "pin",
+      "covered_train_prob": 0.034060670569451834
+    }
+  ],
+  "counts": {
+    "train": 335,
+    "val": 39,
+    "trainval": 374,
+    "test": 42
+  },
+  "selectivity": {
+    "train": 0.009904795695109691,
+    "val": 0.010375099760574621,
+    "trainval": 0.009951837364625741,
+    "test": 0.010057471264367816
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "0.5-1%",
+  "realized_band_test": "1-2%"
+}

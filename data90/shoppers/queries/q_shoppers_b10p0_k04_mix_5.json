@@ -1,0 +1,87 @@
+{
+  "query_id": "q_shoppers_b10p0_k04_mix_5",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.7501953125,
+  "predicates": [
+    {
+      "col": "ProductRelated",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        6.0,
+        111.21358582287488
+      ],
+      "target_share": 0.7498380039119467,
+      "quantile_range": [
+        0.20283998427378236,
+        0.952677988185729
+      ]
+    },
+    {
+      "col": "SpecialDay",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.19045090444425689
+      ],
+      "target_share": 0.7498380039119467,
+      "quantile_range": [
+        0.15968454131026624,
+        0.9095225452222129
+      ]
+    },
+    {
+      "col": "VisitorType",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "New_Visitor"
+      ],
+      "target_share": 0.421601690643307,
+      "form": "pin",
+      "covered_train_prob": 0.13527585861620106
+    },
+    {
+      "col": "OperatingSystems",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2",
+        "1",
+        "3"
+      ],
+      "target_share": 0.7498380039119467,
+      "form": "set",
+      "covered_train_prob": 0.9519375187744067
+    }
+  ],
+  "counts": {
+    "train": 1011,
+    "val": 121,
+    "trainval": 1132,
+    "test": 125
+  },
+  "selectivity": {
+    "train": 0.10123160108140583,
+    "val": 0.109009009009009,
+    "trainval": 0.10200955213120663,
+    "test": 0.10137875101378752
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "10-25%"
+}

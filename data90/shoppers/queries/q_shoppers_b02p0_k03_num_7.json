@@ -1,0 +1,77 @@
+{
+  "query_id": "q_shoppers_b02p0_k03_num_7",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.02,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.9521972656249997,
+  "predicates": [
+    {
+      "col": "ProductRelated_Duration",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        595.3231233550484,
+        1008.2783031932097
+      ],
+      "target_share": 0.14818998387919916,
+      "quantile_range": [
+        0.5008426766919423,
+        0.6490326605711414
+      ]
+    },
+    {
+      "col": "PageValues",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        361.76373
+      ],
+      "target_share": 0.021960271322117298,
+      "quantile_range": [
+        0.4564140703588615,
+        0.4783743416809788
+      ]
+    },
+    {
+      "col": "Informational_Duration",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.1488851623217878,
+        185.41679909424627
+      ],
+      "target_share": 0.14818998387919916,
+      "quantile_range": [
+        0.8003722129058045,
+        0.9485621967850036
+      ]
+    }
+  ],
+  "counts": {
+    "train": 182,
+    "val": 18,
+    "trainval": 200,
+    "test": 31
+  },
+  "selectivity": {
+    "train": 0.01822369079803745,
+    "val": 0.016216216216216217,
+    "trainval": 0.01802288906911778,
+    "test": 0.025141930251419302
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "1-2%",
+  "realized_band_test": "2-5%"
+}

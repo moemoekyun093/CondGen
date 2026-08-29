@@ -1,0 +1,91 @@
+{
+  "query_id": "q_diabetes_b05p0_k04_num_3",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.73046875,
+  "predicates": [
+    {
+      "col": "number_diagnoses",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        6.0,
+        9.0
+      ],
+      "target_share": 0.42147133381074053,
+      "quantile_range": [
+        0.28385185053015405,
+        0.7053231843408946
+      ]
+    },
+    {
+      "col": "time_in_hospital",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        4.0,
+        13.320855591911007
+      ],
+      "target_share": 0.42147133381074053,
+      "quantile_range": [
+        0.5617372221083695,
+        0.98320855591911
+      ]
+    },
+    {
+      "col": "num_medications",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        17.785448390091812,
+        19.0
+      ],
+      "target_share": 0.07486936071503153,
+      "quantile_range": [
+        0.6478544839009182,
+        0.7227238446159496
+      ]
+    },
+    {
+      "col": "num_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        3.0
+      ],
+      "target_share": 0.42147133381074053,
+      "quantile_range": [
+        0.3916802130242709,
+        0.8131515468350115
+      ]
+    }
+  ],
+  "counts": {
+    "train": 2466,
+    "val": 818,
+    "trainval": 3284,
+    "test": 838
+  },
+  "selectivity": {
+    "train": 0.040387166511079445,
+    "val": 0.04019063528718125,
+    "trainval": 0.0403380337051049,
+    "test": 0.041171268546723004
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

@@ -1,0 +1,91 @@
+{
+  "query_id": "q_diabetes_b02p0_k04_num_5",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.02,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 2.47734375,
+  "predicates": [
+    {
+      "col": "number_emergency",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        76.0
+      ],
+      "target_share": 0.007862010855901526,
+      "quantile_range": [
+        0.6970044268476203,
+        0.7048664377035219
+      ]
+    },
+    {
+      "col": "num_lab_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        43.386971634770475,
+        53.0
+      ],
+      "target_share": 0.19884341491346091,
+      "quantile_range": [
+        0.48386971634770476,
+        0.6827131312611656
+      ]
+    },
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        5.0,
+        6.0
+      ],
+      "target_share": 0.19884341491346091,
+      "quantile_range": [
+        0.2954212221883752,
+        0.4942646371018361
+      ]
+    },
+    {
+      "col": "num_medications",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        20.988635354954912,
+        33.74595369260202
+      ],
+      "target_share": 0.19884341491346091,
+      "quantile_range": [
+        0.7698863535495492,
+        0.9687297684630101
+      ]
+    }
+  ],
+  "counts": {
+    "train": 1168,
+    "val": 379,
+    "trainval": 1547,
+    "test": 426
+  },
+  "selectivity": {
+    "train": 0.01912903912609116,
+    "val": 0.01862133346435415,
+    "trainval": 0.019002112710656906,
+    "test": 0.020929547017785204
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "1-2%",
+  "realized_band_test": "2-5%"
+}

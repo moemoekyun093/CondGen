@@ -1,0 +1,135 @@
+{
+  "query_id": "q_diabetes_b02p0_k08_mix_7",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.02,
+  "arity": 8,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 3.4109375,
+  "predicates": [
+    {
+      "col": "number_inpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        2.0
+      ],
+      "target_share": 0.3855366582115974,
+      "quantile_range": [
+        0.5088577572104991,
+        0.8943944154220964
+      ]
+    },
+    {
+      "col": "number_emergency",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        76.0
+      ],
+      "target_share": 0.001266075924576837,
+      "quantile_range": [
+        0.015062658189364581,
+        0.016328734113941416
+      ]
+    },
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        6.0,
+        8.0
+      ],
+      "target_share": 0.3855366582115974,
+      "quantile_range": [
+        0.42736611360884413,
+        0.8129027718204416
+      ]
+    },
+    {
+      "col": "number_diagnoses",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        6.511897160400764,
+        9.0
+      ],
+      "target_share": 0.3855366582115974,
+      "quantile_range": [
+        0.30511897160400764,
+        0.690655629815605
+      ]
+    },
+    {
+      "col": "diabetesMed",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Yes"
+      ],
+      "target_share": 0.3855366582115974,
+      "form": "set",
+      "covered_train_prob": 0.7696326503873303
+    },
+    {
+      "col": "acarbose",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.3855366582115974,
+      "form": "set",
+      "covered_train_prob": 0.9970192764375441
+    },
+    {
+      "col": "glipizide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.3855366582115974,
+      "form": "set",
+      "covered_train_prob": 0.8751862952226535
+    },
+    {
+      "col": "A1Cresult",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        ">8"
+      ],
+      "target_share": 0.3855366582115974,
+      "form": "pin",
+      "covered_train_prob": 0.07980805450465943
+    }
+  ],
+  "counts": {
+    "train": 1168,
+    "val": 392,
+    "trainval": 1560,
+    "test": 361
+  },
+  "selectivity": {
+    "train": 0.01912903912609116,
+    "val": 0.01926005994202329,
+    "trainval": 0.01916179433007419,
+    "test": 0.01773607153385084
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "1-2%",
+  "realized_band_test": "1-2%"
+}

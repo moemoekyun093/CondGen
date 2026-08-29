@@ -1,0 +1,91 @@
+{
+  "query_id": "q_beijing_b40p0_k04_num_5",
+  "dataset": "beijing",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.3041975021362304,
+  "predicates": [
+    {
+      "col": "Ir",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        5.136032399380115
+      ],
+      "target_share": 0.819410023982996,
+      "quantile_range": [
+        0.1677100840149377,
+        0.9871201079979337
+      ]
+    },
+    {
+      "col": "pm2.5",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        18.868046812271256,
+        122.65776736567248
+      ],
+      "target_share": 0.5501787564295291,
+      "quantile_range": [
+        0.15868046812271255,
+        0.7088592245522416
+      ]
+    },
+    {
+      "col": "Iws",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.89,
+        49.179992387796794
+      ],
+      "target_share": 0.819410023982996,
+      "quantile_range": [
+        0.05661243082104171,
+        0.8760224548040377
+      ]
+    },
+    {
+      "col": "TEMP",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -5.0,
+        28.0
+      ],
+      "target_share": 0.819410023982996,
+      "quantile_range": [
+        0.08999885337635892,
+        0.9094088773593549
+      ]
+    }
+  ],
+  "counts": {
+    "train": 13634,
+    "val": 1508,
+    "trainval": 15142,
+    "test": 1745
+  },
+  "selectivity": {
+    "train": 0.40311040151380756,
+    "val": 0.401170524075552,
+    "trainval": 0.40291636731327,
+    "test": 0.4178639846743295
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

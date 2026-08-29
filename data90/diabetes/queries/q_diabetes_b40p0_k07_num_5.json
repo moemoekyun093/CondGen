@@ -1,0 +1,133 @@
+{
+  "query_id": "q_diabetes_b40p0_k07_num_5",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 7,
+  "arity_tier": "extension",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.637109375,
+  "predicates": [
+    {
+      "col": "number_inpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        2.0
+      ],
+      "target_share": 0.8824918909447478,
+      "quantile_range": [
+        0.009767669903650793,
+        0.8922595608483985
+      ]
+    },
+    {
+      "col": "num_lab_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        12.091244718559768,
+        78.8388120019841
+      ],
+      "target_share": 0.8824918909447478,
+      "quantile_range": [
+        0.09363748239519923,
+        0.976129373339947
+      ]
+    },
+    {
+      "col": "num_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        5.0
+      ],
+      "target_share": 0.8824918909447478,
+      "quantile_range": [
+        0.06392852084520335,
+        0.9464204117899512
+      ]
+    },
+    {
+      "col": "number_outpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        2.1230432542980164
+      ],
+      "target_share": 0.8824918909447478,
+      "quantile_range": [
+        0.06873854159823231,
+        0.9512304325429801
+      ]
+    },
+    {
+      "col": "time_in_hospital",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.0,
+        4.0
+      ],
+      "target_share": 0.47235045774449774,
+      "quantile_range": [
+        0.04327125237932595,
+        0.5156217101238237
+      ]
+    },
+    {
+      "col": "number_diagnoses",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        4.0,
+        9.0
+      ],
+      "target_share": 0.8824918909447478,
+      "quantile_range": [
+        0.089405437304099,
+        0.9718973282488468
+      ]
+    },
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        3.0,
+        8.0
+      ],
+      "target_share": 0.8824918909447478,
+      "quantile_range": [
+        0.05675784756121765,
+        0.9392497385059654
+      ]
+    }
+  ],
+  "counts": {
+    "train": 25327,
+    "val": 8439,
+    "trainval": 33766,
+    "test": 8375
+  },
+  "selectivity": {
+    "train": 0.4147955256391359,
+    "val": 0.4146317496192208,
+    "trainval": 0.4147545816341571,
+    "test": 0.41146703350692737
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

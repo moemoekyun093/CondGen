@@ -1,0 +1,112 @@
+{
+  "query_id": "q_adult_b40p0_k05_cat_1",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.050729370117187506,
+  "predicates": [
+    {
+      "col": "relationship",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Husband",
+        " Not-in-family",
+        " Own-child",
+        " Unmarried",
+        " Wife",
+        " Other-relative"
+      ],
+      "target_share": 0.9942064910163274,
+      "form": "set",
+      "covered_train_prob": 0.9999999999999999
+    },
+    {
+      "col": "education",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " HS-grad"
+      ],
+      "target_share": 0.9942064910163274,
+      "form": "pin",
+      "covered_train_prob": 0.32036582036582034
+    },
+    {
+      "col": "sex",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Male"
+      ],
+      "target_share": 0.9942064910163274,
+      "form": "pin",
+      "covered_train_prob": 0.668953043953044
+    },
+    {
+      "col": "race",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " White"
+      ],
+      "target_share": 0.9942064910163274,
+      "form": "pin",
+      "covered_train_prob": 0.8552074802074802
+    },
+    {
+      "col": "native.country",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " United-States",
+        " Mexico",
+        " ?",
+        " Philippines",
+        " Germany",
+        " Canada",
+        " Puerto-Rico",
+        " El-Salvador",
+        " India",
+        " Cuba",
+        " England",
+        " Jamaica",
+        " Italy",
+        " China",
+        " South",
+        " Dominican-Republic",
+        " Vietnam",
+        " Poland"
+      ],
+      "target_share": 0.9770265758393275,
+      "form": "set",
+      "covered_train_prob": 0.9787059787059786
+    }
+  ],
+  "counts": {
+    "train": 5488,
+    "val": 662,
+    "trainval": 6150,
+    "test": 3080
+  },
+  "selectivity": {
+    "train": 0.1872781872781873,
+    "val": 0.20325452870739943,
+    "trainval": 0.1888762630140352,
+    "test": 0.18917756894539647
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "10-25%"
+}

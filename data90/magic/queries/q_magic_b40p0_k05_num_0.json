@@ -1,0 +1,105 @@
+{
+  "query_id": "q_magic_b40p0_k05_num_0",
+  "dataset": "magic",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.3369735717773437,
+  "predicates": [
+    {
+      "col": "Conc",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.18128178779379223,
+        0.6850338742881898
+      ],
+      "target_share": 0.7826956948920364,
+      "quantile_range": [
+        0.13329762312508278,
+        0.9159933180171191
+      ]
+    },
+    {
+      "col": "M3Trans",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -12.566909388356134,
+        41.25983458696104
+      ],
+      "target_share": 0.7826956948920364,
+      "quantile_range": [
+        0.19085915840664322,
+        0.9735548532986796
+      ]
+    },
+    {
+      "col": "M3Long",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -20.334432844787553,
+        82.28047476322433
+      ],
+      "target_share": 0.7826956948920364,
+      "quantile_range": [
+        0.16605786211415835,
+        0.9487535570061947
+      ]
+    },
+    {
+      "col": "Alpha",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.030201577376655464,
+        51.26033028335538
+      ],
+      "target_share": 0.7826956948920364,
+      "quantile_range": [
+        0.0019331236479501934,
+        0.7846288185399866
+      ]
+    },
+    {
+      "col": "Width",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        9.427858066046829,
+        34.502587999210235
+      ],
+      "target_share": 0.7826956948920364,
+      "quantile_range": [
+        0.09176030392441427,
+        0.8744559988164506
+      ]
+    }
+  ],
+  "counts": {
+    "train": 6162,
+    "val": 687,
+    "trainval": 6849,
+    "test": 745
+  },
+  "selectivity": {
+    "train": 0.4,
+    "val": 0.401285046728972,
+    "trainval": 0.40012852719518605,
+    "test": 0.39169295478443744
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

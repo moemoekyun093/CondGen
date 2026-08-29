@@ -1,0 +1,110 @@
+{
+  "query_id": "q_fb-comments_b25p0_k06_mix_5",
+  "dataset": "fb-comments",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 6,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.0594482421875,
+  "predicates": [
+    {
+      "col": "num_8",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        23.495669790939523
+      ],
+      "target_share": 0.8634055978344618,
+      "quantile_range": [
+        0.10650779798432859,
+        0.9699133958187904
+      ]
+    },
+    {
+      "col": "num_16",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -1025.3509117680426,
+        -5.5736857553953865
+      ],
+      "target_share": 0.8634055978344618,
+      "quantile_range": [
+        0.0737259733885613,
+        0.937131571223023
+      ]
+    },
+    {
+      "col": "num_12",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        234.24834930071916,
+        2081.938410699231
+      ],
+      "target_share": 0.4798155297244513,
+      "quantile_range": [
+        0.5107343231180701,
+        0.9905498528425214
+      ]
+    },
+    {
+      "col": "cat_5",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.8634055978344618,
+      "form": "pin",
+      "covered_train_prob": 0.8552633248328448
+    },
+    {
+      "col": "cat_4",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.8634055978344618,
+      "form": "pin",
+      "covered_train_prob": 0.8433055481546328
+    },
+    {
+      "col": "cat_14",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.8634055978344618,
+      "form": "pin",
+      "covered_train_prob": 0.8578261586673264
+    }
+  ],
+  "counts": {
+    "train": 39146,
+    "val": 4874,
+    "trainval": 44020,
+    "test": 4916
+  },
+  "selectivity": {
+    "train": 0.24832844872429236,
+    "val": 0.24713517898793225,
+    "trainval": 0.2481957600360848,
+    "test": 0.24929006085192698
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "10-25%"
+}

@@ -1,0 +1,175 @@
+{
+  "query_id": "q_shoppers_b25p0_k10_num_1",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 10,
+  "arity_tier": "extension",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.495611572265625,
+  "predicates": [
+    {
+      "col": "BounceRates",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.2
+      ],
+      "target_share": 0.8911998756036701,
+      "quantile_range": [
+        0.10446464594797371,
+        0.9956645215516438
+      ]
+    },
+    {
+      "col": "SpecialDay",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.6
+      ],
+      "target_share": 0.8911998756036701,
+      "quantile_range": [
+        0.048815746851265,
+        0.9400156224549351
+      ]
+    },
+    {
+      "col": "PageValues",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        37.46467163695742
+      ],
+      "target_share": 0.8911998756036701,
+      "quantile_range": [
+        0.05687480989587314,
+        0.9480746854995432
+      ]
+    },
+    {
+      "col": "ExitRates",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.019154956890719423,
+        0.0439298731010705
+      ],
+      "target_share": 0.35463047592193475,
+      "quantile_range": [
+        0.36420235713619076,
+        0.7188328330581255
+      ]
+    },
+    {
+      "col": "Informational",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        2.0
+      ],
+      "target_share": 0.8911998756036701,
+      "quantile_range": [
+        0.0337826845131171,
+        0.9249825601167871
+      ]
+    },
+    {
+      "col": "Informational_Duration",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        69.82527650472474
+      ],
+      "target_share": 0.8911998756036701,
+      "quantile_range": [
+        0.008916246305981871,
+        0.900116121909652
+      ]
+    },
+    {
+      "col": "ProductRelated_Duration",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        18.640847280720017,
+        5430.12641206182
+      ],
+      "target_share": 0.8911998756036701,
+      "quantile_range": [
+        0.07805835325817145,
+        0.9692582288618415
+      ]
+    },
+    {
+      "col": "ProductRelated",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2.367634522010295,
+        148.83946416012125
+      ],
+      "target_share": 0.8911998756036701,
+      "quantile_range": [
+        0.08367634522010295,
+        0.974876220823773
+      ]
+    },
+    {
+      "col": "Administrative_Duration",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        271.8942075495042
+      ],
+      "target_share": 0.8911998756036701,
+      "quantile_range": [
+        0.03382509408824168,
+        0.9250249696919117
+      ]
+    },
+    {
+      "col": "Administrative",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        9.887275360701377
+      ],
+      "target_share": 0.8911998756036701,
+      "quantile_range": [
+        0.06767287800334362,
+        0.9588727536070137
+      ]
+    }
+  ],
+  "counts": {
+    "train": 2504,
+    "val": 278,
+    "trainval": 2782,
+    "test": 270
+  },
+  "selectivity": {
+    "train": 0.2507259437268449,
+    "val": 0.25045045045045045,
+    "trainval": 0.2506983869514283,
+    "test": 0.21897810218978103
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "10-25%"
+}

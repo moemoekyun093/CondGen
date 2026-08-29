@@ -1,0 +1,147 @@
+{
+  "query_id": "q_news_b02p0_k08_num_4",
+  "dataset": "news",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.02,
+  "arity": 8,
+  "arity_tier": "extension",
+  "modality_mix": "numeric",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.518951416015625,
+  "predicates": [
+    {
+      "col": " shares",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        501.15663586678676,
+        1440.7173100309456
+      ],
+      "target_share": 0.47579337246889014,
+      "quantile_range": [
+        0.028278358534204392,
+        0.5040717310030945
+      ]
+    },
+    {
+      "col": " LDA_02",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.028571914998143575,
+        0.32448269256165757
+      ],
+      "target_share": 0.47579337246889014,
+      "quantile_range": [
+        0.2677418703918744,
+        0.7435352428607646
+      ]
+    },
+    {
+      "col": " abs_title_sentiment_polarity",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.6673589561652392
+      ],
+      "target_share": 0.47579337246889014,
+      "quantile_range": [
+        0.4842896983041668,
+        0.960083070773057
+      ]
+    },
+    {
+      "col": " title_subjectivity",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        0.6933597252529846
+      ],
+      "target_share": 0.47579337246889014,
+      "quantile_range": [
+        0.3915505176323037,
+        0.8673438901011938
+      ]
+    },
+    {
+      "col": " rate_positive_words",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.58618041009102,
+        0.7827250227424077
+      ],
+      "target_share": 0.47579337246889014,
+      "quantile_range": [
+        0.22653415948615097,
+        0.702327531955041
+      ]
+    },
+    {
+      "col": " kw_avg_max",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        199470.18017573538,
+        374717.0731586988
+      ],
+      "target_share": 0.47579337246889014,
+      "quantile_range": [
+        0.3432517074421659,
+        0.819045079911056
+      ]
+    },
+    {
+      "col": " kw_avg_avg",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2138.693051945773,
+        3161.1228858412032
+      ],
+      "target_share": 0.47579337246889014,
+      "quantile_range": [
+        0.14578914116720187,
+        0.621582513636092
+      ]
+    },
+    {
+      "col": " max_negative_polarity",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -0.125,
+        -0.05
+      ],
+      "target_share": 0.47579337246889014,
+      "quantile_range": [
+        0.29328286244610025,
+        0.7690762349149904
+      ]
+    }
+  ],
+  "counts": {
+    "train": 642,
+    "val": 61,
+    "trainval": 703,
+    "test": 92
+  },
+  "selectivity": {
+    "train": 0.019993148765220643,
+    "val": 0.017096412556053812,
+    "trainval": 0.019703467025421115,
+    "test": 0.023203026481715006
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "1-2%",
+  "realized_band_test": "2-5%"
+}

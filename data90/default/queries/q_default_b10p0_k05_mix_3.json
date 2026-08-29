@@ -1,0 +1,97 @@
+{
+  "query_id": "q_default_b10p0_k05_mix_3",
+  "dataset": "default",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.9660888671875001,
+  "predicates": [
+    {
+      "col": "BILL_AMT6",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        806.890482162887,
+        222314.88243606564
+      ],
+      "target_share": 0.7572493192803461,
+      "quantile_range": [
+        0.22187038201035592,
+        0.979119701290702
+      ]
+    },
+    {
+      "col": "PAY_AMT5",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2223.0977294364666,
+        13039.434504303166
+      ],
+      "target_share": 0.3288179870860911,
+      "quantile_range": [
+        0.6072288434577552,
+        0.9360468305438463
+      ]
+    },
+    {
+      "col": "EDUCATION",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.7572493192803461,
+      "form": "pin",
+      "covered_train_prob": 0.4692181069958848
+    },
+    {
+      "col": "PAY_3",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.7572493192803461,
+      "form": "pin",
+      "covered_train_prob": 0.5273662551440329
+    },
+    {
+      "col": "MARRIAGE",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2",
+        "1"
+      ],
+      "target_share": 0.7572493192803461,
+      "form": "set",
+      "covered_train_prob": 0.987037037037037
+    }
+  ],
+  "counts": {
+    "train": 2430,
+    "val": 271,
+    "trainval": 2701,
+    "test": 277
+  },
+  "selectivity": {
+    "train": 0.1,
+    "val": 0.10037037037037037,
+    "trainval": 0.10003703703703704,
+    "test": 0.09233333333333334
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "5-10%"
+}

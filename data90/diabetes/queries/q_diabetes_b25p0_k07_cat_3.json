@@ -1,0 +1,112 @@
+{
+  "query_id": "q_diabetes_b25p0_k07_cat_3",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 7,
+  "arity_tier": "extension",
+  "modality_mix": "categorical",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.796875,
+  "predicates": [
+    {
+      "col": "repaglinide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.9120516927035266,
+      "form": "pin",
+      "covered_train_prob": 0.9847852077498812
+    },
+    {
+      "col": "diag_1",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "428"
+      ],
+      "target_share": 0.9120516927035266,
+      "form": "pin",
+      "covered_train_prob": 0.06737745459309848
+    },
+    {
+      "col": "pioglitazone",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.9120516927035266,
+      "form": "pin",
+      "covered_train_prob": 0.9280531944512684
+    },
+    {
+      "col": "chlorpropamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.9120516927035266,
+      "form": "pin",
+      "covered_train_prob": 0.9991156094924581
+    },
+    {
+      "col": "insulin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.5755946149764913,
+      "form": "pin",
+      "covered_train_prob": 0.46892350022109763
+    },
+    {
+      "col": "admission_source_id",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "7"
+      ],
+      "target_share": 0.9120516927035266,
+      "form": "pin",
+      "covered_train_prob": 0.5659771696228239
+    },
+    {
+      "col": "readmitted",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.9120516927035266,
+      "form": "pin",
+      "covered_train_prob": 0.539117902356737
+    }
+  ],
+  "counts": {
+    "train": 522,
+    "val": 159,
+    "trainval": 681,
+    "test": 143
+  },
+  "selectivity": {
+    "train": 0.008549108239571562,
+    "val": 0.007812116149953324,
+    "trainval": 0.008364860217167003,
+    "test": 0.007025646064655596
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "0.5-1%",
+  "realized_band_test": "0.5-1%"
+}

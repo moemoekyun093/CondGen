@@ -1,0 +1,63 @@
+{
+  "query_id": "q_shoppers_b25p0_k02_num_6",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 2,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "equal",
+  "calibration_exponent": 3.0375,
+  "predicates": [
+    {
+      "col": "Informational",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.0,
+        5.795750152087293
+      ],
+      "target_share": 0.12179273640021337,
+      "quantile_range": [
+        0.8661647651206595,
+        0.9879575015208729
+      ]
+    },
+    {
+      "col": "PageValues",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        361.76373
+      ],
+      "target_share": 0.12179273640021337,
+      "quantile_range": [
+        0.07757986787034378,
+        0.19937260427055714
+      ]
+    }
+  ],
+  "counts": {
+    "train": 1999,
+    "val": 225,
+    "trainval": 2224,
+    "test": 246
+  },
+  "selectivity": {
+    "train": 0.20016020827075198,
+    "val": 0.20270270270270271,
+    "trainval": 0.2004145264485897,
+    "test": 0.19951338199513383
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "10-25%"
+}

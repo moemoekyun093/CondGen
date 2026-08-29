@@ -1,0 +1,121 @@
+{
+  "query_id": "q_default_b05p0_k07_mix_7",
+  "dataset": "default",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 7,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.0003692626953125,
+  "predicates": [
+    {
+      "col": "BILL_AMT2",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        84336.17682183154
+      ],
+      "target_share": 0.7790059925849944,
+      "quantile_range": [
+        0.03192785362281543,
+        0.8109338462078098
+      ]
+    },
+    {
+      "col": "BILL_AMT1",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        6808.558262996119,
+        27192.99394130329
+      ],
+      "target_share": 0.2234831536663747,
+      "quantile_range": [
+        0.3119893769739467,
+        0.5354725306403214
+      ]
+    },
+    {
+      "col": "PAY_AMT2",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        16153.997777008266
+      ],
+      "target_share": 0.7790059925849944,
+      "quantile_range": [
+        0.16224350908848403,
+        0.9412495016734784
+      ]
+    },
+    {
+      "col": "MARRIAGE",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.7790059925849944,
+      "form": "pin",
+      "covered_train_prob": 0.5312345679012346
+    },
+    {
+      "col": "PAY_4",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.7790059925849944,
+      "form": "pin",
+      "covered_train_prob": 0.5502880658436214
+    },
+    {
+      "col": "PAY_2",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.7790059925849944,
+      "form": "pin",
+      "covered_train_prob": 0.5239917695473251
+    },
+    {
+      "col": "default payment next month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.7790059925849944,
+      "form": "set",
+      "covered_train_prob": 0.7790123456790123
+    }
+  ],
+  "counts": {
+    "train": 1132,
+    "val": 112,
+    "trainval": 1244,
+    "test": 164
+  },
+  "selectivity": {
+    "train": 0.04658436213991769,
+    "val": 0.04148148148148148,
+    "trainval": 0.04607407407407407,
+    "test": 0.05466666666666667
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "5-10%"
+}

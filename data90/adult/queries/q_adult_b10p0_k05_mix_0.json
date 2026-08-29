@@ -1,0 +1,96 @@
+{
+  "query_id": "q_adult_b10p0_k05_mix_0",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.050729370117187506,
+  "predicates": [
+    {
+      "col": "hours.per.week",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        10.885098306390935,
+        96.49053902592564
+      ],
+      "target_share": 0.9769090344534948,
+      "quantile_range": [
+        0.02177019661278187,
+        0.9986792310662767
+      ]
+    },
+    {
+      "col": "capital.gain",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        14111.106614220806
+      ],
+      "target_share": 0.9769090344534948,
+      "quantile_range": [
+        0.0033793337828967383,
+        0.9802883682363915
+      ]
+    },
+    {
+      "col": "marital.status",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Married-civ-spouse"
+      ],
+      "target_share": 0.9769090344534948,
+      "form": "pin",
+      "covered_train_prob": 0.46133633633633636
+    },
+    {
+      "col": "native.country",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " United-States"
+      ],
+      "target_share": 0.9769090344534948,
+      "form": "pin",
+      "covered_train_prob": 0.8959527709527709
+    },
+    {
+      "col": "occupation",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Prof-specialty"
+      ],
+      "target_share": 0.9769090344534948,
+      "form": "pin",
+      "covered_train_prob": 0.12817362817362818
+    }
+  ],
+  "counts": {
+    "train": 1534,
+    "val": 149,
+    "trainval": 1683,
+    "test": 849
+  },
+  "selectivity": {
+    "train": 0.05234780234780235,
+    "val": 0.045747620509671474,
+    "trainval": 0.051687601732133534,
+    "test": 0.0521466740372213
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "5-10%"
+}

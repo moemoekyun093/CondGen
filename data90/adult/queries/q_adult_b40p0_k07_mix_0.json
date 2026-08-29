@@ -1,0 +1,121 @@
+{
+  "query_id": "q_adult_b40p0_k07_mix_0",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 7,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.05291748046875,
+  "predicates": [
+    {
+      "col": "fnlwgt",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        13021.560587916989,
+        817445.2857300646
+      ],
+      "target_share": 0.9930971070474661,
+      "quantile_range": [
+        0.0004950962201803774,
+        0.9935922032676465
+      ]
+    },
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        17.0,
+        80.35142399070271
+      ],
+      "target_share": 0.9930971070474661,
+      "quantile_range": [
+        0.0008725329467231111,
+        0.9939696399941892
+      ]
+    },
+    {
+      "col": "education.num",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2.0693118712804184,
+        16.0
+      ],
+      "target_share": 0.9930971070474661,
+      "quantile_range": [
+        0.0053465593564020935,
+        0.9984436664038682
+      ]
+    },
+    {
+      "col": "income",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " <=50K"
+      ],
+      "target_share": 0.9930971070474661,
+      "form": "pin",
+      "covered_train_prob": 0.7576098826098826
+    },
+    {
+      "col": "sex",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Male"
+      ],
+      "target_share": 0.9930971070474661,
+      "form": "pin",
+      "covered_train_prob": 0.668953043953044
+    },
+    {
+      "col": "native.country",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " United-States"
+      ],
+      "target_share": 0.9930971070474661,
+      "form": "pin",
+      "covered_train_prob": 0.8959527709527709
+    },
+    {
+      "col": "occupation",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Prof-specialty"
+      ],
+      "target_share": 0.9930971070474661,
+      "form": "pin",
+      "covered_train_prob": 0.12817362817362818
+    }
+  ],
+  "counts": {
+    "train": 922,
+    "val": 88,
+    "trainval": 1010,
+    "test": 503
+  },
+  "selectivity": {
+    "train": 0.031463281463281464,
+    "val": 0.027018728891618052,
+    "trainval": 0.031018703356776513,
+    "test": 0.030894908175173517
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

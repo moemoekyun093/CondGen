@@ -1,0 +1,91 @@
+{
+  "query_id": "q_adult_b05p0_k05_cat_7",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.4234375,
+  "predicates": [
+    {
+      "col": "native.country",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " United-States"
+      ],
+      "target_share": 0.5303316612060803,
+      "form": "pin",
+      "covered_train_prob": 0.8959527709527709
+    },
+    {
+      "col": "income",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " <=50K",
+        " >50K"
+      ],
+      "target_share": 0.8533690521427474,
+      "form": "set",
+      "covered_train_prob": 1.0
+    },
+    {
+      "col": "occupation",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Prof-specialty"
+      ],
+      "target_share": 0.8533690521427474,
+      "form": "pin",
+      "covered_train_prob": 0.12817362817362818
+    },
+    {
+      "col": "marital.status",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Married-civ-spouse"
+      ],
+      "target_share": 0.8533690521427474,
+      "form": "pin",
+      "covered_train_prob": 0.46133633633633636
+    },
+    {
+      "col": "relationship",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Husband"
+      ],
+      "target_share": 0.8533690521427474,
+      "form": "pin",
+      "covered_train_prob": 0.40605378105378104
+    }
+  ],
+  "counts": {
+    "train": 1439,
+    "val": 139,
+    "trainval": 1578,
+    "test": 786
+  },
+  "selectivity": {
+    "train": 0.049105924105924105,
+    "val": 0.042677310408351245,
+    "trainval": 0.048462885046528056,
+    "test": 0.048277132854247284
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

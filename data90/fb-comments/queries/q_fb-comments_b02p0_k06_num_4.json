@@ -1,0 +1,119 @@
+{
+  "query_id": "q_fb-comments_b02p0_k06_num_4",
+  "dataset": "fb-comments",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.02,
+  "arity": 6,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.28701171875,
+  "predicates": [
+    {
+      "col": "num_0",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2380.608610046724,
+        247653.0177352886
+      ],
+      "target_share": 0.43208343391035037,
+      "quantile_range": [
+        0.042653716357864135,
+        0.4747371502682145
+      ]
+    },
+    {
+      "col": "num_27",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        12.119433378436334,
+        114.80418024075962
+      ],
+      "target_share": 0.43208343391035037,
+      "quantile_range": [
+        0.14059716689218169,
+        0.572680600802532
+      ]
+    },
+    {
+      "col": "num_30",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1458.0
+      ],
+      "target_share": 0.43208343391035037,
+      "quantile_range": [
+        0.3451662361490566,
+        0.7772496700594069
+      ]
+    },
+    {
+      "col": "num_22",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        3.094124258744588
+      ],
+      "target_share": 0.43208343391035037,
+      "quantile_range": [
+        0.15885780867709545,
+        0.5909412425874458
+      ]
+    },
+    {
+      "col": "num_20",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        8.970128886280397,
+        76.39474447354335
+      ],
+      "target_share": 0.43208343391035037,
+      "quantile_range": [
+        0.30974891525218284,
+        0.7418323491625332
+      ]
+    },
+    {
+      "col": "num_31",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        226.2431469744004,
+        1391.2298030004622
+      ],
+      "target_share": 0.43208343391035037,
+      "quantile_range": [
+        0.48270262247866697,
+        0.9147860563890173
+      ]
+    }
+  ],
+  "counts": {
+    "train": 3194,
+    "val": 427,
+    "trainval": 3621,
+    "test": 425
+  },
+  "selectivity": {
+    "train": 0.02026161204785648,
+    "val": 0.021650948179697798,
+    "trainval": 0.020416102841677945,
+    "test": 0.021551724137931036
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

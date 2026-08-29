@@ -1,0 +1,160 @@
+{
+  "query_id": "q_diabetes_b05p0_k10_mix_5",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 10,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.61015625,
+  "predicates": [
+    {
+      "col": "number_outpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        2.0
+      ],
+      "target_share": 0.903437774637554,
+      "quantile_range": [
+        0.043224918279175066,
+        0.9466626929167291
+      ]
+    },
+    {
+      "col": "num_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        6.0
+      ],
+      "target_share": 0.903437774637554,
+      "quantile_range": [
+        0.07647074859541048,
+        0.9799085232329645
+      ]
+    },
+    {
+      "col": "number_diagnoses",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.270037187493027,
+        9.0
+      ],
+      "target_share": 0.903437774637554,
+      "quantile_range": [
+        0.0027003718749302693,
+        0.9061381465124843
+      ]
+    },
+    {
+      "col": "number_emergency",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1.0
+      ],
+      "target_share": 0.903437774637554,
+      "quantile_range": [
+        0.015609733108040098,
+        0.9190475077455942
+      ]
+    },
+    {
+      "col": "time_in_hospital",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.0,
+        14.0
+      ],
+      "target_share": 0.903437774637554,
+      "quantile_range": [
+        0.08863840935191183,
+        0.9920761839894658
+      ]
+    },
+    {
+      "col": "tolbutamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.903437774637554,
+      "form": "pin",
+      "covered_train_prob": 0.9997870911741102
+    },
+    {
+      "col": "readmitted",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.903437774637554,
+      "form": "pin",
+      "covered_train_prob": 0.539117902356737
+    },
+    {
+      "col": "glimepiride",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Steady"
+      ],
+      "target_share": 0.40094445197746487,
+      "form": "pin",
+      "covered_train_prob": 0.04579177516827986
+    },
+    {
+      "col": "acarbose",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.903437774637554,
+      "form": "pin",
+      "covered_train_prob": 0.9970192764375441
+    },
+    {
+      "col": "chlorpropamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.903437774637554,
+      "form": "set",
+      "covered_train_prob": 0.9991156094924581
+    }
+  ],
+  "counts": {
+    "train": 1437,
+    "val": 466,
+    "trainval": 1903,
+    "test": 441
+  },
+  "selectivity": {
+    "train": 0.02353461406180907,
+    "val": 0.02289588758413993,
+    "trainval": 0.023374932442391784,
+    "test": 0.02166650289869313
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

@@ -1,0 +1,186 @@
+{
+  "query_id": "q_adult_b40p0_k10_mix_0",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 10,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.07042236328125,
+  "predicates": [
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        17.0,
+        87.87869639218663
+      ],
+      "target_share": 0.9935680383135578,
+      "quantile_range": [
+        0.005106146931558821,
+        0.9986741852451166
+      ]
+    },
+    {
+      "col": "fnlwgt",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        12846.135405945943,
+        847672.6023893894
+      ],
+      "target_share": 0.9935680383135578,
+      "quantile_range": [
+        0.00037718013025769945,
+        0.9939452184438154
+      ]
+    },
+    {
+      "col": "capital.gain",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        77461.82257493066
+      ],
+      "target_share": 0.9935680383135578,
+      "quantile_range": [
+        0.0037797489856396583,
+        0.9973477872991975
+      ]
+    },
+    {
+      "col": "education.num",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.9679086827228731,
+        16.0
+      ],
+      "target_share": 0.9935680383135578,
+      "quantile_range": [
+        0.004839543413614366,
+        0.9984075817271721
+      ]
+    },
+    {
+      "col": "capital.loss",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        3275.4533942598996
+      ],
+      "target_share": 0.9935680383135578,
+      "quantile_range": [
+        0.0018448804990736233,
+        0.9954129188126314
+      ]
+    },
+    {
+      "col": "education",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " HS-grad",
+        " Some-college",
+        " Bachelors",
+        " Masters",
+        " Assoc-voc",
+        " 11th",
+        " Assoc-acdm",
+        " 10th",
+        " 7th-8th",
+        " Prof-school",
+        " 9th",
+        " 12th",
+        " Doctorate",
+        " 5th-6th",
+        " 1st-4th"
+      ],
+      "target_share": 0.9935680383135578,
+      "form": "set",
+      "covered_train_prob": 0.9985326235326236
+    },
+    {
+      "col": "occupation",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Prof-specialty",
+        " Craft-repair",
+        " Exec-managerial",
+        " Adm-clerical",
+        " Sales",
+        " Other-service",
+        " Machine-op-inspct",
+        " ?",
+        " Transport-moving",
+        " Handlers-cleaners",
+        " Farming-fishing",
+        " Tech-support",
+        " Protective-serv"
+      ],
+      "target_share": 0.9935680383135578,
+      "form": "set",
+      "covered_train_prob": 0.9950177450177449
+    },
+    {
+      "col": "marital.status",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Married-civ-spouse"
+      ],
+      "target_share": 0.9935680383135578,
+      "form": "pin",
+      "covered_train_prob": 0.46133633633633636
+    },
+    {
+      "col": "sex",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Male"
+      ],
+      "target_share": 0.9935680383135578,
+      "form": "pin",
+      "covered_train_prob": 0.668953043953044
+    },
+    {
+      "col": "relationship",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Husband"
+      ],
+      "target_share": 0.9935680383135578,
+      "form": "pin",
+      "covered_train_prob": 0.40605378105378104
+    }
+  ],
+  "counts": {
+    "train": 11746,
+    "val": 1274,
+    "trainval": 13020,
+    "test": 6437
+  },
+  "selectivity": {
+    "train": 0.40083265083265085,
+    "val": 0.3911575069081977,
+    "trainval": 0.3998648690150794,
+    "test": 0.3953688348381549
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

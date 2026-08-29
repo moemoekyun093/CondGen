@@ -1,0 +1,79 @@
+{
+  "query_id": "q_diabetes_b25p0_k04_cat_3",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.796875,
+  "predicates": [
+    {
+      "col": "race",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Caucasian"
+      ],
+      "target_share": 0.8318382901633683,
+      "form": "pin",
+      "covered_train_prob": 0.746916916425097
+    },
+    {
+      "col": "glyburide-metformin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.8318382901633683,
+      "form": "pin",
+      "covered_train_prob": 0.9928593655316988
+    },
+    {
+      "col": "admission_source_id",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "7"
+      ],
+      "target_share": 0.5755946149764913,
+      "form": "pin",
+      "covered_train_prob": 0.5659771696228239
+    },
+    {
+      "col": "admission_type_id",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1"
+      ],
+      "target_share": 0.8318382901633683,
+      "form": "pin",
+      "covered_train_prob": 0.5319117574804697
+    }
+  ],
+  "counts": {
+    "train": 20706,
+    "val": 6847,
+    "trainval": 27553,
+    "test": 6930
+  },
+  "selectivity": {
+    "train": 0.33911462683633864,
+    "val": 0.3364123225077384,
+    "trainval": 0.33843905075418856,
+    "test": 0.3404736169794635
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

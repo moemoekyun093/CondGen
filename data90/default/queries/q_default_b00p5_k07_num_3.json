@@ -1,0 +1,133 @@
+{
+  "query_id": "q_default_b00p5_k07_num_3",
+  "dataset": "default",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.005,
+  "arity": 7,
+  "arity_tier": "extension",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.8316112518310546,
+  "predicates": [
+    {
+      "col": "PAY_AMT6",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        241.91095703707828,
+        19730.935374611945
+      ],
+      "target_share": 0.6926860855082835,
+      "quantile_range": [
+        0.26347314124012117,
+        0.9561592267484047
+      ]
+    },
+    {
+      "col": "BILL_AMT2",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        694.2514538192537,
+        103925.0077832393
+      ],
+      "target_share": 0.6926860855082835,
+      "quantile_range": [
+        0.16058520949072722,
+        0.8532712949990107
+      ]
+    },
+    {
+      "col": "BILL_AMT5",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2134.2468261652803,
+        172454.68576902943
+      ],
+      "target_share": 0.6926860855082835,
+      "quantile_range": [
+        0.2619775048652201,
+        0.9546635903735036
+      ]
+    },
+    {
+      "col": "PAY_AMT2",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        7475.087995817132
+      ],
+      "target_share": 0.6926860855082835,
+      "quantile_range": [
+        0.14863495593818263,
+        0.8413210414464661
+      ]
+    },
+    {
+      "col": "AGE",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        27.0,
+        48.67506647043724
+      ],
+      "target_share": 0.6926860855082835,
+      "quantile_range": [
+        0.20406457919608884,
+        0.8967506647043724
+      ]
+    },
+    {
+      "col": "BILL_AMT3",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        98373.84200910771,
+        207553.25484063872
+      ],
+      "target_share": 0.11046349562966504,
+      "quantile_range": [
+        0.8513500509028534,
+        0.9618135465325185
+      ]
+    },
+    {
+      "col": "PAY_AMT3",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        314.17618732982135,
+        12100.591717982326
+      ],
+      "target_share": 0.6926860855082835,
+      "quantile_range": [
+        0.23257748860542207,
+        0.9252635741137055
+      ]
+    }
+  ],
+  "counts": {
+    "train": 122,
+    "val": 11,
+    "trainval": 133,
+    "test": 16
+  },
+  "selectivity": {
+    "train": 0.005020576131687242,
+    "val": 0.004074074074074074,
+    "trainval": 0.004925925925925926,
+    "test": 0.005333333333333333
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "0.5-1%",
+  "realized_band_test": "0.5-1%"
+}

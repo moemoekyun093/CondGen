@@ -1,0 +1,57 @@
+{
+  "query_id": "q_beijing_b01p0_k02_cat_4",
+  "dataset": "beijing",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 2,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "equal",
+  "calibration_exponent": 6.025,
+  "predicates": [
+    {
+      "col": "year",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2011"
+      ],
+      "target_share": 0.0001,
+      "form": "pin",
+      "covered_train_prob": 0.19357223109218852
+    },
+    {
+      "col": "month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "9"
+      ],
+      "target_share": 0.0001,
+      "form": "pin",
+      "covered_train_prob": 0.07997752941872155
+    }
+  ],
+  "counts": {
+    "train": 596,
+    "val": 52,
+    "trainval": 648,
+    "test": 71
+  },
+  "selectivity": {
+    "train": 0.017621666371001123,
+    "val": 0.013833466347432828,
+    "trainval": 0.01724275564780075,
+    "test": 0.017001915708812262
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "1-2%",
+  "realized_band_test": "1-2%"
+}

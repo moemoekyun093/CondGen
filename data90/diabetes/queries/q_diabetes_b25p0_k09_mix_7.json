@@ -1,0 +1,150 @@
+{
+  "query_id": "q_diabetes_b25p0_k09_mix_7",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 9,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.061669921875,
+  "predicates": [
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.9064085583810878,
+        9.0
+      ],
+      "target_share": 0.9946709584313017,
+      "quantile_range": [
+        0.004532042791905439,
+        0.9992030012232072
+      ]
+    },
+    {
+      "col": "number_emergency",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        2.0
+      ],
+      "target_share": 0.958154411902497,
+      "quantile_range": [
+        0.015474095134099964,
+        0.9736285070365969
+      ]
+    },
+    {
+      "col": "num_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        6.0
+      ],
+      "target_share": 0.9946709584313017,
+      "quantile_range": [
+        0.0033472272089596702,
+        0.9980181856402613
+      ]
+    },
+    {
+      "col": "number_inpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        15.701415618576783
+      ],
+      "target_share": 0.9946709584313017,
+      "quantile_range": [
+        0.0017966519810827945,
+        0.9964676104123845
+      ]
+    },
+    {
+      "col": "rosiglitazone",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No",
+        "Steady"
+      ],
+      "target_share": 0.9946709584313017,
+      "form": "set",
+      "covered_train_prob": 0.997461471691315
+    },
+    {
+      "col": "diag_1",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "428"
+      ],
+      "target_share": 0.9946709584313017,
+      "form": "pin",
+      "covered_train_prob": 0.06737745459309848
+    },
+    {
+      "col": "insulin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No",
+        "Steady",
+        "Down",
+        "Up"
+      ],
+      "target_share": 0.9946709584313017,
+      "form": "set",
+      "covered_train_prob": 1.0
+    },
+    {
+      "col": "gender",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Female"
+      ],
+      "target_share": 0.9946709584313017,
+      "form": "pin",
+      "covered_train_prob": 0.5371034573117804
+    },
+    {
+      "col": "acarbose",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.9946709584313017,
+      "form": "pin",
+      "covered_train_prob": 0.9970192764375441
+    }
+  ],
+  "counts": {
+    "train": 2138,
+    "val": 723,
+    "trainval": 2861,
+    "test": 696
+  },
+  "selectivity": {
+    "train": 0.03501531305786207,
+    "val": 0.03552301871959908,
+    "trainval": 0.03514223947329632,
+    "test": 0.03419475287412794
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

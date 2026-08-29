@@ -1,0 +1,147 @@
+{
+  "query_id": "q_diabetes_b05p0_k09_mix_3",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 9,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.58681640625,
+  "predicates": [
+    {
+      "col": "num_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        6.0
+      ],
+      "target_share": 0.8959492099582069,
+      "quantile_range": [
+        0.06632809979815282,
+        0.9622773097563597
+      ]
+    },
+    {
+      "col": "number_inpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        19.335398160581423
+      ],
+      "target_share": 0.8959492099582069,
+      "quantile_range": [
+        0.10294105548218072,
+        0.9988902654403876
+      ]
+    },
+    {
+      "col": "number_outpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        3.923741033682123
+      ],
+      "target_share": 0.8959492099582069,
+      "quantile_range": [
+        0.08328820037861431,
+        0.9792374103368212
+      ]
+    },
+    {
+      "col": "time_in_hospital",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.0,
+        9.0
+      ],
+      "target_share": 0.8959492099582069,
+      "quantile_range": [
+        0.00644952693474195,
+        0.9023987368929489
+      ]
+    },
+    {
+      "col": "metformin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No",
+        "Steady"
+      ],
+      "target_share": 0.8959492099582069,
+      "form": "set",
+      "covered_train_prob": 0.9840973484662375
+    },
+    {
+      "col": "chlorpropamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.8959492099582069,
+      "form": "pin",
+      "covered_train_prob": 0.9991156094924581
+    },
+    {
+      "col": "readmitted",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.8959492099582069,
+      "form": "pin",
+      "covered_train_prob": 0.539117902356737
+    },
+    {
+      "col": "glipizide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Steady"
+      ],
+      "target_share": 0.415209351946976,
+      "form": "pin",
+      "covered_train_prob": 0.11146595915426064
+    },
+    {
+      "col": "tolazamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.8959492099582069,
+      "form": "set",
+      "covered_train_prob": 0.9996069375522036
+    }
+  ],
+  "counts": {
+    "train": 3096,
+    "val": 1055,
+    "trainval": 4151,
+    "test": 1054
+  },
+  "selectivity": {
+    "train": 0.05070505576573478,
+    "val": 0.05183511030314941,
+    "trainval": 0.05098756940008844,
+    "test": 0.05178343323179719
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "5-10%"
+}

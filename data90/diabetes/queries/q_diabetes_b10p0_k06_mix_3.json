@@ -1,0 +1,110 @@
+{
+  "query_id": "q_diabetes_b10p0_k06_mix_3",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 6,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.637109375,
+  "predicates": [
+    {
+      "col": "num_medications",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        11.0,
+        41.524385519303735
+      ],
+      "target_share": 0.6859446331223922,
+      "quantile_range": [
+        0.30159600940978065,
+        0.9875406425321729
+      ]
+    },
+    {
+      "col": "num_lab_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        14.892294021889429,
+        31.632214041476296
+      ],
+      "target_share": 0.15186067030531583,
+      "quantile_range": [
+        0.10446147010944715,
+        0.256322140414763
+      ]
+    },
+    {
+      "col": "number_inpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        3.0
+      ],
+      "target_share": 0.6859446331223922,
+      "quantile_range": [
+        0.2594871736275051,
+        0.9454318067498972
+      ]
+    },
+    {
+      "col": "acarbose",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.6859446331223922,
+      "form": "pin",
+      "covered_train_prob": 0.9970192764375441
+    },
+    {
+      "col": "tolazamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.6859446331223922,
+      "form": "pin",
+      "covered_train_prob": 0.9996069375522036
+    },
+    {
+      "col": "glyburide-metformin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.6859446331223922,
+      "form": "set",
+      "covered_train_prob": 0.9928593655316988
+    }
+  ],
+  "counts": {
+    "train": 6060,
+    "val": 2006,
+    "trainval": 8066,
+    "test": 2106
+  },
+  "selectivity": {
+    "train": 0.0992482680685894,
+    "val": 0.09856040878494571,
+    "trainval": 0.09907630324767848,
+    "test": 0.10346860567947332
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "10-25%"
+}

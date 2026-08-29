@@ -1,0 +1,91 @@
+{
+  "query_id": "q_magic_b25p0_k04_num_1",
+  "dataset": "magic",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.5608901977539062,
+  "predicates": [
+    {
+      "col": "Size",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2.1665083614227187,
+        3.0742252966751975
+      ],
+      "target_share": 0.697228412936561,
+      "quantile_range": [
+        0.038745904751325055,
+        0.7359743176878861
+      ]
+    },
+    {
+      "col": "Dist",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        8.15117629089146,
+        229.44549850751622
+      ],
+      "target_share": 0.697228412936561,
+      "quantile_range": [
+        0.0007707508099984998,
+        0.6979991637465596
+      ]
+    },
+    {
+      "col": "Conc",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.15201287558302692,
+        0.5295605780910897
+      ],
+      "target_share": 0.697228412936561,
+      "quantile_range": [
+        0.08259975103426247,
+        0.7798281639708234
+      ]
+    },
+    {
+      "col": "Conc1",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.17490312081751738,
+        0.292245284879821
+      ],
+      "target_share": 0.33894187728544406,
+      "quantile_range": [
+        0.42414869247419784,
+        0.763090569759642
+      ]
+    }
+  ],
+  "counts": {
+    "train": 3851,
+    "val": 448,
+    "trainval": 4299,
+    "test": 470
+  },
+  "selectivity": {
+    "train": 0.24998377150275886,
+    "val": 0.2616822429906542,
+    "trainval": 0.2511538236840568,
+    "test": 0.24710830704521555
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "10-25%"
+}

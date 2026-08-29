@@ -1,0 +1,96 @@
+{
+  "query_id": "q_diabetes_b40p0_k05_mix_3",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.061669921875,
+  "predicates": [
+    {
+      "col": "number_emergency",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        46.903134458694545
+      ],
+      "target_share": 0.9929614402805268,
+      "quantile_range": [
+        0.003052687727513526,
+        0.9960141280080403
+      ]
+    },
+    {
+      "col": "number_inpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        16.123864057411048
+      ],
+      "target_share": 0.9929614402805268,
+      "quantile_range": [
+        0.0037878024244138923,
+        0.9967492427049407
+      ]
+    },
+    {
+      "col": "diag_2",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "276"
+      ],
+      "target_share": 0.9929614402805268,
+      "form": "pin",
+      "covered_train_prob": 0.06551040796606561
+    },
+    {
+      "col": "chlorpropamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.9721416167157575,
+      "form": "pin",
+      "covered_train_prob": 0.9991156094924581
+    },
+    {
+      "col": "A1Cresult",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "empty"
+      ],
+      "target_share": 0.9929614402805268,
+      "form": "pin",
+      "covered_train_prob": 0.8333578997363206
+    }
+  ],
+  "counts": {
+    "train": 3179,
+    "val": 1083,
+    "trainval": 4262,
+    "test": 1104
+  },
+  "selectivity": {
+    "train": 0.052064396731030645,
+    "val": 0.053210828870436794,
+    "trainval": 0.05235100476588218,
+    "test": 0.05423995283482362
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "5-10%"
+}

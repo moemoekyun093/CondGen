@@ -1,0 +1,110 @@
+{
+  "query_id": "q_default_b05p0_k06_mix_0",
+  "dataset": "default",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 6,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.3880294799804687,
+  "predicates": [
+    {
+      "col": "BILL_AMT5",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        236.16077534482864,
+        30284.815963924353
+      ],
+      "target_share": 0.5000598680453817,
+      "quantile_range": [
+        0.14931639602326113,
+        0.6493762640686429
+      ]
+    },
+    {
+      "col": "PAY_AMT5",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        910.2785866721822,
+        7071.022817117172
+      ],
+      "target_share": 0.5000598680453817,
+      "quantile_range": [
+        0.3670491671002834,
+        0.8671090351456652
+      ]
+    },
+    {
+      "col": "PAY_AMT6",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        2450.127858229432
+      ],
+      "target_share": 0.5000598680453817,
+      "quantile_range": [
+        0.12556538267649828,
+        0.62562525072188
+      ]
+    },
+    {
+      "col": "default payment next month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.5000598680453817,
+      "form": "pin",
+      "covered_train_prob": 0.7790123456790123
+    },
+    {
+      "col": "PAY_2",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.5000598680453817,
+      "form": "pin",
+      "covered_train_prob": 0.5239917695473251
+    },
+    {
+      "col": "PAY_4",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.5000598680453817,
+      "form": "pin",
+      "covered_train_prob": 0.5502880658436214
+    }
+  ],
+  "counts": {
+    "train": 1588,
+    "val": 155,
+    "trainval": 1743,
+    "test": 178
+  },
+  "selectivity": {
+    "train": 0.06534979423868313,
+    "val": 0.05740740740740741,
+    "trainval": 0.06455555555555556,
+    "test": 0.059333333333333335
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "5-10%"
+}

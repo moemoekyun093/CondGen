@@ -1,0 +1,79 @@
+{
+  "query_id": "q_diabetes_b01p0_k04_cat_4",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "equal",
+  "calibration_exponent": 6.025,
+  "predicates": [
+    {
+      "col": "max_glu_serum",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "empty"
+      ],
+      "target_share": 0.0009716279515771059,
+      "form": "set",
+      "covered_train_prob": 0.9482140225028252
+    },
+    {
+      "col": "metformin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.0009716279515771059,
+      "form": "set",
+      "covered_train_prob": 0.8033541328878625
+    },
+    {
+      "col": "chlorpropamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.0009716279515771059,
+      "form": "set",
+      "covered_train_prob": 0.9991156094924581
+    },
+    {
+      "col": "readmitted",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.0009716279515771059,
+      "form": "set",
+      "covered_train_prob": 0.539117902356737
+    }
+  ],
+  "counts": {
+    "train": 24734,
+    "val": 8221,
+    "trainval": 32955,
+    "test": 8206
+  },
+  "selectivity": {
+    "train": 0.4050836076581667,
+    "val": 0.40392079791676905,
+    "trainval": 0.4047929052228173,
+    "test": 0.40316399724869806
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

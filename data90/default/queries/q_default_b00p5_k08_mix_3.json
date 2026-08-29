@@ -1,0 +1,137 @@
+{
+  "query_id": "q_default_b00p5_k08_mix_3",
+  "dataset": "default",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.005,
+  "arity": 8,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.2169921875,
+  "predicates": [
+    {
+      "col": "BILL_AMT1",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        24755.329603486607,
+        29361.538905907102
+      ],
+      "target_share": 0.03979534151149259,
+      "quantile_range": [
+        0.5148880423536454,
+        0.5546833838651379
+      ]
+    },
+    {
+      "col": "PAY_AMT3",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        621.5062067948442,
+        10326.090203919808
+      ],
+      "target_share": 0.6309225264383733,
+      "quantile_range": [
+        0.28093827584935555,
+        0.9118608022877288
+      ]
+    },
+    {
+      "col": "PAY_AMT2",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        616.626890072467,
+        8461.823904510798
+      ],
+      "target_share": 0.6309225264383733,
+      "quantile_range": [
+        0.23161627717331112,
+        0.8625388036116844
+      ]
+    },
+    {
+      "col": "LIMIT_BAL",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        80000.0,
+        452895.85955604643
+      ],
+      "target_share": 0.6309225264383733,
+      "quantile_range": [
+        0.3267094267469755,
+        0.9576319531853488
+      ]
+    },
+    {
+      "col": "PAY_4",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0",
+        "-1"
+      ],
+      "target_share": 0.6309225264383733,
+      "form": "set",
+      "covered_train_prob": 0.7385596707818931
+    },
+    {
+      "col": "PAY_5",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.6309225264383733,
+      "form": "pin",
+      "covered_train_prob": 0.5663786008230453
+    },
+    {
+      "col": "default payment next month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.6309225264383733,
+      "form": "pin",
+      "covered_train_prob": 0.7790123456790123
+    },
+    {
+      "col": "PAY_2",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0",
+        "-1"
+      ],
+      "target_share": 0.6309225264383733,
+      "form": "set",
+      "covered_train_prob": 0.7247325102880658
+    }
+  ],
+  "counts": {
+    "train": 122,
+    "val": 10,
+    "trainval": 132,
+    "test": 9
+  },
+  "selectivity": {
+    "train": 0.005020576131687242,
+    "val": 0.003703703703703704,
+    "trainval": 0.004888888888888889,
+    "test": 0.003
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "0.5-1%",
+  "realized_band_test": "<0.5%"
+}

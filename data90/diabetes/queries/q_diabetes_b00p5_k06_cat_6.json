@@ -1,0 +1,101 @@
+{
+  "query_id": "q_diabetes_b00p5_k06_cat_6",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.005,
+  "arity": 6,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.7850227355957031,
+  "predicates": [
+    {
+      "col": "glipizide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.49996529205618967,
+      "form": "pin",
+      "covered_train_prob": 0.8751862952226535
+    },
+    {
+      "col": "diag_1",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "428"
+      ],
+      "target_share": 0.49996529205618967,
+      "form": "pin",
+      "covered_train_prob": 0.06737745459309848
+    },
+    {
+      "col": "insulin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.49996529205618967,
+      "form": "pin",
+      "covered_train_prob": 0.46892350022109763
+    },
+    {
+      "col": "change",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Ch"
+      ],
+      "target_share": 0.49996529205618967,
+      "form": "pin",
+      "covered_train_prob": 0.4609312304492376
+    },
+    {
+      "col": "admission_source_id",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "7"
+      ],
+      "target_share": 0.49996529205618967,
+      "form": "set",
+      "covered_train_prob": 0.5659771696228239
+    },
+    {
+      "col": "chlorpropamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.49996529205618967,
+      "form": "pin",
+      "covered_train_prob": 0.9991156094924581
+    }
+  ],
+  "counts": {
+    "train": 154,
+    "val": 49,
+    "trainval": 203,
+    "test": 30
+  },
+  "selectivity": {
+    "train": 0.002522150706693526,
+    "val": 0.002407507492752911,
+    "trainval": 0.002493489903208372,
+    "test": 0.0014739117618158594
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "<0.5%",
+  "realized_band_test": "<0.5%"
+}

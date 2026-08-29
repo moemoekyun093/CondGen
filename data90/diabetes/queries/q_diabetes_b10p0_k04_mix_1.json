@@ -1,0 +1,85 @@
+{
+  "query_id": "q_diabetes_b10p0_k04_mix_1",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.61015625,
+  "predicates": [
+    {
+      "col": "number_outpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        2.0
+      ],
+      "target_share": 0.7912382826627102,
+      "quantile_range": [
+        0.1347016429314308,
+        0.9259399255941411
+      ]
+    },
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        4.0,
+        8.0
+      ],
+      "target_share": 0.7912382826627102,
+      "quantile_range": [
+        0.07356593469672078,
+        0.864804217359431
+      ]
+    },
+    {
+      "col": "glyburide-metformin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Steady"
+      ],
+      "target_share": 0.4953610725532736,
+      "form": "pin",
+      "covered_train_prob": 0.006960480846394471
+    },
+    {
+      "col": "tolazamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.7912382826627102,
+      "form": "pin",
+      "covered_train_prob": 0.9996069375522036
+    }
+  ],
+  "counts": {
+    "train": 395,
+    "val": 121,
+    "trainval": 516,
+    "test": 121
+  },
+  "selectivity": {
+    "train": 0.006469152786648979,
+    "val": 0.005945069522920454,
+    "trainval": 0.0063381319707168475,
+    "test": 0.005944777439323966
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "0.5-1%",
+  "realized_band_test": "0.5-1%"
+}

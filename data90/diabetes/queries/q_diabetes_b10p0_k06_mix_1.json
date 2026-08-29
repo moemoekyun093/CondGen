@@ -1,0 +1,110 @@
+{
+  "query_id": "q_diabetes_b10p0_k06_mix_1",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 6,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.05291748046875,
+  "predicates": [
+    {
+      "col": "time_in_hospital",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.0,
+        14.0
+      ],
+      "target_share": 0.9878892327025384,
+      "quantile_range": [
+        0.0057587939115896014,
+        0.993648026614128
+      ]
+    },
+    {
+      "col": "number_emergency",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        12.40056754552541
+      ],
+      "target_share": 0.9878892327025384,
+      "quantile_range": [
+        0.0033985162763007486,
+        0.9912877489788391
+      ]
+    },
+    {
+      "col": "num_medications",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2.8180737159749154,
+        64.63676397548005
+      ],
+      "target_share": 0.9878892327025384,
+      "quantile_range": [
+        0.009090368579874577,
+        0.9969796012824129
+      ]
+    },
+    {
+      "col": "diag_1",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "428"
+      ],
+      "target_share": 0.9408952147136452,
+      "form": "pin",
+      "covered_train_prob": 0.06737745459309848
+    },
+    {
+      "col": "chlorpropamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.9878892327025384,
+      "form": "pin",
+      "covered_train_prob": 0.9991156094924581
+    },
+    {
+      "col": "nateglinide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.9878892327025384,
+      "form": "pin",
+      "covered_train_prob": 0.992957631143648
+    }
+  ],
+  "counts": {
+    "train": 4073,
+    "val": 1390,
+    "trainval": 5463,
+    "test": 1333
+  },
+  "selectivity": {
+    "train": 0.06670597291144631,
+    "val": 0.06829460030462339,
+    "trainval": 0.06710312975974057,
+    "test": 0.06549081261668468
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "5-10%"
+}

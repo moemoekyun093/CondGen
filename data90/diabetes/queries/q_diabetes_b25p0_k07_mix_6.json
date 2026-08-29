@@ -1,0 +1,121 @@
+{
+  "query_id": "q_diabetes_b25p0_k07_mix_6",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 7,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 3.4576171875000004,
+  "predicates": [
+    {
+      "col": "number_outpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        42.0
+      ],
+      "target_share": 0.5042144519948926,
+      "quantile_range": [
+        0.18524006028380854,
+        0.6894545122787011
+      ]
+    },
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        3.0,
+        6.744876542369554
+      ],
+      "target_share": 0.5042144519948926,
+      "quantile_range": [
+        0.043234313428803024,
+        0.5474487654236956
+      ]
+    },
+    {
+      "col": "num_medications",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        7.657848770721376,
+        17.0
+      ],
+      "target_share": 0.5042144519948926,
+      "quantile_range": [
+        0.10657848770721376,
+        0.6107929397021064
+      ]
+    },
+    {
+      "col": "rosiglitazone",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.5042144519948926,
+      "form": "set",
+      "covered_train_prob": 0.9386331253377881
+    },
+    {
+      "col": "chlorpropamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.5042144519948926,
+      "form": "pin",
+      "covered_train_prob": 0.9991156094924581
+    },
+    {
+      "col": "glipizide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.5042144519948926,
+      "form": "pin",
+      "covered_train_prob": 0.8751862952226535
+    },
+    {
+      "col": "glyburide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.5042144519948926,
+      "form": "pin",
+      "covered_train_prob": 0.8959039617419218
+    }
+  ],
+  "counts": {
+    "train": 12397,
+    "val": 4034,
+    "trainval": 16431,
+    "test": 4107
+  },
+  "selectivity": {
+    "train": 0.20303313188882885,
+    "val": 0.1982017393013315,
+    "trainval": 0.2018252837419545,
+    "test": 0.20177852019259113
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "10-25%"
+}

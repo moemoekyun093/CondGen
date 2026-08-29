@@ -1,0 +1,147 @@
+{
+  "query_id": "q_diabetes_b05p0_k08_num_0",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 8,
+  "arity_tier": "extension",
+  "modality_mix": "numeric",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.9171874999999998,
+  "predicates": [
+    {
+      "col": "number_inpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        21.0
+      ],
+      "target_share": 0.48776450636572655,
+      "quantile_range": [
+        0.025019227875492094,
+        0.5127837342412186
+      ]
+    },
+    {
+      "col": "number_outpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        42.0
+      ],
+      "target_share": 0.48776450636572655,
+      "quantile_range": [
+        0.14860658218605874,
+        0.6363710885517853
+      ]
+    },
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.13880465172989936,
+        6.0
+      ],
+      "target_share": 0.48776450636572655,
+      "quantile_range": [
+        0.0006940232586494968,
+        0.488458529624376
+      ]
+    },
+    {
+      "col": "num_medications",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        8.0,
+        17.0
+      ],
+      "target_share": 0.48776450636572655,
+      "quantile_range": [
+        0.12045665226122391,
+        0.6082211586269505
+      ]
+    },
+    {
+      "col": "time_in_hospital",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        3.0,
+        7.908030123086722
+      ],
+      "target_share": 0.48776450636572655,
+      "quantile_range": [
+        0.3713157948651407,
+        0.8590803012308672
+      ]
+    },
+    {
+      "col": "num_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1.0
+      ],
+      "target_share": 0.48776450636572655,
+      "quantile_range": [
+        0.05122098745304371,
+        0.5389854938187703
+      ]
+    },
+    {
+      "col": "num_lab_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        43.77945358834082,
+        78.66771267474041
+      ],
+      "target_share": 0.48776450636572655,
+      "quantile_range": [
+        0.4877945358834082,
+        0.9755590422491347
+      ]
+    },
+    {
+      "col": "number_emergency",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1.0
+      ],
+      "target_share": 0.48776450636572655,
+      "quantile_range": [
+        0.4687202589931233,
+        0.9564847653588499
+      ]
+    }
+  ],
+  "counts": {
+    "train": 3173,
+    "val": 1039,
+    "trainval": 4212,
+    "test": 1088
+  },
+  "selectivity": {
+    "train": 0.05196613111908154,
+    "val": 0.051048985407556625,
+    "trainval": 0.051736844691200316,
+    "test": 0.05345386656185516
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "5-10%"
+}

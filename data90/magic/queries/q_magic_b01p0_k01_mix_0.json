@@ -1,0 +1,49 @@
+{
+  "query_id": "q_magic_b01p0_k01_mix_0",
+  "dataset": "magic",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 1,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.0204269409179685,
+  "predicates": [
+    {
+      "col": "Length",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        67.21741238583571,
+        68.92730867049062
+      ],
+      "target_share": 0.009102194640097644,
+      "quantile_range": [
+        0.73576324029458,
+        0.7448654349346776
+      ]
+    }
+  ],
+  "counts": {
+    "train": 154,
+    "val": 12,
+    "trainval": 166,
+    "test": 12
+  },
+  "selectivity": {
+    "train": 0.00999675430055177,
+    "val": 0.007009345794392523,
+    "trainval": 0.00969796109131273,
+    "test": 0.006309148264984227
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "0.5-1%",
+  "realized_band_test": "0.5-1%"
+}

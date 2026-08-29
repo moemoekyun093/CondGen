@@ -1,0 +1,105 @@
+{
+  "query_id": "q_magic_b25p0_k05_num_2",
+  "dataset": "magic",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.3198818087577822,
+  "predicates": [
+    {
+      "col": "Width",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        10.948400614479224,
+        35.157145496691605
+      ],
+      "target_share": 0.6935382111426416,
+      "quantile_range": [
+        0.18538061478824217,
+        0.8789188259308838
+      ]
+    },
+    {
+      "col": "Conc1",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.023536350567637775,
+        0.26473903246642194
+      ],
+      "target_share": 0.6935382111426416,
+      "quantile_range": [
+        0.006608635788756476,
+        0.7001468469313981
+      ]
+    },
+    {
+      "col": "Conc",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.24279987865484812,
+        0.7477972174962005
+      ],
+      "target_share": 0.6935382111426416,
+      "quantile_range": [
+        0.2654759015591622,
+        0.9590141127018037
+      ]
+    },
+    {
+      "col": "Length",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        5.474793599100111,
+        60.15958386120328
+      ],
+      "target_share": 0.6935382111426416,
+      "quantile_range": [
+        0.0014122563588036107,
+        0.6949504675014452
+      ]
+    },
+    {
+      "col": "Asym",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -17.322347234377293,
+        74.45906328546461
+      ],
+      "target_share": 0.6935382111426416,
+      "quantile_range": [
+        0.2699950434021191,
+        0.9635332545447607
+      ]
+    }
+  ],
+  "counts": {
+    "train": 3851,
+    "val": 439,
+    "trainval": 4290,
+    "test": 471
+  },
+  "selectivity": {
+    "train": 0.24998377150275886,
+    "val": 0.2564252336448598,
+    "trainval": 0.25062803061284106,
+    "test": 0.2476340694006309
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "10-25%"
+}

@@ -1,0 +1,91 @@
+{
+  "query_id": "q_adult_b10p0_k04_num_7",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.4480201721191406,
+  "predicates": [
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        41.0,
+        50.0
+      ],
+      "target_share": 0.1887947502874686,
+      "quantile_range": [
+        0.6086140551094448,
+        0.7974088053969134
+      ]
+    },
+    {
+      "col": "education.num",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        9.0,
+        13.0
+      ],
+      "target_share": 0.5736715395990486,
+      "quantile_range": [
+        0.30292217520184794,
+        0.8765937148008965
+      ]
+    },
+    {
+      "col": "fnlwgt",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        75670.65852852885,
+        216965.38528485256
+      ],
+      "target_share": 0.5736715395990486,
+      "quantile_range": [
+        0.11705919952740357,
+        0.6907307391264521
+      ]
+    },
+    {
+      "col": "capital.loss",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        4356.0
+      ],
+      "target_share": 0.5736715395990486,
+      "quantile_range": [
+        0.12271246399805025,
+        0.6963840035970988
+      ]
+    }
+  ],
+  "counts": {
+    "train": 2930,
+    "val": 309,
+    "trainval": 3239,
+    "test": 1527
+  },
+  "selectivity": {
+    "train": 0.09998634998634999,
+    "val": 0.0948725821307952,
+    "trainval": 0.09947483185405853,
+    "test": 0.09379030772065598
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "5-10%"
+}

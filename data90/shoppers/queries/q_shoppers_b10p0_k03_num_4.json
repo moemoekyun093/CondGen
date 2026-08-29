@@ -1,0 +1,77 @@
+{
+  "query_id": "q_shoppers_b10p0_k03_num_4",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.5029052734375,
+  "predicates": [
+    {
+      "col": "ProductRelated",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        4.766084030077892,
+        16.318424203534178
+      ],
+      "target_share": 0.31552340173456284,
+      "quantile_range": [
+        0.15766084030077893,
+        0.47318424203534176
+      ]
+    },
+    {
+      "col": "ExitRates",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0138780952211498,
+        0.0289547068073305
+      ],
+      "target_share": 0.31552340173456284,
+      "quantile_range": [
+        0.2414966901024656,
+        0.5570200918370285
+      ]
+    },
+    {
+      "col": "Administrative",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        24.0
+      ],
+      "target_share": 0.31552340173456284,
+      "quantile_range": [
+        0.07787891911643133,
+        0.39340232085099414
+      ]
+    }
+  ],
+  "counts": {
+    "train": 999,
+    "val": 117,
+    "trainval": 1116,
+    "test": 108
+  },
+  "selectivity": {
+    "train": 0.10003003905076599,
+    "val": 0.10540540540540541,
+    "trainval": 0.10056772100567721,
+    "test": 0.08759124087591241
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "5-10%"
+}

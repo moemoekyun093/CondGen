@@ -1,0 +1,71 @@
+{
+  "query_id": "q_adult_b05p0_k03_cat_0",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.7501953125,
+  "predicates": [
+    {
+      "col": "race",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Black"
+      ],
+      "target_share": 0.47277858730127836,
+      "form": "pin",
+      "covered_train_prob": 0.09572072072072071
+    },
+    {
+      "col": "occupation",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Prof-specialty",
+        " Craft-repair",
+        " Exec-managerial",
+        " Adm-clerical"
+      ],
+      "target_share": 0.47277858730127836,
+      "form": "set",
+      "covered_train_prob": 0.49365274365274364
+    },
+    {
+      "col": "native.country",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " United-States"
+      ],
+      "target_share": 0.47277858730127836,
+      "form": "pin",
+      "covered_train_prob": 0.8959527709527709
+    }
+  ],
+  "counts": {
+    "train": 980,
+    "val": 116,
+    "trainval": 1096,
+    "test": 568
+  },
+  "selectivity": {
+    "train": 0.033442533442533444,
+    "val": 0.035615597175314706,
+    "trainval": 0.03365989988022481,
+    "test": 0.034887291935384805
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

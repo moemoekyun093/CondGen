@@ -1,0 +1,137 @@
+{
+  "query_id": "q_adult_b10p0_k08_mix_1",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 8,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 3.2008789062500003,
+  "predicates": [
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        18.91649322792612,
+        41.98633294319613
+      ],
+      "target_share": 0.5906983971527001,
+      "quantile_range": [
+        0.029164932279261212,
+        0.6198633294319613
+      ]
+    },
+    {
+      "col": "capital.loss",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        4356.0
+      ],
+      "target_share": 0.5906983971527001,
+      "quantile_range": [
+        0.19907344218893375,
+        0.7897718393416339
+      ]
+    },
+    {
+      "col": "hours.per.week",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        40.0,
+        50.83833151130277
+      ],
+      "target_share": 0.5906983971527001,
+      "quantile_range": [
+        0.29349326040381374,
+        0.8841916575565139
+      ]
+    },
+    {
+      "col": "fnlwgt",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        55624.46485299565,
+        212122.08957848503
+      ],
+      "target_share": 0.5906983971527001,
+      "quantile_range": [
+        0.08259395323096573,
+        0.6732923503836659
+      ]
+    },
+    {
+      "col": "education",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " HS-grad",
+        " Some-college",
+        " Bachelors"
+      ],
+      "target_share": 0.5906983971527001,
+      "form": "set",
+      "covered_train_prob": 0.7103808353808354
+    },
+    {
+      "col": "income",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " <=50K"
+      ],
+      "target_share": 0.02509345993875259,
+      "form": "set",
+      "covered_train_prob": 0.7576098826098826
+    },
+    {
+      "col": "workclass",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Private"
+      ],
+      "target_share": 0.5906983971527001,
+      "form": "pin",
+      "covered_train_prob": 0.6968331968331969
+    },
+    {
+      "col": "native.country",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " United-States"
+      ],
+      "target_share": 0.5906983971527001,
+      "form": "pin",
+      "covered_train_prob": 0.8959527709527709
+    }
+  ],
+  "counts": {
+    "train": 2925,
+    "val": 329,
+    "trainval": 3254,
+    "test": 1588
+  },
+  "selectivity": {
+    "train": 0.09981572481572482,
+    "val": 0.10101320233343568,
+    "trainval": 0.0999355056662879,
+    "test": 0.09753700632639273
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "5-10%"
+}

@@ -1,0 +1,110 @@
+{
+  "query_id": "q_default_b00p5_k06_mix_1",
+  "dataset": "default",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.005,
+  "arity": 6,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.102116394042969,
+  "predicates": [
+    {
+      "col": "BILL_AMT5",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        11152.584373657695,
+        219248.18810811156
+      ],
+      "target_share": 0.5576988023601183,
+      "quantile_range": [
+        0.41890724718845007,
+        0.9766060495485683
+      ]
+    },
+    {
+      "col": "BILL_AMT3",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -1.0701273736404473,
+        29597.39589110816
+      ],
+      "target_share": 0.5576988023601183,
+      "quantile_range": [
+        0.02643290875453184,
+        0.5841317111146501
+      ]
+    },
+    {
+      "col": "LIMIT_BAL",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        20000.0,
+        197562.84325095123
+      ],
+      "target_share": 0.5576988023601183,
+      "quantile_range": [
+        0.07986404089083304,
+        0.6375628432509512
+      ]
+    },
+    {
+      "col": "SEX",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.5576988023601183,
+      "form": "pin",
+      "covered_train_prob": 0.6022633744855967
+    },
+    {
+      "col": "PAY_6",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.05395088327773175,
+      "form": "pin",
+      "covered_train_prob": 0.09230452674897119
+    },
+    {
+      "col": "PAY_0",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.5576988023601183,
+      "form": "pin",
+      "covered_train_prob": 0.491440329218107
+    }
+  ],
+  "counts": {
+    "train": 122,
+    "val": 15,
+    "trainval": 137,
+    "test": 10
+  },
+  "selectivity": {
+    "train": 0.005020576131687242,
+    "val": 0.005555555555555556,
+    "trainval": 0.005074074074074074,
+    "test": 0.0033333333333333335
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "0.5-1%",
+  "realized_band_test": "<0.5%"
+}

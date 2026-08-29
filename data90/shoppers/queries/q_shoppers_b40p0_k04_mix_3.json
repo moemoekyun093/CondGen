@@ -1,0 +1,88 @@
+{
+  "query_id": "q_shoppers_b40p0_k04_mix_3",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.70712890625,
+  "predicates": [
+    {
+      "col": "ProductRelated",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        6.0,
+        194.08505572143847
+      ],
+      "target_share": 0.7705086489650368,
+      "quantile_range": [
+        0.2149844949936769,
+        0.9854931439587137
+      ]
+    },
+    {
+      "col": "Informational",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        24.0
+      ],
+      "target_share": 0.4574383316976184,
+      "quantile_range": [
+        0.30542013280677593,
+        0.7628584645043943
+      ]
+    },
+    {
+      "col": "Browser",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.7705086489650368,
+      "form": "pin",
+      "covered_train_prob": 0.6437368579152899
+    },
+    {
+      "col": "Region",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1",
+        "3",
+        "4",
+        "2"
+      ],
+      "target_share": 0.7705086489650368,
+      "form": "set",
+      "covered_train_prob": 0.771002302993892
+    }
+  ],
+  "counts": {
+    "train": 3970,
+    "val": 438,
+    "trainval": 4408,
+    "test": 484
+  },
+  "selectivity": {
+    "train": 0.3975167718033443,
+    "val": 0.3945945945945946,
+    "trainval": 0.39722447508335584,
+    "test": 0.39253852392538524
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

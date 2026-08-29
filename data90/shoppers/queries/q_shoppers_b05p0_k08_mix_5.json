@@ -1,0 +1,135 @@
+{
+  "query_id": "q_shoppers_b05p0_k08_mix_5",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 8,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 3.2708984375000005,
+  "predicates": [
+    {
+      "col": "SpecialDay",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1.0
+      ],
+      "target_share": 0.49663013992249294,
+      "quantile_range": [
+        0.3947922300943449,
+        0.8914223700168378
+      ]
+    },
+    {
+      "col": "ProductRelated",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        10.116709211899597,
+        50.559446408297795
+      ],
+      "target_share": 0.49663013992249294,
+      "quantile_range": [
+        0.331167092118996,
+        0.8277972320414889
+      ]
+    },
+    {
+      "col": "Informational_Duration",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        85.67426996243887
+      ],
+      "target_share": 0.49663013992249294,
+      "quantile_range": [
+        0.4116555662437127,
+        0.9082857061662056
+      ]
+    },
+    {
+      "col": "ExitRates",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.01441023399754647,
+        0.05
+      ],
+      "target_share": 0.49663013992249294,
+      "quantile_range": [
+        0.25419185011497863,
+        0.7508219900374715
+      ]
+    },
+    {
+      "col": "VisitorType",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Returning_Visitor"
+      ],
+      "target_share": 0.49663013992249294,
+      "form": "pin",
+      "covered_train_prob": 0.8578151597076199
+    },
+    {
+      "col": "Browser",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.49663013992249294,
+      "form": "set",
+      "covered_train_prob": 0.6437368579152899
+    },
+    {
+      "col": "Weekend",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "False"
+      ],
+      "target_share": 0.007451290751460417,
+      "form": "set",
+      "covered_train_prob": 0.7676980074096326
+    },
+    {
+      "col": "OperatingSystems",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.49663013992249294,
+      "form": "pin",
+      "covered_train_prob": 0.5336938019425252
+    }
+  ],
+  "counts": {
+    "train": 792,
+    "val": 83,
+    "trainval": 875,
+    "test": 84
+  },
+  "selectivity": {
+    "train": 0.0793030940222289,
+    "val": 0.07477477477477477,
+    "trainval": 0.07885013967739028,
+    "test": 0.0681265206812652
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "5-10%"
+}

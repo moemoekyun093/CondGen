@@ -1,0 +1,146 @@
+{
+  "query_id": "q_diabetes_b25p0_k09_mix_4",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 9,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 4.1578125,
+  "predicates": [
+    {
+      "col": "number_outpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        42.0
+      ],
+      "target_share": 0.5270609335422245,
+      "quantile_range": [
+        0.27828187458397824,
+        0.8053428081262027
+      ]
+    },
+    {
+      "col": "num_medications",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        13.0,
+        28.0
+      ],
+      "target_share": 0.5270609335422245,
+      "quantile_range": [
+        0.40272103354327116,
+        0.9297819670854957
+      ]
+    },
+    {
+      "col": "number_emergency",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        76.0
+      ],
+      "target_share": 0.5270609335422245,
+      "quantile_range": [
+        0.34310069227068657,
+        0.870161625812911
+      ]
+    },
+    {
+      "col": "num_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        2.8643779321420455
+      ],
+      "target_share": 0.5270609335422245,
+      "quantile_range": [
+        0.261582845779196,
+        0.7886437793214205
+      ]
+    },
+    {
+      "col": "diabetesMed",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Yes"
+      ],
+      "target_share": 0.5270609335422245,
+      "form": "pin",
+      "covered_train_prob": 0.7696326503873303
+    },
+    {
+      "col": "tolazamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.5270609335422245,
+      "form": "set",
+      "covered_train_prob": 0.9996069375522036
+    },
+    {
+      "col": "miglitol",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.5270609335422245,
+      "form": "set",
+      "covered_train_prob": 0.9995905599502121
+    },
+    {
+      "col": "glyburide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.5270609335422245,
+      "form": "set",
+      "covered_train_prob": 0.8959039617419218
+    },
+    {
+      "col": "pioglitazone",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.5270609335422245,
+      "form": "set",
+      "covered_train_prob": 0.9280531944512684
+    }
+  ],
+  "counts": {
+    "train": 16800,
+    "val": 5701,
+    "trainval": 22501,
+    "test": 5784
+  },
+  "selectivity": {
+    "train": 0.27514371345747557,
+    "val": 0.280106126860905,
+    "trainval": 0.2763843168083329,
+    "test": 0.28417018767809765
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

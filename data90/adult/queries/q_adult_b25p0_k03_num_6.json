@@ -1,0 +1,77 @@
+{
+  "query_id": "q_adult_b25p0_k03_num_6",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.3387969970703122,
+  "predicates": [
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        30.0,
+        54.0
+      ],
+      "target_share": 0.5386681494357562,
+      "quantile_range": [
+        0.31708945618436346,
+        0.8557576056201197
+      ]
+    },
+    {
+      "col": "hours.per.week",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        40.0,
+        67.0360549027233
+      ],
+      "target_share": 0.5386681494357562,
+      "quantile_range": [
+        0.43540396036969026,
+        0.9740721098054466
+      ]
+    },
+    {
+      "col": "fnlwgt",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        166512.1363249523,
+        427005.0334865819
+      ],
+      "target_share": 0.5386681494357562,
+      "quantile_range": [
+        0.43430522352756384,
+        0.9729733729633201
+      ]
+    }
+  ],
+  "counts": {
+    "train": 7326,
+    "val": 796,
+    "trainval": 8122,
+    "test": 4040
+  },
+  "selectivity": {
+    "train": 0.25,
+    "val": 0.24439668406509057,
+    "trainval": 0.24943951352845428,
+    "test": 0.2481420060192863
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "10-25%"
+}

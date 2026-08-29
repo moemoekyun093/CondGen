@@ -1,0 +1,111 @@
+{
+  "query_id": "q_adult_b02p0_k06_mix_1",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.02,
+  "arity": 6,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 4.53125,
+  "predicates": [
+    {
+      "col": "education.num",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        10.0,
+        13.0
+      ],
+      "target_share": 0.1698846801229766,
+      "quantile_range": [
+        0.6233590631676301,
+        0.7932437432906068
+      ]
+    },
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        17.0,
+        90.0
+      ],
+      "target_share": 0.0001415047713483517,
+      "quantile_range": [
+        0.04138933104593184,
+        0.0415308358172802
+      ]
+    },
+    {
+      "col": "capital.gain",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        99999.0
+      ],
+      "target_share": 0.1698846801229766,
+      "quantile_range": [
+        0.4102021674967463,
+        0.580086847619723
+      ]
+    },
+    {
+      "col": "sex",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Female"
+      ],
+      "target_share": 0.1698846801229766,
+      "form": "pin",
+      "covered_train_prob": 0.33104695604695605
+    },
+    {
+      "col": "occupation",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Prof-specialty",
+        " Craft-repair"
+      ],
+      "target_share": 0.1698846801229766,
+      "form": "set",
+      "covered_train_prob": 0.2544021294021294
+    },
+    {
+      "col": "workclass",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Private"
+      ],
+      "target_share": 0.1698846801229766,
+      "form": "set",
+      "covered_train_prob": 0.6968331968331969
+    }
+  ],
+  "counts": {
+    "train": 555,
+    "val": 59,
+    "trainval": 614,
+    "test": 269
+  },
+  "selectivity": {
+    "train": 0.01893939393939394,
+    "val": 0.018114829597789376,
+    "trainval": 0.018856914713921563,
+    "test": 0.016522326638412875
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "1-2%",
+  "realized_band_test": "1-2%"
+}

@@ -1,0 +1,49 @@
+{
+  "query_id": "q_fb-comments_b02p0_k01_num_5",
+  "dataset": "fb-comments",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.02,
+  "arity": 1,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.0769531250000002,
+  "predicates": [
+    {
+      "col": "num_31",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        16.687992708355807,
+        18.33617100696479
+      ],
+      "target_share": 0.014800927951265913,
+      "quantile_range": [
+        0.11687992708355806,
+        0.13168085503482396
+      ]
+    }
+  ],
+  "counts": {
+    "train": 3640,
+    "val": 436,
+    "trainval": 4076,
+    "test": 484
+  },
+  "selectivity": {
+    "train": 0.02309087910275441,
+    "val": 0.022107291349761686,
+    "trainval": 0.02298150654036987,
+    "test": 0.024543610547667342
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

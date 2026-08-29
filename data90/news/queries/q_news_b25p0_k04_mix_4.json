@@ -1,0 +1,90 @@
+{
+  "query_id": "q_news_b25p0_k04_mix_4",
+  "dataset": "news",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.05291748046875,
+  "predicates": [
+    {
+      "col": " num_keywords",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        3.747761519828559,
+        10.0
+      ],
+      "target_share": 0.9818273495623083,
+      "quantile_range": [
+        0.01747761519828559,
+        0.9993049647605939
+      ]
+    },
+    {
+      "col": " title_sentiment_polarity",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -0.9748616408388668,
+        0.8533058973535883
+      ],
+      "target_share": 0.9818273495623083,
+      "quantile_range": [
+        0.0008379453053711049,
+        0.9826652948676794
+      ]
+    },
+    {
+      "col": "data_channel",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "5",
+        "0",
+        "4",
+        "1",
+        "2",
+        "3"
+      ],
+      "target_share": 0.9818273495623083,
+      "form": "set",
+      "covered_train_prob": 1.0
+    },
+    {
+      "col": "weekday",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.9818273495623083,
+      "form": "pin",
+      "covered_train_prob": 0.18759926504936003
+    }
+  ],
+  "counts": {
+    "train": 5803,
+    "val": 651,
+    "trainval": 6454,
+    "test": 706
+  },
+  "selectivity": {
+    "train": 0.18071688829373111,
+    "val": 0.18245515695067266,
+    "trainval": 0.180890720031391,
+    "test": 0.1780580075662043
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "10-25%"
+}

@@ -1,0 +1,203 @@
+{
+  "query_id": "q_fb-comments_b40p0_k09_cat_2",
+  "dataset": "fb-comments",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 9,
+  "arity_tier": "extension",
+  "modality_mix": "categorical",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.050729370117187506,
+  "predicates": [
+    {
+      "col": "cat_12",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.9948485531508731,
+      "form": "pin",
+      "covered_train_prob": 0.8445298722389272
+    },
+    {
+      "col": "cat_7",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.9948485531508731,
+      "form": "pin",
+      "covered_train_prob": 0.863015262817341
+    },
+    {
+      "col": "cat_0",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "9",
+        "24",
+        "18",
+        "36",
+        "16",
+        "14",
+        "8",
+        "32",
+        "4",
+        "2",
+        "1",
+        "40",
+        "39",
+        "13",
+        "17",
+        "26",
+        "38",
+        "27",
+        "46",
+        "44",
+        "28",
+        "55",
+        "42",
+        "5",
+        "80",
+        "20",
+        "31",
+        "30",
+        "34",
+        "22",
+        "92",
+        "35",
+        "100",
+        "60",
+        "12",
+        "47",
+        "3",
+        "91",
+        "21",
+        "19",
+        "23",
+        "67",
+        "68",
+        "87",
+        "50",
+        "66",
+        "49",
+        "54",
+        "57",
+        "45",
+        "6",
+        "56",
+        "61",
+        "96",
+        "10",
+        "77",
+        "79",
+        "105",
+        "51",
+        "75",
+        "90",
+        "106",
+        "29",
+        "73",
+        "59",
+        "15",
+        "101",
+        "76",
+        "25"
+      ],
+      "target_share": 0.9948485531508731,
+      "form": "set",
+      "covered_train_prob": 0.9956672883441806
+    },
+    {
+      "col": "cat_8",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0",
+        "1"
+      ],
+      "target_share": 0.9948485531508731,
+      "form": "set",
+      "covered_train_prob": 1.0
+    },
+    {
+      "col": "cat_5",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.9948485531508731,
+      "form": "pin",
+      "covered_train_prob": 0.8552633248328448
+    },
+    {
+      "col": "cat_2",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.9948485531508731,
+      "form": "pin",
+      "covered_train_prob": 0.8565003362133495
+    },
+    {
+      "col": "cat_10",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.9948485531508731,
+      "form": "pin",
+      "covered_train_prob": 0.8633641634631244
+    },
+    {
+      "col": "cat_9",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.9948485531508731,
+      "form": "pin",
+      "covered_train_prob": 0.8651403849325671
+    },
+    {
+      "col": "cat_11",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.9948485531508731,
+      "form": "pin",
+      "covered_train_prob": 0.8537408492876083
+    }
+  ],
+  "counts": {
+    "train": 37366,
+    "val": 4526,
+    "trainval": 41892,
+    "test": 4741
+  },
+  "selectivity": {
+    "train": 0.23703675509712124,
+    "val": 0.22948990974546193,
+    "trainval": 0.2361975642760487,
+    "test": 0.2404158215010142
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "10-25%"
+}

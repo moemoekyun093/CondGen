@@ -1,0 +1,153 @@
+{
+  "query_id": "q_adult_b05p0_k09_mix_1",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 9,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.588275146484375,
+  "predicates": [
+    {
+      "col": "capital.gain",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        7429.335800880364
+      ],
+      "target_share": 0.8957045375136513,
+      "quantile_range": [
+        0.0676630471243067,
+        0.963367584637958
+      ]
+    },
+    {
+      "col": "capital.loss",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        1852.6012024324473
+      ],
+      "target_share": 0.8957045375136513,
+      "quantile_range": [
+        0.075147537010876,
+        0.9708520745245273
+      ]
+    },
+    {
+      "col": "hours.per.week",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        40.0,
+        50.0
+      ],
+      "target_share": 0.41430311093747746,
+      "quantile_range": [
+        0.44435553981947995,
+        0.8586586507569574
+      ]
+    },
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        21.0,
+        68.3353148711096
+      ],
+      "target_share": 0.8957045375136513,
+      "quantile_range": [
+        0.08097203684189672,
+        0.976676574355548
+      ]
+    },
+    {
+      "col": "relationship",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Husband",
+        " Not-in-family",
+        " Own-child",
+        " Unmarried"
+      ],
+      "target_share": 0.8957045375136513,
+      "form": "set",
+      "covered_train_prob": 0.921102921102921
+    },
+    {
+      "col": "native.country",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " United-States"
+      ],
+      "target_share": 0.8957045375136513,
+      "form": "pin",
+      "covered_train_prob": 0.8959527709527709
+    },
+    {
+      "col": "occupation",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Prof-specialty"
+      ],
+      "target_share": 0.8957045375136513,
+      "form": "pin",
+      "covered_train_prob": 0.12817362817362818
+    },
+    {
+      "col": "workclass",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Private",
+        " Self-emp-not-inc",
+        " Local-gov",
+        " ?",
+        " State-gov"
+      ],
+      "target_share": 0.8957045375136513,
+      "form": "set",
+      "covered_train_prob": 0.9352306852306853
+    },
+    {
+      "col": "race",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " White"
+      ],
+      "target_share": 0.8957045375136513,
+      "form": "pin",
+      "covered_train_prob": 0.8552074802074802
+    }
+  ],
+  "counts": {
+    "train": 1472,
+    "val": 138,
+    "trainval": 1610,
+    "test": 775
+  },
+  "selectivity": {
+    "train": 0.050232050232050234,
+    "val": 0.04237027939821922,
+    "trainval": 0.049445655845950676,
+    "test": 0.04760149867944229
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "2-5%"
+}

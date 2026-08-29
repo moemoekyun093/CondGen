@@ -1,0 +1,193 @@
+{
+  "query_id": "q_adult_b40p0_k10_mix_2",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 10,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.07333984375,
+  "predicates": [
+    {
+      "col": "capital.loss",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        4257.082647872197
+      ],
+      "target_share": 0.9933024672115714,
+      "quantile_range": [
+        0.006277613904190394,
+        0.9995800811157618
+      ]
+    },
+    {
+      "col": "fnlwgt",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        13976.962321285893,
+        890018.168537485
+      ],
+      "target_share": 0.9933024672115714,
+      "quantile_range": [
+        0.0011372915734267743,
+        0.9944397587849982
+      ]
+    },
+    {
+      "col": "capital.gain",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        95918.487245058
+      ],
+      "target_share": 0.9933024672115714,
+      "quantile_range": [
+        0.006217331228564853,
+        0.9995197984401363
+      ]
+    },
+    {
+      "col": "education.num",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.6653862217501598,
+        16.0
+      ],
+      "target_share": 0.9933024672115714,
+      "quantile_range": [
+        0.003326931108750799,
+        0.9966293983203223
+      ]
+    },
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        17.0,
+        88.03781474936706
+      ],
+      "target_share": 0.9933024672115714,
+      "quantile_range": [
+        0.005471167006782907,
+        0.9987736342183544
+      ]
+    },
+    {
+      "col": "native.country",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " United-States",
+        " Mexico",
+        " ?",
+        " Philippines",
+        " Germany",
+        " Canada",
+        " Puerto-Rico",
+        " El-Salvador",
+        " India",
+        " Cuba",
+        " England",
+        " Jamaica",
+        " Italy",
+        " China",
+        " South",
+        " Dominican-Republic",
+        " Vietnam",
+        " Poland",
+        " Guatemala",
+        " Columbia",
+        " Japan",
+        " Taiwan",
+        " Haiti",
+        " Iran",
+        " Portugal",
+        " Peru",
+        " Nicaragua",
+        " Ecuador",
+        " Greece"
+      ],
+      "target_share": 0.9933024672115714,
+      "form": "set",
+      "covered_train_prob": 0.9933797433797434
+    },
+    {
+      "col": "education",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " HS-grad"
+      ],
+      "target_share": 0.9933024672115714,
+      "form": "pin",
+      "covered_train_prob": 0.32036582036582034
+    },
+    {
+      "col": "relationship",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Husband",
+        " Not-in-family",
+        " Own-child",
+        " Unmarried",
+        " Wife",
+        " Other-relative"
+      ],
+      "target_share": 0.9933024672115714,
+      "form": "set",
+      "covered_train_prob": 0.9999999999999999
+    },
+    {
+      "col": "race",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " White"
+      ],
+      "target_share": 0.9933024672115714,
+      "form": "pin",
+      "covered_train_prob": 0.8552074802074802
+    },
+    {
+      "col": "occupation",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Prof-specialty"
+      ],
+      "target_share": 0.9933024672115714,
+      "form": "pin",
+      "covered_train_prob": 0.12817362817362818
+    }
+  ],
+  "counts": {
+    "train": 172,
+    "val": 23,
+    "trainval": 195,
+    "test": 100
+  },
+  "selectivity": {
+    "train": 0.00586950586950587,
+    "val": 0.007061713233036537,
+    "trainval": 0.005988759558981604,
+    "test": 0.006142128861863522
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "0.5-1%",
+  "realized_band_test": "0.5-1%"
+}

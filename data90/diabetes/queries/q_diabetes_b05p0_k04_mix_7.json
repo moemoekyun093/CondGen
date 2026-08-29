@@ -1,0 +1,85 @@
+{
+  "query_id": "q_diabetes_b05p0_k04_mix_7",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.35703125,
+  "predicates": [
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        6.0,
+        8.0
+      ],
+      "target_share": 0.5078595300413886,
+      "quantile_range": [
+        0.44278600825695524,
+        0.9506455382983439
+      ]
+    },
+    {
+      "col": "num_lab_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        31.52036035651976,
+        39.0
+      ],
+      "target_share": 0.1309877913503083,
+      "quantile_range": [
+        0.2552036035651976,
+        0.3861913949155059
+      ]
+    },
+    {
+      "col": "glimepiride",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.5078595300413886,
+      "form": "pin",
+      "covered_train_prob": 0.9491966786223162
+    },
+    {
+      "col": "repaglinide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.5078595300413886,
+      "form": "pin",
+      "covered_train_prob": 0.9847852077498812
+    }
+  ],
+  "counts": {
+    "train": 5176,
+    "val": 1664,
+    "trainval": 6840,
+    "test": 1734
+  },
+  "selectivity": {
+    "train": 0.0847704679080889,
+    "val": 0.08175698914164987,
+    "trainval": 0.08401709821647914,
+    "test": 0.08519209983295667
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "5-10%"
+}

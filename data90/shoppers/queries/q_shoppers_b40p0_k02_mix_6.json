@@ -1,0 +1,60 @@
+{
+  "query_id": "q_shoppers_b40p0_k02_mix_6",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 2,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.7407135009765624,
+  "predicates": [
+    {
+      "col": "ProductRelated_Duration",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        230.1748334494292,
+        59358.34917471562
+      ],
+      "target_share": 0.7122299487671682,
+      "quantile_range": [
+        0.2869311831514933,
+        0.9991611319186615
+      ]
+    },
+    {
+      "col": "OperatingSystems",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.7122299487671682,
+      "form": "pin",
+      "covered_train_prob": 0.5336938019425252
+    }
+  ],
+  "counts": {
+    "train": 3995,
+    "val": 440,
+    "trainval": 4435,
+    "test": 483
+  },
+  "selectivity": {
+    "train": 0.400020026033844,
+    "val": 0.3963963963963964,
+    "trainval": 0.39965756510768674,
+    "test": 0.39172749391727496
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

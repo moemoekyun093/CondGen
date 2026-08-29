@@ -1,0 +1,121 @@
+{
+  "query_id": "q_default_b05p0_k07_mix_4",
+  "dataset": "default",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 7,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.621063232421875,
+  "predicates": [
+    {
+      "col": "BILL_AMT6",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        4385.1132738782,
+        76391.07731734171
+      ],
+      "target_share": 0.4996971504036199,
+      "quantile_range": [
+        0.3317663031891597,
+        0.8314634535927796
+      ]
+    },
+    {
+      "col": "PAY_AMT1",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1043.2783599679626,
+        5289.2950728953465
+      ],
+      "target_share": 0.4996971504036199,
+      "quantile_range": [
+        0.2658484270226977,
+        0.7655455774263176
+      ]
+    },
+    {
+      "col": "AGE",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        33.96161526061109,
+        59.79399090291923
+      ],
+      "target_share": 0.4996971504036199,
+      "quantile_range": [
+        0.4896161526061109,
+        0.9893133030097307
+      ]
+    },
+    {
+      "col": "PAY_5",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.4996971504036199,
+      "form": "pin",
+      "covered_train_prob": 0.5663786008230453
+    },
+    {
+      "col": "SEX",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1"
+      ],
+      "target_share": 0.4996971504036199,
+      "form": "pin",
+      "covered_train_prob": 0.3977366255144033
+    },
+    {
+      "col": "PAY_6",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.4996971504036199,
+      "form": "pin",
+      "covered_train_prob": 0.5433744855967079
+    },
+    {
+      "col": "PAY_4",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.4996971504036199,
+      "form": "pin",
+      "covered_train_prob": 0.5502880658436214
+    }
+  ],
+  "counts": {
+    "train": 1153,
+    "val": 116,
+    "trainval": 1269,
+    "test": 149
+  },
+  "selectivity": {
+    "train": 0.04744855967078189,
+    "val": 0.04296296296296296,
+    "trainval": 0.047,
+    "test": 0.049666666666666665
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

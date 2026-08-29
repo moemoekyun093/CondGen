@@ -1,0 +1,85 @@
+{
+  "query_id": "q_adult_b01p0_k04_mix_3",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 2.85078125,
+  "predicates": [
+    {
+      "col": "capital.gain",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        99999.0
+      ],
+      "target_share": 0.1121345858329354,
+      "quantile_range": [
+        0.0006893568829481241,
+        0.11282394271588352
+      ]
+    },
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        40.933221963707965,
+        45.14668054700151
+      ],
+      "target_share": 0.1121345858329354,
+      "quantile_range": [
+        0.5893322196370796,
+        0.701466805470015
+      ]
+    },
+    {
+      "col": "occupation",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Sales"
+      ],
+      "target_share": 0.1121345858329354,
+      "form": "pin",
+      "covered_train_prob": 0.1122031122031122
+    },
+    {
+      "col": "marital.status",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Married-civ-spouse"
+      ],
+      "target_share": 0.0014099988225872234,
+      "form": "set",
+      "covered_train_prob": 0.46133633633633636
+    }
+  ],
+  "counts": {
+    "train": 215,
+    "val": 22,
+    "trainval": 237,
+    "test": 120
+  },
+  "selectivity": {
+    "train": 0.0073368823368823366,
+    "val": 0.006754682222904513,
+    "trainval": 0.007278646233223795,
+    "test": 0.0073705546342362266
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "0.5-1%",
+  "realized_band_test": "0.5-1%"
+}

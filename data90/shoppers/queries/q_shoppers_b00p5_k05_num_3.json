@@ -1,0 +1,105 @@
+{
+  "query_id": "q_shoppers_b00p5_k05_num_3",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.005,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "numeric",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.2169921875,
+  "predicates": [
+    {
+      "col": "ExitRates",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.005018056202515392,
+        0.02540524860240497
+      ],
+      "target_share": 0.4466404567932385,
+      "quantile_range": [
+        0.055995035948257624,
+        0.5026354927414961
+      ]
+    },
+    {
+      "col": "ProductRelated_Duration",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        603.7317219879836
+      ],
+      "target_share": 0.4466404567932385,
+      "quantile_range": [
+        0.05810408940657894,
+        0.5047445461998175
+      ]
+    },
+    {
+      "col": "PageValues",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        361.76373
+      ],
+      "target_share": 0.4466404567932385,
+      "quantile_range": [
+        0.16876510778654114,
+        0.6154055645797796
+      ]
+    },
+    {
+      "col": "Administrative_Duration",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        239.30082902695366,
+        337.52356425679466
+      ],
+      "target_share": 0.03979534151149259,
+      "quantile_range": [
+        0.9084463528843224,
+        0.948241694395815
+      ]
+    },
+    {
+      "col": "Informational_Duration",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        2549.375
+      ],
+      "target_share": 0.4466404567932385,
+      "quantile_range": [
+        0.10463833430918018,
+        0.5512787911024186
+      ]
+    }
+  ],
+  "counts": {
+    "train": 50,
+    "val": 5,
+    "trainval": 55,
+    "test": 7
+  },
+  "selectivity": {
+    "train": 0.005006508460999299,
+    "val": 0.0045045045045045045,
+    "trainval": 0.00495629449400739,
+    "test": 0.0056772100567721
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "0.5-1%",
+  "realized_band_test": "0.5-1%"
+}

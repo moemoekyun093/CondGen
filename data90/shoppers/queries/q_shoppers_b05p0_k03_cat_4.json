@@ -1,0 +1,68 @@
+{
+  "query_id": "q_shoppers_b05p0_k03_cat_4",
+  "dataset": "shoppers",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.54375,
+  "predicates": [
+    {
+      "col": "Weekend",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "True"
+      ],
+      "target_share": 0.21404823351503993,
+      "form": "pin",
+      "covered_train_prob": 0.2323019925903675
+    },
+    {
+      "col": "Month",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Nov"
+      ],
+      "target_share": 0.21404823351503993,
+      "form": "pin",
+      "covered_train_prob": 0.24601982577350556
+    },
+    {
+      "col": "Browser",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.21404823351503993,
+      "form": "set",
+      "covered_train_prob": 0.6437368579152899
+    }
+  ],
+  "counts": {
+    "train": 422,
+    "val": 38,
+    "trainval": 460,
+    "test": 67
+  },
+  "selectivity": {
+    "train": 0.042254931410834085,
+    "val": 0.03423423423423423,
+    "trainval": 0.04145264485897089,
+    "test": 0.054339010543390104
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "5-10%"
+}

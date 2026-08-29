@@ -1,0 +1,130 @@
+{
+  "query_id": "q_diabetes_b02p0_k06_cat_0",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.02,
+  "arity": 6,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.808544921875,
+  "predicates": [
+    {
+      "col": "diag_2",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "276"
+      ],
+      "target_share": 0.5902704901762892,
+      "form": "pin",
+      "covered_train_prob": 0.06551040796606561
+    },
+    {
+      "col": "pioglitazone",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.5902704901762892,
+      "form": "set",
+      "covered_train_prob": 0.9280531944512684
+    },
+    {
+      "col": "discharge_disposition_id",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1"
+      ],
+      "target_share": 0.5902704901762892,
+      "form": "set",
+      "covered_train_prob": 0.5923614864311567
+    },
+    {
+      "col": "diag_1",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "428",
+        "414",
+        "786",
+        "410",
+        "486",
+        "427",
+        "491",
+        "715",
+        "682",
+        "780",
+        "996",
+        "434",
+        "276",
+        "250.8",
+        "38",
+        "599",
+        "584",
+        "250.6",
+        "V57",
+        "518",
+        "577",
+        "820",
+        "493",
+        "435",
+        "574",
+        "562",
+        "296",
+        "250.7",
+        "250.13"
+      ],
+      "target_share": 0.5902704901762892,
+      "form": "set",
+      "covered_train_prob": 0.5953749651975957
+    },
+    {
+      "col": "tolbutamide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.5902704901762892,
+      "form": "set",
+      "covered_train_prob": 0.9997870911741102
+    },
+    {
+      "col": "readmitted",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0",
+        "1"
+      ],
+      "target_share": 0.5902704901762892,
+      "form": "set",
+      "covered_train_prob": 1.0
+    }
+  ],
+  "counts": {
+    "train": 1070,
+    "val": 379,
+    "trainval": 1449,
+    "test": 366
+  },
+  "selectivity": {
+    "train": 0.01752403413092255,
+    "val": 0.01862133346435415,
+    "trainval": 0.01779835896428045,
+    "test": 0.017981723494153484
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "1-2%",
+  "realized_band_test": "1-2%"
+}

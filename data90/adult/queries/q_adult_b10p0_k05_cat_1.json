@@ -1,0 +1,90 @@
+{
+  "query_id": "q_adult_b10p0_k05_cat_1",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "categorical",
+  "share_scheme": "skewed",
+  "calibration_exponent": 3.0375,
+  "predicates": [
+    {
+      "col": "marital.status",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Married-civ-spouse"
+      ],
+      "target_share": 0.4171694530498805,
+      "form": "pin",
+      "covered_train_prob": 0.46133633633633636
+    },
+    {
+      "col": "native.country",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Mexico"
+      ],
+      "target_share": 0.030286563611439637,
+      "form": "pin",
+      "covered_train_prob": 0.019553644553644552
+    },
+    {
+      "col": "race",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " White"
+      ],
+      "target_share": 0.4171694530498805,
+      "form": "set",
+      "covered_train_prob": 0.8552074802074802
+    },
+    {
+      "col": "workclass",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Private"
+      ],
+      "target_share": 0.4171694530498805,
+      "form": "pin",
+      "covered_train_prob": 0.6968331968331969
+    },
+    {
+      "col": "relationship",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Husband"
+      ],
+      "target_share": 0.4171694530498805,
+      "form": "pin",
+      "covered_train_prob": 0.40605378105378104
+    }
+  ],
+  "counts": {
+    "train": 185,
+    "val": 18,
+    "trainval": 203,
+    "test": 101
+  },
+  "selectivity": {
+    "train": 0.006313131313131313,
+    "val": 0.00552655818237642,
+    "trainval": 0.0062344522588372595,
+    "test": 0.0062035501504821575
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "0.5-1%",
+  "realized_band_test": "0.5-1%"
+}

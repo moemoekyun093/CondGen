@@ -1,0 +1,135 @@
+{
+  "query_id": "q_diabetes_b40p0_k08_mix_1",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 8,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.54375,
+  "predicates": [
+    {
+      "col": "number_emergency",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        2.0
+      ],
+      "target_share": 0.9038992123908279,
+      "quantile_range": [
+        0.06851146512616493,
+        0.9724106775169928
+      ]
+    },
+    {
+      "col": "number_inpatient",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        5.5131292784525066
+      ],
+      "target_share": 0.9038992123908279,
+      "quantile_range": [
+        0.08123208039369709,
+        0.985131292784525
+      ]
+    },
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        4.0,
+        9.0
+      ],
+      "target_share": 0.9038992123908279,
+      "quantile_range": [
+        0.08669763571004395,
+        0.9905968481008719
+      ]
+    },
+    {
+      "col": "time_in_hospital",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.0,
+        9.0
+      ],
+      "target_share": 0.9038992123908279,
+      "quantile_range": [
+        0.014123316871116072,
+        0.918022529261944
+      ]
+    },
+    {
+      "col": "A1Cresult",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "empty"
+      ],
+      "target_share": 0.49299220882468814,
+      "form": "set",
+      "covered_train_prob": 0.8333578997363206
+    },
+    {
+      "col": "acarbose",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.9038992123908279,
+      "form": "pin",
+      "covered_train_prob": 0.9970192764375441
+    },
+    {
+      "col": "change",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.9038992123908279,
+      "form": "pin",
+      "covered_train_prob": 0.5390687695507623
+    },
+    {
+      "col": "nateglinide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.9038992123908279,
+      "form": "pin",
+      "covered_train_prob": 0.992957631143648
+    }
+  ],
+  "counts": {
+    "train": 24548,
+    "val": 8108,
+    "trainval": 32656,
+    "test": 8190
+  },
+  "selectivity": {
+    "train": 0.4020373736877446,
+    "val": 0.39836879084164495,
+    "trainval": 0.4011202279762197,
+    "test": 0.4023779109757296
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

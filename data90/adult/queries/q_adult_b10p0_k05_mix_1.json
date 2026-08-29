@@ -1,0 +1,109 @@
+{
+  "query_id": "q_adult_b10p0_k05_mix_1",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.0558349609375,
+  "predicates": [
+    {
+      "col": "capital.gain",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        32906.539157117746
+      ],
+      "target_share": 0.9840578494265458,
+      "quantile_range": [
+        0.008046597664612505,
+        0.9921044470911583
+      ]
+    },
+    {
+      "col": "capital.loss",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        4211.032630438016
+      ],
+      "target_share": 0.9840578494265458,
+      "quantile_range": [
+        0.015326742510379795,
+        0.9993845919369256
+      ]
+    },
+    {
+      "col": "education",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " HS-grad",
+        " Some-college",
+        " Bachelors",
+        " Masters",
+        " Assoc-voc",
+        " 11th",
+        " Assoc-acdm",
+        " 10th",
+        " 7th-8th",
+        " Prof-school",
+        " 9th",
+        " 12th",
+        " Doctorate",
+        " 5th-6th"
+      ],
+      "target_share": 0.9840578494265458,
+      "form": "set",
+      "covered_train_prob": 0.9931408681408682
+    },
+    {
+      "col": "sex",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Male"
+      ],
+      "target_share": 0.9377401683606204,
+      "form": "pin",
+      "covered_train_prob": 0.668953043953044
+    },
+    {
+      "col": "occupation",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Prof-specialty"
+      ],
+      "target_share": 0.9840578494265458,
+      "form": "pin",
+      "covered_train_prob": 0.12817362817362818
+    }
+  ],
+  "counts": {
+    "train": 2336,
+    "val": 227,
+    "trainval": 2563,
+    "test": 1274
+  },
+  "selectivity": {
+    "train": 0.07971607971607972,
+    "val": 0.0696960392999693,
+    "trainval": 0.07871379871625564,
+    "test": 0.07825072170014127
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "5-10%"
+}

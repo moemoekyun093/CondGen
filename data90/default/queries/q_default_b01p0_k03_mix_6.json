@@ -1,0 +1,71 @@
+{
+  "query_id": "q_default_b01p0_k03_mix_6",
+  "dataset": "default",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.01,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 0.9456665039062502,
+  "predicates": [
+    {
+      "col": "BILL_AMT2",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        9031.511401479773,
+        32767.94790819624
+      ],
+      "target_share": 0.23418316113972168,
+      "quantile_range": [
+        0.3547030180902918,
+        0.5888861792300135
+      ]
+    },
+    {
+      "col": "PAY_5",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "-1"
+      ],
+      "target_share": 0.23418316113972168,
+      "form": "pin",
+      "covered_train_prob": 0.18345679012345678
+    },
+    {
+      "col": "MARRIAGE",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1"
+      ],
+      "target_share": 0.23418316113972168,
+      "form": "pin",
+      "covered_train_prob": 0.45580246913580247
+    }
+  ],
+  "counts": {
+    "train": 372,
+    "val": 36,
+    "trainval": 408,
+    "test": 50
+  },
+  "selectivity": {
+    "train": 0.015308641975308642,
+    "val": 0.013333333333333334,
+    "trainval": 0.015111111111111112,
+    "test": 0.016666666666666666
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "1-2%",
+  "realized_band_test": "1-2%"
+}

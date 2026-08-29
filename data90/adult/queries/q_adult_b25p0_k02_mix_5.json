@@ -1,0 +1,60 @@
+{
+  "query_id": "q_adult_b25p0_k02_mix_5",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 2,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.7182853698730467,
+  "predicates": [
+    {
+      "col": "fnlwgt",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        73580.50217847596,
+        226865.18197674077
+      ],
+      "target_share": 0.6078194010026936,
+      "quantile_range": [
+        0.11346289750527525,
+        0.7212822985079689
+      ]
+    },
+    {
+      "col": "relationship",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Husband"
+      ],
+      "target_share": 0.6078194010026936,
+      "form": "pin",
+      "covered_train_prob": 0.40605378105378104
+    }
+  ],
+  "counts": {
+    "train": 7327,
+    "val": 803,
+    "trainval": 8130,
+    "test": 3958
+  },
+  "selectivity": {
+    "train": 0.25003412503412503,
+    "val": 0.24654590113601474,
+    "trainval": 0.24968520622830995,
+    "test": 0.2431054603525582
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "10-25%"
+}

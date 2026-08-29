@@ -1,0 +1,85 @@
+{
+  "query_id": "q_diabetes_b05p0_k04_mix_4",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.05,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.54375,
+  "predicates": [
+    {
+      "col": "time_in_hospital",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        5.0,
+        14.0
+      ],
+      "target_share": 0.31469057506087555,
+      "quantile_range": [
+        0.6825469760582559,
+        0.9972375511191314
+      ]
+    },
+    {
+      "col": "num_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.0,
+        3.889915468296142
+      ],
+      "target_share": 0.31469057506087555,
+      "quantile_range": [
+        0.5642085796220859,
+        0.8788991546829614
+      ]
+    },
+    {
+      "col": "pioglitazone",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "No"
+      ],
+      "target_share": 0.31469057506087555,
+      "form": "set",
+      "covered_train_prob": 0.9280531944512684
+    },
+    {
+      "col": "insulin",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Steady"
+      ],
+      "target_share": 0.31469057506087555,
+      "form": "pin",
+      "covered_train_prob": 0.3002341997084787
+    }
+  ],
+  "counts": {
+    "train": 3037,
+    "val": 1060,
+    "trainval": 4097,
+    "test": 1024
+  },
+  "selectivity": {
+    "train": 0.04973877724823531,
+    "val": 0.05208077433302216,
+    "trainval": 0.050324276519432026,
+    "test": 0.05030952146998133
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "5-10%"
+}

@@ -1,0 +1,96 @@
+{
+  "query_id": "q_fb-comments_b00p5_k05_mix_5",
+  "dataset": "fb-comments",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.005,
+  "arity": 5,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.05361328125,
+  "predicates": [
+    {
+      "col": "num_15",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        103.46737578290575,
+        132.78169206223328
+      ],
+      "target_share": 0.06134824142677687,
+      "quantile_range": [
+        0.777415500138914,
+        0.8387637415656909
+      ]
+    },
+    {
+      "col": "num_33",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        2.0,
+        38.85819960220002
+      ],
+      "target_share": 0.49768039096079253,
+      "quantile_range": [
+        0.24803600824360755,
+        0.7457163992044
+      ]
+    },
+    {
+      "col": "cat_10",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1"
+      ],
+      "target_share": 0.49768039096079253,
+      "form": "pin",
+      "covered_train_prob": 0.13663583653687564
+    },
+    {
+      "col": "cat_1",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "1"
+      ],
+      "target_share": 0.49768039096079253,
+      "form": "pin",
+      "covered_train_prob": 0.1222611299306005
+    },
+    {
+      "col": "cat_12",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.49768039096079253,
+      "form": "set",
+      "covered_train_prob": 0.8445298722389272
+    }
+  ],
+  "counts": {
+    "train": 134,
+    "val": 15,
+    "trainval": 149,
+    "test": 17
+  },
+  "selectivity": {
+    "train": 0.0008500488460904097,
+    "val": 0.0007605719501064801,
+    "trainval": 0.0008400992331980153,
+    "test": 0.0008620689655172414
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": false,
+  "realized_band": "<0.5%",
+  "realized_band_test": "<0.5%"
+}

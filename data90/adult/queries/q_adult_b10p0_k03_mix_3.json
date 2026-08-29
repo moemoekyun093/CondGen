@@ -1,0 +1,71 @@
+{
+  "query_id": "q_adult_b10p0_k03_mix_3",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.1,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 1.4503906249999998,
+  "predicates": [
+    {
+      "col": "hours.per.week",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        40.0,
+        64.14136158276845
+      ],
+      "target_share": 0.4339126822761538,
+      "quantile_range": [
+        0.5343700408893831,
+        0.9682827231655369
+      ]
+    },
+    {
+      "col": "race",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " White"
+      ],
+      "target_share": 0.4339126822761538,
+      "form": "set",
+      "covered_train_prob": 0.8552074802074802
+    },
+    {
+      "col": "relationship",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Own-child"
+      ],
+      "target_share": 0.18828021584008642,
+      "form": "pin",
+      "covered_train_prob": 0.15537128037128037
+    }
+  ],
+  "counts": {
+    "train": 1893,
+    "val": 225,
+    "trainval": 2118,
+    "test": 1037
+  },
+  "selectivity": {
+    "train": 0.0645986895986896,
+    "val": 0.06908197727970525,
+    "trainval": 0.0650471422867848,
+    "test": 0.06369387629752472
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "5-10%",
+  "realized_band_test": "5-10%"
+}

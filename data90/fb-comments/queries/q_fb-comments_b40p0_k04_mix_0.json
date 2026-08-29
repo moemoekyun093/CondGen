@@ -1,0 +1,85 @@
+{
+  "query_id": "q_fb-comments_b40p0_k04_mix_0",
+  "dataset": "fb-comments",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 4,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "equal",
+  "calibration_exponent": 1.14697265625,
+  "predicates": [
+    {
+      "col": "num_17",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        23.198037028916698,
+        1247.6018399123789
+      ],
+      "target_share": 0.7689417164826565,
+      "quantile_range": [
+        0.18066012342972232,
+        0.9496018399123789
+      ]
+    },
+    {
+      "col": "num_25",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        -7.0,
+        2024.112851587058
+      ],
+      "target_share": 0.7689417164826565,
+      "quantile_range": [
+        0.23055194868056145,
+        0.999493665163218
+      ]
+    },
+    {
+      "col": "cat_14",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.7689417164826565,
+      "form": "pin",
+      "covered_train_prob": 0.8578261586673264
+    },
+    {
+      "col": "cat_3",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "0"
+      ],
+      "target_share": 0.7689417164826565,
+      "form": "pin",
+      "covered_train_prob": 0.8503216229589312
+    }
+  ],
+  "counts": {
+    "train": 63115,
+    "val": 7934,
+    "trainval": 71049,
+    "test": 7842
+  },
+  "selectivity": {
+    "train": 0.40037935015668813,
+    "val": 0.4022918568096542,
+    "trainval": 0.40059201623815965,
+    "test": 0.39766734279918864
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

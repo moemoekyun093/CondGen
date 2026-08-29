@@ -1,0 +1,71 @@
+{
+  "query_id": "q_diabetes_b02p0_k03_mix_3",
+  "dataset": "diabetes",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.02,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.796875,
+  "predicates": [
+    {
+      "col": "num_procedures",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.0,
+        3.0
+      ],
+      "target_share": 0.21041012719406998,
+      "quantile_range": [
+        0.622142767238255,
+        0.832552894432325
+      ]
+    },
+    {
+      "col": "change",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Ch"
+      ],
+      "target_share": 0.45870483668048456,
+      "form": "pin",
+      "covered_train_prob": 0.4609312304492376
+    },
+    {
+      "col": "glyburide",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "Steady"
+      ],
+      "target_share": 0.45870483668048456,
+      "form": "pin",
+      "covered_train_prob": 0.09038798539117902
+    }
+  ],
+  "counts": {
+    "train": 1534,
+    "val": 521,
+    "trainval": 2055,
+    "test": 500
+  },
+  "selectivity": {
+    "train": 0.02512324145498616,
+    "val": 0.025598191912740136,
+    "trainval": 0.025241979069424655,
+    "test": 0.02456519603026432
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "2-5%",
+  "realized_band_test": "2-5%"
+}

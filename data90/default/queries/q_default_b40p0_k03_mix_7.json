@@ -1,0 +1,71 @@
+{
+  "query_id": "q_default_b40p0_k03_mix_7",
+  "dataset": "default",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.4,
+  "arity": 3,
+  "arity_tier": "primary",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.050045585632324224,
+  "predicates": [
+    {
+      "col": "PAY_AMT4",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        150216.9741137757
+      ],
+      "target_share": 0.9886013855611905,
+      "quantile_range": [
+        0.0028949794845133728,
+        0.9914963650457038
+      ]
+    },
+    {
+      "col": "MARRIAGE",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.9886013855611905,
+      "form": "pin",
+      "covered_train_prob": 0.5312345679012346
+    },
+    {
+      "col": "SEX",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        "2"
+      ],
+      "target_share": 0.9773326995335055,
+      "form": "pin",
+      "covered_train_prob": 0.6022633744855967
+    }
+  ],
+  "counts": {
+    "train": 7630,
+    "val": 819,
+    "trainval": 8449,
+    "test": 947
+  },
+  "selectivity": {
+    "train": 0.3139917695473251,
+    "val": 0.30333333333333334,
+    "trainval": 0.31292592592592594,
+    "test": 0.31566666666666665
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "25-50%",
+  "realized_band_test": "25-50%"
+}

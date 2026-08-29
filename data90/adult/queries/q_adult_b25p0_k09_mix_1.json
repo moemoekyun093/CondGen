@@ -1,0 +1,155 @@
+{
+  "query_id": "q_adult_b25p0_k09_mix_1",
+  "dataset": "adult",
+  "suite": "sampled_arity",
+  "split_root": "data90",
+  "layout": "81/9/10",
+  "target_band": 0.25,
+  "arity": 9,
+  "arity_tier": "extension",
+  "modality_mix": "mixed",
+  "share_scheme": "skewed",
+  "calibration_exponent": 0.061669921875,
+  "predicates": [
+    {
+      "col": "fnlwgt",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        14893.249538023409,
+        1059934.1819517836
+      ],
+      "target_share": 0.9946709584313017,
+      "quantile_range": [
+        0.0017531952004308687,
+        0.9964241536317325
+      ]
+    },
+    {
+      "col": "hours.per.week",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        1.490018791781998,
+        90.20487202573862
+      ],
+      "target_share": 0.9946709584313017,
+      "quantile_range": [
+        0.0007000268454028544,
+        0.9953709852767045
+      ]
+    },
+    {
+      "col": "age",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        17.0,
+        89.12560790277941
+      ],
+      "target_share": 0.9946709584313017,
+      "quantile_range": [
+        0.004782546507935424,
+        0.9994535049392371
+      ]
+    },
+    {
+      "col": "capital.gain",
+      "modality": "numeric",
+      "op": "between",
+      "values": [
+        0.0,
+        56666.31056400877
+      ],
+      "target_share": 0.9946709584313017,
+      "quantile_range": [
+        0.00022957826349190497,
+        0.9949005366947936
+      ]
+    },
+    {
+      "col": "relationship",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Husband",
+        " Not-in-family",
+        " Own-child",
+        " Unmarried",
+        " Wife"
+      ],
+      "target_share": 0.958154411902497,
+      "form": "set",
+      "covered_train_prob": 0.9696628446628446
+    },
+    {
+      "col": "marital.status",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Married-civ-spouse",
+        " Never-married",
+        " Divorced",
+        " Separated",
+        " Widowed",
+        " Married-spouse-absent"
+      ],
+      "target_share": 0.9946709584313017,
+      "form": "set",
+      "covered_train_prob": 0.9993174993174992
+    },
+    {
+      "col": "sex",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Male"
+      ],
+      "target_share": 0.9946709584313017,
+      "form": "pin",
+      "covered_train_prob": 0.668953043953044
+    },
+    {
+      "col": "workclass",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " Private"
+      ],
+      "target_share": 0.9946709584313017,
+      "form": "pin",
+      "covered_train_prob": 0.6968331968331969
+    },
+    {
+      "col": "education",
+      "modality": "categorical",
+      "op": "in",
+      "values": [
+        " HS-grad"
+      ],
+      "target_share": 0.9946709584313017,
+      "form": "pin",
+      "covered_train_prob": 0.32036582036582034
+    }
+  ],
+  "counts": {
+    "train": 4399,
+    "val": 543,
+    "trainval": 4942,
+    "test": 2499
+  },
+  "selectivity": {
+    "train": 0.15011602511602512,
+    "val": 0.16671783850168867,
+    "trainval": 0.1517766653358312,
+    "test": 0.1534918002579694
+  },
+  "c_min": 50,
+  "sel_max": 0.5,
+  "gate": "counts.train >= c_min and sel.train,sel.test <= sel_max",
+  "accepted": true,
+  "reject_reason": null,
+  "test_supported": true,
+  "realized_band": "10-25%",
+  "realized_band_test": "10-25%"
+}

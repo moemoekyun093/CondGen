@@ -27,7 +27,7 @@ def main() -> None:
         raise FileNotFoundError(query_dir)
     found = 0
     seen_bands = set()
-    for path in sorted(query_dir.glob("qf_*.json")):
+    for path in sorted(query_dir.glob("q*.json")):
         with path.open("r", encoding="utf-8") as stream:
             query = json.load(stream)
         if query.get("accepted", True):

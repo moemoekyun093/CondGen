@@ -129,7 +129,8 @@ def load_structured_query_suite(
     core_indices = np.load(core_indices_path)
 
     queries = []
-    for path in sorted(query_dir.glob("qf_*.json")):
+    # Legacy suites use qf_*.json; the sampled-arity release uses q_*.json.
+    for path in sorted(query_dir.glob("q*.json")):
         with path.open("r", encoding="utf-8") as stream:
             specification = json.load(stream)
         query_id = specification["query_id"]

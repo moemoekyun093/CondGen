@@ -9,9 +9,13 @@ from tabdiff.doob_query_curriculum import (
 
 
 class DummyQuery:
-    def __init__(self, query_id, target_band):
+    def __init__(self, query_id, target_band, *, train_selectivity=None, realized_band=None):
         self.query_id = query_id
         self.specification = {"target_band": target_band}
+        if train_selectivity is not None:
+            self.specification["selectivity"] = {"train": train_selectivity}
+        if realized_band is not None:
+            self.specification["realized_band"] = realized_band
 
 
 class QueryCurriculumTest(unittest.TestCase):
@@ -65,6 +69,30 @@ class QueryCurriculumTest(unittest.TestCase):
             broad_min_band=0.1,
         )
         self.assertEqual(sampler.phase_and_probabilities(1)[1], (0.0, 0.0, 1.0))
+
+    def test_realized_selectivity_overrides_nominal_target(self):
+        query = DummyQuery(
+            "nominally-tight-but-realized-broad",
+            0.005,
+            train_selectivity=0.268,
+            realized_band="25-50%",
+        )
+        sampler = QueryCurriculumSampler(
+            [query],
+            total_steps=3,
+            warmup_steps=1,
+            transition_steps=1,
+            warmup_probabilities=(0.5, 0.3, 0.2),
+            final_probabilities=(0.15, 0.25, 0.6),
+            tight_max_band=0.01,
+            broad_min_band=0.1,
+            selectivity_source="realized_train",
+        )
+        self.assertEqual(sampler.summary()["broad"], {"25-50%": 1})
+        sampled, bucket, band, _ = sampler.sample(1, random.Random(0))
+        self.assertIs(sampled, query)
+        self.assertEqual(bucket, "broad")
+        self.assertEqual(band, "25-50%")
 
 
 if __name__ == "__main__":

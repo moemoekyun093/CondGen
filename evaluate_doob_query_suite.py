@@ -76,7 +76,7 @@ def parse_methods(values: list[str]) -> dict[str, Path]:
 
 def load_queries(query_dir: Path) -> list[tuple[Path, dict]]:
     queries = []
-    for path in sorted(query_dir.glob("qf_*.json")):
+    for path in sorted(query_dir.glob("q*.json")):
         with path.open("r", encoding="utf-8") as stream:
             query = json.load(stream)
         if query.get("accepted", True):

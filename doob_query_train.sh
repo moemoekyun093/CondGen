@@ -40,6 +40,7 @@ FACTOR="${FACTOR:-2}"
 BOUND_EMBEDDING_DIM="${BOUND_EMBEDDING_DIM:-8}"
 ACTIVE_EMBEDDING_DIM="${ACTIVE_EMBEDDING_DIM:-8}"
 QUERY_SAMPLING_MODE="${QUERY_SAMPLING_MODE:-curriculum}"
+CURRICULUM_SELECTIVITY_SOURCE="${CURRICULUM_SELECTIVITY_SOURCE:-target_band}"
 CURRICULUM_WARMUP_STEPS="${CURRICULUM_WARMUP_STEPS:-2000}"
 CURRICULUM_TRANSITION_STEPS="${CURRICULUM_TRANSITION_STEPS:-4000}"
 CURRICULUM_WARMUP_PROBABILITIES="${CURRICULUM_WARMUP_PROBABILITIES:-0.70,0.25,0.05}"
@@ -60,6 +61,7 @@ echo "Training steps   : ${STEPS}"
 echo "Batch size       : ${BATCH_SIZE}"
 echo "Learning rate    : ${LR}"
 echo "Query sampling   : ${QUERY_SAMPLING_MODE}"
+echo "Selectivity source: ${CURRICULUM_SELECTIVITY_SOURCE}"
 echo "Curriculum       : warmup=${CURRICULUM_WARMUP_STEPS}, transition=${CURRICULUM_TRANSITION_STEPS}"
 echo "Warm probabilities: ${CURRICULUM_WARMUP_PROBABILITIES} (broad,medium,tight)"
 echo "Final probabilities: ${CURRICULUM_FINAL_PROBABILITIES} (broad,medium,tight)"
@@ -97,6 +99,7 @@ python -u train_doob_query_suite.py \
     --bound-embedding-dim "${BOUND_EMBEDDING_DIM}" \
     --active-embedding-dim "${ACTIVE_EMBEDDING_DIM}" \
     --query-sampling-mode "${QUERY_SAMPLING_MODE}" \
+    --curriculum-selectivity-source "${CURRICULUM_SELECTIVITY_SOURCE}" \
     --curriculum-warmup-steps "${CURRICULUM_WARMUP_STEPS}" \
     --curriculum-transition-steps "${CURRICULUM_TRANSITION_STEPS}" \
     --curriculum-warmup-probabilities "${CURRICULUM_WARMUP_PROBABILITIES}" \

@@ -6,6 +6,14 @@ from collections import defaultdict
 
 
 BUCKET_ORDER = ("broad", "medium", "tight")
+REALIZED_BAND_VALUES = {
+    "0.5-1%": 0.005,
+    "1-2%": 0.01,
+    "2-5%": 0.02,
+    "5-10%": 0.05,
+    "10-25%": 0.10,
+    "25-50%": 0.25,
+}
 
 
 def parse_bucket_probabilities(text: str) -> tuple[float, float, float]:
@@ -38,6 +46,26 @@ def resolution_bucket(
     return "medium"
 
 
+def query_selectivity_stratum(query, source: str):
+    """Return the numeric bucket value and within-bucket stratum label."""
+    specification = query.specification
+    if source == "target_band":
+        value = float(specification["target_band"])
+        return value, value
+    if source != "realized_train":
+        raise ValueError(f"unsupported curriculum selectivity source {source!r}")
+    selectivity = specification.get("selectivity", {}).get("train")
+    if selectivity is None:
+        raise ValueError(
+            f"query {query.query_id} has no selectivity.train for realized curriculum"
+        )
+    realized_band = specification.get("realized_band")
+    if realized_band in REALIZED_BAND_VALUES:
+        return REALIZED_BAND_VALUES[realized_band], realized_band
+    value = float(selectivity)
+    return value, f"{value:.8g}"
+
+
 class QueryCurriculumSampler:
     """Sample bucket, then selectivity band, then query within that band."""
 
@@ -52,6 +80,7 @@ class QueryCurriculumSampler:
         final_probabilities: tuple[float, float, float],
         tight_max_band: float,
         broad_min_band: float,
+        selectivity_source: str = "target_band",
     ):
         if total_steps <= 0 or warmup_steps < 0 or transition_steps < 0:
             raise ValueError("curriculum step counts are invalid")
@@ -68,13 +97,14 @@ class QueryCurriculumSampler:
         self.final_probabilities = final_probabilities
         self.tight_max_band = tight_max_band
         self.broad_min_band = broad_min_band
+        self.selectivity_source = selectivity_source
         self.by_bucket = {
             bucket: defaultdict(list) for bucket in BUCKET_ORDER
         }
         for query in queries:
-            band = float(query.specification["target_band"])
+            value, band = query_selectivity_stratum(query, selectivity_source)
             bucket = resolution_bucket(
-                band,
+                value,
                 tight_max_band=tight_max_band,
                 broad_min_band=broad_min_band,
             )

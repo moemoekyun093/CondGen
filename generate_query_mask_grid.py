@@ -80,7 +80,7 @@ def main() -> None:
         raise ValueError("core training indices do not address the real table")
 
     by_band: dict[float, list[dict]] = defaultdict(list)
-    for path in sorted(source_dir.glob("qf_*.json")):
+    for path in sorted(source_dir.glob("q*.json")):
         with path.open("r", encoding="utf-8") as stream:
             query = json.load(stream)
         if query.get("accepted", True):
@@ -194,7 +194,7 @@ def main() -> None:
                 generated.append((derived, train_rows, manifest_row))
 
     expected = {query["query_id"] for query, _, _ in generated}
-    existing = {path.stem for path in output_dir.glob("qf_*.json")}
+    existing = {path.stem for path in output_dir.glob("q*.json")}
     stale = existing - expected
     if stale:
         raise ValueError(

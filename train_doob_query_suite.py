@@ -94,6 +94,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--curriculum-tight-max-band", type=float, default=0.01)
     parser.add_argument("--curriculum-broad-min-band", type=float, default=0.10)
     parser.add_argument(
+        "--curriculum-selectivity-source",
+        choices=("target_band", "realized_train"),
+        default="target_band",
+        help="Stratify by requested target or measured training selectivity",
+    )
+    parser.add_argument(
         "--curriculum-reference-metadata",
         default=None,
         help="Reuse the selectivity schedule stored in an earlier metadata.json",
@@ -290,6 +296,7 @@ def main() -> None:
             final_probabilities=final_probabilities,
             tight_max_band=args.curriculum_tight_max_band,
             broad_min_band=args.curriculum_broad_min_band,
+            selectivity_source=args.curriculum_selectivity_source,
         )
     x_all = runtime.dataset.X.float().to(device)
     architecture = {
@@ -381,12 +388,17 @@ def main() -> None:
     guide_count = sum(p.numel() for p in numerical.parameters()) + sum(
         p.numel() for p in categorical.parameters()
     )
-    print(f"Loaded {len(queries)} accepted full-arity queries")
-    for query in queries:
-        print(
-            f"  {query.query_id}: target_band="
-            f"{query.specification.get('target_band')} support={len(query.eligible_indices)}"
-        )
+    print(f"Loaded {len(queries)} accepted structured queries")
+    supports = np.asarray([len(query.eligible_indices) for query in queries])
+    arities = np.asarray([len(query.specification["predicates"]) for query in queries])
+    print(
+        "Query support min/median/max: "
+        f"{supports.min()}/{int(np.median(supports))}/{supports.max()}"
+    )
+    print(
+        f"Query arity min/max: {arities.min()}/{arities.max()} | "
+        f"curriculum selectivity: {args.curriculum_selectivity_source}"
+    )
     if curriculum is None:
         print("Query sampling: legacy uniform over queries")
     else:
@@ -436,13 +448,13 @@ def main() -> None:
     for step in range(1, args.steps + 1):
         if curriculum is None:
             query = random.choice(queries)
-            target_band = float(query.specification["target_band"])
+            sampled_band = query.specification["target_band"]
             bucket = "uniform"
             phase = "uniform"
         else:
-            query, bucket, target_band, phase = curriculum.sample(step, random)
+            query, bucket, sampled_band, phase = curriculum.sample(step, random)
         query_counts[query.query_id] += 1
-        band_key = str(target_band)
+        band_key = str(sampled_band)
         band_counts[band_key] = band_counts.get(band_key, 0) + 1
         if bucket in bucket_counts:
             bucket_counts[bucket] += 1
@@ -535,7 +547,7 @@ def main() -> None:
             print(
                 f"step={step:05d} query={query.query_id} support={len(eligible)} "
                 f"mask={mask_kind} arity={active_arity} "
-                f"phase={phase} bucket={bucket} band={target_band:g} "
+                f"phase={phase} bucket={bucket} band={sampled_band} "
                 f"total={loss_value:.6f} gradient_mse={gradient_loss.item():.6f} "
                 f"categorical_loss={categorical_loss.item():.6f} "
                 f"smoothed_total={smoothed_loss:.6f}",

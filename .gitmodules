@@ -1,3 +1,9 @@
 [submodule "baselines/harpoon"]
 	path = baselines/harpoon
 	url = https://github.com/adis98/Harpoon.git
+[submodule "baselines/diffputer"]
+	path = baselines/diffputer
+	url = https://github.com/hengruizhang98/DiffPuter.git
+[submodule "baselines/great"]
+	path = baselines/great
+	url = https://github.com/kathrinse/be_great.git

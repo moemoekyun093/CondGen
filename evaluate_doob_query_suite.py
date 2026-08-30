@@ -16,6 +16,7 @@ from tabdiff.doob_h_evaluation import (
     raw_modality_constraint_report,
 )
 from tabdiff.metrics import TabMetrics
+from tabdiff.query_split import load_query_split
 
 
 def parse_args() -> argparse.Namespace:
@@ -58,6 +59,13 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Reuse Shape/Trend/C2ST values already present in output per_query.csv",
     )
+    parser.add_argument(
+        "--test-supported-only",
+        action="store_true",
+        help="Evaluate only queries marked as supported by the held-out test split",
+    )
+    parser.add_argument("--query-split-manifest", default=None)
+    parser.add_argument("--query-split", choices=("train", "test"), default=None)
     return parser.parse_args()
 
 
@@ -74,12 +82,19 @@ def parse_methods(values: list[str]) -> dict[str, Path]:
     return methods
 
 
-def load_queries(query_dir: Path) -> list[tuple[Path, dict]]:
+def load_queries(
+    query_dir: Path,
+    *,
+    test_supported_only: bool = False,
+    query_ids: set[str] | None = None,
+) -> list[tuple[Path, dict]]:
     queries = []
     for path in sorted(query_dir.glob("q*.json")):
         with path.open("r", encoding="utf-8") as stream:
             query = json.load(stream)
-        if query.get("accepted", True):
+        if query.get("accepted", True) and (
+            not test_supported_only or query.get("test_supported", False)
+        ) and (query_ids is None or query["query_id"] in query_ids):
             queries.append((path, query))
     if not queries:
         raise ValueError(f"no accepted queries found in {query_dir}")
@@ -226,6 +241,10 @@ def make_plots(grouped: pd.DataFrame, output_dir: Path, group_by: str) -> None:
 
 def main() -> None:
     args = parse_args()
+    if (args.query_split_manifest is None) != (args.query_split is None):
+        raise ValueError(
+            "--query-split-manifest and --query-split must be supplied together"
+        )
     if args.filtered_min_rows <= 0:
         raise ValueError("filtered-min-rows must be positive")
     query_dir = Path(args.query_dir)
@@ -252,7 +271,21 @@ def main() -> None:
         if not path.exists():
             raise FileNotFoundError(path)
 
-    queries = load_queries(query_dir)
+    selected_query_ids = None
+    if args.query_split_manifest is not None:
+        selected_query_ids = set(
+            load_query_split(args.query_split_manifest, args.query_split)
+        )
+    queries = load_queries(
+        query_dir,
+        test_supported_only=args.test_supported_only,
+        query_ids=selected_query_ids,
+    )
+    if selected_query_ids is not None and len(queries) != len(selected_query_ids):
+        raise ValueError(
+            f"query split selects {len(selected_query_ids)} ids but "
+            f"{len(queries)} accepted query files were loaded"
+        )
     real = pd.read_csv(real_path)
     with info_path.open("r", encoding="utf-8") as stream:
         info = json.load(stream)
@@ -286,8 +319,12 @@ def main() -> None:
         arity = int(query.get("arity", len(query["predicates"])))
         real_report, real_mask = raw_constraint_report(real, query)
         conditional_real = real.loc[real_mask].reset_index(drop=True)
-        if len(conditional_real) < 2:
-            raise ValueError(f"fewer than two real rows satisfy {query_id}")
+        reference_metrics_available = len(conditional_real) >= 2
+        if not reference_metrics_available:
+            print(
+                f"Reference-based metrics unavailable for {query_id}: "
+                f"conditional test rows={len(conditional_real)}"
+            )
         reference_path = reference_dir / f"{query_id}.csv"
         conditional_real.to_csv(reference_path, index=False)
 
@@ -315,7 +352,16 @@ def main() -> None:
             constraint_report = payload["constraint_report"]
             modality_report = payload["modality_report"]
             cached = existing_full_metrics.get((label, query_id))
-            if cached is not None and str(cached.samples) == str(samples_path):
+            if not reference_metrics_available:
+                metrics = {
+                    "density/Shape": float("nan"),
+                    "density/Trend": float("nan"),
+                    "density/Overall": float("nan"),
+                    "c2st": float("nan"),
+                    "c2st_xgb": float("nan"),
+                    "c2st_xgb_auc": float("nan"),
+                }
+            elif cached is not None and str(cached.samples) == str(samples_path):
                 metrics = {
                     "density/Shape": float(cached.shape),
                     "density/Trend": float(cached.trend),
@@ -376,6 +422,7 @@ def main() -> None:
                     "num_categorical_constraints": modality_report["categorical"]["num_constraints"],
                     "generated_rows": len(samples),
                     "conditional_real_rows": len(conditional_real),
+                    "reference_metrics_available": reference_metrics_available,
                     "conditional_real_rate": real_report["joint_hit_rate"],
                     "raw_joint_hit_rate": hit_rate,
                     "violation_rate": 1.0 - hit_rate,
@@ -427,13 +474,15 @@ def main() -> None:
         .to_string()
     )
     grouping_column = args.group_by
-    grouped = aggregate(per_query, ["method", grouping_column])
+    by_selectivity_band = aggregate(per_query, ["method", "target_band"])
+    by_arity = aggregate(per_query, ["method", "arity"])
+    grouped = (
+        by_selectivity_band if grouping_column == "target_band" else by_arity
+    )
     overall = aggregate(per_query, ["method"])
     per_query.to_csv(output_dir / "per_query.csv", index=False)
-    grouped_filename = (
-        "by_selectivity_band.csv" if grouping_column == "target_band" else "by_arity.csv"
-    )
-    grouped.to_csv(output_dir / grouped_filename, index=False)
+    by_selectivity_band.to_csv(output_dir / "by_selectivity_band.csv", index=False)
+    by_arity.to_csv(output_dir / "by_arity.csv", index=False)
     overall.to_csv(output_dir / "overall.csv", index=False)
     relative_grouped = None
     if args.baseline_method is not None:
@@ -488,11 +537,17 @@ def main() -> None:
         json.dump(
             {
                 "query_directory": str(query_dir),
+                "test_supported_only": args.test_supported_only,
+                "query_split_manifest": args.query_split_manifest,
+                "query_split": args.query_split,
+                "reference_data": str(real_path),
                 "num_queries": len(queries),
                 "methods": list(methods),
                 "overall": overall.to_dict(orient="records"),
                 "group_by": grouping_column,
                 "grouped": grouped.to_dict(orient="records"),
+                "by_selectivity_band": by_selectivity_band.to_dict(orient="records"),
+                "by_arity": by_arity.to_dict(orient="records"),
                 "baseline_method": args.baseline_method,
                 "filtered_feasible_evaluation": {
                     "minimum_rows_per_side": args.filtered_min_rows,

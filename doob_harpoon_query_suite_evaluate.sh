@@ -20,6 +20,22 @@ SUITE_EVAL_DIR="${SUITE_EVAL_DIR:-evaluations/${DATANAME}/doob_vs_harpoon_query_
 REAL_DATA="${REAL_DATA:-synthetic/${DATANAME}/real.csv}"
 INFO_FILE="${INFO_FILE:-data/${DATANAME}/info.json}"
 EVAL_GROUP_BY="${EVAL_GROUP_BY:-target_band}"
+EVAL_BASELINE_METHOD="${EVAL_BASELINE_METHOD:-}"
+
+QUERY_FILTER_ARGS=()
+if [ -n "${QUERY_SPLIT_MANIFEST:-}" ]; then
+    QUERY_FILTER_ARGS+=(
+        --query-split-manifest "${QUERY_SPLIT_MANIFEST}"
+        --query-split "${QUERY_SPLIT:?QUERY_SPLIT is required with QUERY_SPLIT_MANIFEST}"
+    )
+fi
+if [ "${QUERY_TEST_SUPPORTED_ONLY:-0}" = "1" ]; then
+    QUERY_FILTER_ARGS+=(--test-supported-only)
+fi
+BASELINE_ARGS=()
+if [ -n "${EVAL_BASELINE_METHOD}" ]; then
+    BASELINE_ARGS+=(--baseline-method "${EVAL_BASELINE_METHOD}")
+fi
 
 mkdir -p evaluations/slurm "${SUITE_EVAL_DIR}"
 
@@ -30,6 +46,8 @@ python -u evaluate_doob_query_suite.py \
     --real-data "${REAL_DATA}" \
     --info-file "${INFO_FILE}" \
     --group-by "${EVAL_GROUP_BY}" \
+    "${QUERY_FILTER_ARGS[@]}" \
+    "${BASELINE_ARGS[@]}" \
     --output-dir "${SUITE_EVAL_DIR}"
 
 echo "Modality columns are included in the grouped evaluation CSV:"

@@ -24,7 +24,19 @@ NUM_TIMESTEPS="${NUM_TIMESTEPS:-}"
 SEED_BASE="${SEED_BASE:-10000}"
 SEED_BY_ARITY="${SEED_BY_ARITY:-0}"
 
-mapfile -t QUERY_FILES < <(python list_accepted_queries.py "${QUERY_DIR}")
+QUERY_LIST_ARGS=()
+if [ -n "${QUERY_SPLIT_MANIFEST:-}" ]; then
+    QUERY_LIST_ARGS+=(
+        --query-split-manifest "${QUERY_SPLIT_MANIFEST}"
+        --query-split "${QUERY_SPLIT:?QUERY_SPLIT is required with QUERY_SPLIT_MANIFEST}"
+    )
+fi
+if [ "${QUERY_TEST_SUPPORTED_ONLY:-0}" = "1" ]; then
+    QUERY_LIST_ARGS+=(--test-supported-only)
+fi
+mapfile -t QUERY_FILES < <(
+    python list_accepted_queries.py "${QUERY_DIR}" "${QUERY_LIST_ARGS[@]}"
+)
 IFS=',' read -r -a MODEL_SPECS <<< "${GUIDE_SPECS}"
 NUM_QUERIES="${#QUERY_FILES[@]}"
 NUM_MODELS="${#MODEL_SPECS[@]}"

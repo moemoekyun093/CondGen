@@ -40,6 +40,8 @@ FACTOR="${FACTOR:-2}"
 BOUND_EMBEDDING_DIM="${BOUND_EMBEDDING_DIM:-8}"
 ACTIVE_EMBEDDING_DIM="${ACTIVE_EMBEDDING_DIM:-8}"
 QUERY_SAMPLING_MODE="${QUERY_SAMPLING_MODE:-curriculum}"
+QUERY_SPLIT_MANIFEST="${QUERY_SPLIT_MANIFEST:-}"
+QUERY_SPLIT="${QUERY_SPLIT:-}"
 CURRICULUM_SELECTIVITY_SOURCE="${CURRICULUM_SELECTIVITY_SOURCE:-target_band}"
 CURRICULUM_WARMUP_STEPS="${CURRICULUM_WARMUP_STEPS:-2000}"
 CURRICULUM_TRANSITION_STEPS="${CURRICULUM_TRANSITION_STEPS:-4000}"
@@ -61,6 +63,9 @@ echo "Training steps   : ${STEPS}"
 echo "Batch size       : ${BATCH_SIZE}"
 echo "Learning rate    : ${LR}"
 echo "Query sampling   : ${QUERY_SAMPLING_MODE}"
+if [ -n "${QUERY_SPLIT_MANIFEST}" ]; then
+    echo "Query split      : ${QUERY_SPLIT} from ${QUERY_SPLIT_MANIFEST}"
+fi
 echo "Selectivity source: ${CURRICULUM_SELECTIVITY_SOURCE}"
 echo "Curriculum       : warmup=${CURRICULUM_WARMUP_STEPS}, transition=${CURRICULUM_TRANSITION_STEPS}"
 echo "Warm probabilities: ${CURRICULUM_WARMUP_PROBABILITIES} (broad,medium,tight)"
@@ -83,11 +88,19 @@ REFERENCE_ARGS=()
 if [ -n "${CURRICULUM_REFERENCE_METADATA}" ]; then
     REFERENCE_ARGS+=(--curriculum-reference-metadata "${CURRICULUM_REFERENCE_METADATA}")
 fi
+QUERY_SPLIT_ARGS=()
+if [ -n "${QUERY_SPLIT_MANIFEST}" ]; then
+    QUERY_SPLIT_ARGS+=(
+        --query-split-manifest "${QUERY_SPLIT_MANIFEST}"
+        --query-split "${QUERY_SPLIT}"
+    )
+fi
 
 python -u train_doob_query_suite.py \
     --dataname "${DATANAME}" \
     --base-ckpt "${BASE_CKPT}" \
     --query-dir "${QUERY_DIR}" \
+    "${QUERY_SPLIT_ARGS[@]}" \
     --output-dir "${OUTPUT_DIR}" \
     --steps "${STEPS}" \
     --batch-size "${BATCH_SIZE}" \

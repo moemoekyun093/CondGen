@@ -29,6 +29,7 @@ from tabdiff.doob_query_masking import (
     sample_predicate_mask,
 )
 from tabdiff.doob_query_suite import _model_column_names, load_structured_query_suite
+from tabdiff.query_split import load_query_split
 from tabdiff.models.doob_h_transform import (
     StructuredCategoricalHTransformGuide,
     StructuredNumericalHScoreGuide,
@@ -47,6 +48,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--base-exp-name", default="ft_periodic_seed0")
     parser.add_argument("--query-dir", default="data90/shoppers/queries_full")
     parser.add_argument("--query-id", action="append", default=[])
+    parser.add_argument(
+        "--query-split-manifest",
+        default=None,
+        help="Optional manifest defining disjoint train/test query-id partitions",
+    )
+    parser.add_argument(
+        "--query-split",
+        choices=("train", "test"),
+        default=None,
+        help="Partition to load from --query-split-manifest",
+    )
     parser.add_argument(
         "--target-band",
         type=float,
@@ -227,6 +239,12 @@ def save_checkpoint(path, numerical, categorical, metadata, step, loss, ema):
 def main() -> None:
     args = parse_args()
     apply_reference_curriculum(args)
+    if (args.query_split_manifest is None) != (args.query_split is None):
+        raise ValueError(
+            "--query-split-manifest and --query-split must be supplied together"
+        )
+    if args.query_split_manifest is not None and args.query_id:
+        raise ValueError("query-id cannot be combined with a query split manifest")
     if min(args.steps, args.batch_size, args.h_candidate_batch_size) <= 0:
         raise ValueError("steps and batch sizes must be positive")
     if args.predicate_mask_mode == "mixed":
@@ -251,12 +269,26 @@ def main() -> None:
     )
     runtime = load_doob_runtime(args.dataname, base_checkpoint, device)
     tokenizer = frozen_ft_tokenizer(runtime)
+    selected_query_ids = args.query_id or None
+    if args.query_split_manifest is not None:
+        selected_query_ids = load_query_split(
+            args.query_split_manifest,
+            args.query_split,
+        )
     queries = load_structured_query_suite(
         args.query_dir,
         runtime,
-        query_ids=args.query_id or None,
+        query_ids=selected_query_ids,
         target_band=args.target_band,
     )
+    if selected_query_ids is not None:
+        loaded_ids = {query.query_id for query in queries}
+        missing_ids = sorted(set(selected_query_ids) - loaded_ids)
+        if missing_ids:
+            raise ValueError(
+                "query selection contains ids absent from the accepted suite: "
+                f"{missing_ids[:5]}"
+            )
     numerical_names, categorical_names = _model_column_names(runtime.info)
     core_indices = None
     query_hit_matrices = None
@@ -344,6 +376,8 @@ def main() -> None:
         "query_suite": {
             "directory": str(Path(args.query_dir)),
             "query_ids": [query.query_id for query in queries],
+            "split_manifest": args.query_split_manifest,
+            "split": args.query_split,
             "target_band": args.target_band,
             "sampling": (
                 "curriculum_bucket_then_uniform_band_then_uniform_query_then_"

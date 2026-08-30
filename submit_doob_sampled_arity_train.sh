@@ -7,8 +7,10 @@ mkdir -p logs
 
 DATANAME="${DATANAME:-shoppers}"
 MODEL_NAME="${MODEL_NAME:-ft_periodic_seed0}"
-GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_sampled_arity_realized_curriculum_d48_l2_8000}"
+GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_sampled_arity_qsplit_train_realized_curriculum_d48_l2_8000}"
 QUERY_DIR="${QUERY_DIR:-data90/${DATANAME}/queries}"
+QUERY_SPLIT_MANIFEST="${QUERY_SPLIT_MANIFEST:-data90/${DATANAME}/query_splits/sampled_arity_stratified_80_20_seed42.json}"
+QUERY_SPLIT=train
 STEPS="${STEPS:-8000}"
 BATCH_SIZE="${BATCH_SIZE:-1024}"
 LR="${LR:-1e-3}"
@@ -26,7 +28,21 @@ CURRICULUM_FINAL_PROBABILITIES="${CURRICULUM_FINAL_PROBABILITIES:-0.15,0.25,0.60
 # second random mask; keep mixed masking available only through the legacy flag.
 PREDICATE_MASK_MODE=full
 
+if [ ! -f "${QUERY_SPLIT_MANIFEST}" ]; then
+    echo "ERROR: query split manifest not found: ${QUERY_SPLIT_MANIFEST}"
+    exit 1
+fi
+TRAIN_QUERY_COUNT=$(python list_accepted_queries.py \
+    "${QUERY_DIR}" \
+    --query-split-manifest "${QUERY_SPLIT_MANIFEST}" \
+    --query-split train | wc -l)
+TEST_QUERY_COUNT=$(python list_accepted_queries.py \
+    "${QUERY_DIR}" \
+    --query-split-manifest "${QUERY_SPLIT_MANIFEST}" \
+    --query-split test | wc -l)
+
 export DATANAME MODEL_NAME GUIDE_DIR_NAME QUERY_DIR STEPS BATCH_SIZE LR
+export QUERY_SPLIT_MANIFEST QUERY_SPLIT
 export QUERY_SAMPLING_MODE CURRICULUM_SELECTIVITY_SOURCE
 export CURRICULUM_WARMUP_STEPS CURRICULUM_TRANSITION_STEPS
 export CURRICULUM_WARMUP_PROBABILITIES CURRICULUM_FINAL_PROBABILITIES
@@ -40,6 +56,8 @@ echo "Sampled-arity Doob training submitted"
 echo "Job             : ${JOB_ID}"
 echo "Dataset         : ${DATANAME}"
 echo "Query suite     : ${QUERY_DIR}"
+echo "Query split     : ${QUERY_SPLIT} from ${QUERY_SPLIT_MANIFEST}"
+echo "Query counts    : train=${TRAIN_QUERY_COUNT}, held-out test=${TEST_QUERY_COUNT}"
 echo "Optimizer steps : ${STEPS}"
 echo "Batch size      : ${BATCH_SIZE}"
 echo "Masking         : disabled (queries used exactly as written)"

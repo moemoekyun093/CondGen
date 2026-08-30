@@ -26,8 +26,17 @@ GUIDANCE_SCALE="${HARPOON_GUIDANCE_SCALE:-0.2}"
 SEED_BASE="${SEED_BASE:-10000}"
 
 QUERY_LIST_ARGS=()
+if [ -n "${QUERY_SPLIT_MANIFEST:-}" ]; then
+    QUERY_LIST_ARGS+=(
+        --query-split-manifest "${QUERY_SPLIT_MANIFEST}"
+        --query-split "${QUERY_SPLIT:?QUERY_SPLIT is required with QUERY_SPLIT_MANIFEST}"
+    )
+fi
 if [ -n "${QUERY_TARGET_BAND:-}" ]; then
     QUERY_LIST_ARGS+=(--target-band "${QUERY_TARGET_BAND}")
+fi
+if [ "${QUERY_TEST_SUPPORTED_ONLY:-0}" = "1" ]; then
+    QUERY_LIST_ARGS+=(--test-supported-only)
 fi
 mapfile -t QUERY_FILES < <(
     python list_accepted_queries.py "${QUERY_DIR}" "${QUERY_LIST_ARGS[@]}"

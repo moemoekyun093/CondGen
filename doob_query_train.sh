@@ -43,6 +43,7 @@ ACTIVE_EMBEDDING_DIM="${ACTIVE_EMBEDDING_DIM:-8}"
 QUERY_SAMPLING_MODE="${QUERY_SAMPLING_MODE:-curriculum}"
 QUERY_SPLIT_MANIFEST="${QUERY_SPLIT_MANIFEST:-}"
 QUERY_SPLIT="${QUERY_SPLIT:-}"
+QUERY_ID="${QUERY_ID:-}"
 CURRICULUM_SELECTIVITY_SOURCE="${CURRICULUM_SELECTIVITY_SOURCE:-target_band}"
 CURRICULUM_WARMUP_STEPS="${CURRICULUM_WARMUP_STEPS:-2000}"
 CURRICULUM_TRANSITION_STEPS="${CURRICULUM_TRANSITION_STEPS:-4000}"
@@ -67,6 +68,9 @@ echo "Learning rate    : ${LR}"
 echo "Query sampling   : ${QUERY_SAMPLING_MODE}"
 if [ -n "${QUERY_SPLIT_MANIFEST}" ]; then
     echo "Query split      : ${QUERY_SPLIT} from ${QUERY_SPLIT_MANIFEST}"
+fi
+if [ -n "${QUERY_ID}" ]; then
+    echo "Fixed query      : ${QUERY_ID}"
 fi
 echo "Selectivity source: ${CURRICULUM_SELECTIVITY_SOURCE}"
 echo "Curriculum       : warmup=${CURRICULUM_WARMUP_STEPS}, transition=${CURRICULUM_TRANSITION_STEPS}"
@@ -97,12 +101,21 @@ if [ -n "${QUERY_SPLIT_MANIFEST}" ]; then
         --query-split "${QUERY_SPLIT}"
     )
 fi
+QUERY_ID_ARGS=()
+if [ -n "${QUERY_ID}" ]; then
+    if [ -n "${QUERY_SPLIT_MANIFEST}" ]; then
+        echo "ERROR: QUERY_ID cannot be combined with QUERY_SPLIT_MANIFEST"
+        exit 1
+    fi
+    QUERY_ID_ARGS+=(--query-id "${QUERY_ID}")
+fi
 
 python -u train_doob_query_suite.py \
     --dataname "${DATANAME}" \
     --base-ckpt "${BASE_CKPT}" \
     --query-dir "${QUERY_DIR}" \
     "${QUERY_SPLIT_ARGS[@]}" \
+    "${QUERY_ID_ARGS[@]}" \
     --output-dir "${OUTPUT_DIR}" \
     --steps "${STEPS}" \
     --batch-size "${BATCH_SIZE}" \

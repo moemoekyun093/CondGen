@@ -66,6 +66,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--query-split-manifest", default=None)
     parser.add_argument("--query-split", choices=("train", "test"), default=None)
+    parser.add_argument(
+        "--query-id",
+        action="append",
+        default=[],
+        help="Evaluate only these query ids; repeat for multiple queries",
+    )
     return parser.parse_args()
 
 
@@ -245,6 +251,8 @@ def main() -> None:
         raise ValueError(
             "--query-split-manifest and --query-split must be supplied together"
         )
+    if args.query_id and args.query_split_manifest is not None:
+        raise ValueError("query-id cannot be combined with a query split manifest")
     if args.filtered_min_rows <= 0:
         raise ValueError("filtered-min-rows must be positive")
     query_dir = Path(args.query_dir)
@@ -271,7 +279,7 @@ def main() -> None:
         if not path.exists():
             raise FileNotFoundError(path)
 
-    selected_query_ids = None
+    selected_query_ids = set(args.query_id) if args.query_id else None
     if args.query_split_manifest is not None:
         selected_query_ids = set(
             load_query_split(args.query_split_manifest, args.query_split)

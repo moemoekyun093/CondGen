@@ -417,7 +417,8 @@ def main() -> None:
                 "random_predicate_active_probability": (
                     args.random_predicate_active_probability
                 ),
-                "shared_by_optimizer_step_batch": True,
+                "shared_by_query_subbatch": True,
+                "shared_by_optimizer_step_batch": args.queries_per_step == 1,
             },
         },
         "objective": {

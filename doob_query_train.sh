@@ -32,6 +32,7 @@ fi
 QUERY_DIR="${QUERY_DIR:-data90/${DATANAME}/queries_full}"
 STEPS="${STEPS:-12000}"
 BATCH_SIZE="${BATCH_SIZE:-1024}"
+QUERIES_PER_STEP="${QUERIES_PER_STEP:-1}"
 LR="${LR:-1e-3}"
 D_TOKEN="${D_TOKEN:-48}"
 NUM_LAYERS="${NUM_LAYERS:-2}"
@@ -61,6 +62,7 @@ echo "Query suite      : ${QUERY_DIR}"
 echo "Output           : ${OUTPUT_DIR}"
 echo "Training steps   : ${STEPS}"
 echo "Batch size       : ${BATCH_SIZE}"
+echo "Queries per step : ${QUERIES_PER_STEP}"
 echo "Learning rate    : ${LR}"
 echo "Query sampling   : ${QUERY_SAMPLING_MODE}"
 if [ -n "${QUERY_SPLIT_MANIFEST}" ]; then
@@ -104,6 +106,7 @@ python -u train_doob_query_suite.py \
     --output-dir "${OUTPUT_DIR}" \
     --steps "${STEPS}" \
     --batch-size "${BATCH_SIZE}" \
+    --queries-per-step "${QUERIES_PER_STEP}" \
     --lr "${LR}" \
     --d-token "${D_TOKEN}" \
     --num-layers "${NUM_LAYERS}" \

@@ -7,12 +7,13 @@ mkdir -p logs
 
 DATANAME="${DATANAME:-shoppers}"
 MODEL_NAME="${MODEL_NAME:-ft_periodic_seed0}"
-GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_sampled_arity_qsplit_train_realized_curriculum_d48_l2_8000}"
+GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_sampled_arity_qsplit_multiq8_realized_curriculum_d48_l2_8000}"
 QUERY_DIR="${QUERY_DIR:-data90/${DATANAME}/queries}"
 QUERY_SPLIT_MANIFEST="${QUERY_SPLIT_MANIFEST:-data90/${DATANAME}/query_splits/sampled_arity_stratified_80_20_seed42.json}"
 QUERY_SPLIT=train
 STEPS="${STEPS:-8000}"
 BATCH_SIZE="${BATCH_SIZE:-1024}"
+QUERIES_PER_STEP="${QUERIES_PER_STEP:-8}"
 LR="${LR:-1e-3}"
 
 # Same three-phase curriculum as the previous tight schedule, with the final
@@ -22,12 +23,16 @@ CURRICULUM_SELECTIVITY_SOURCE=realized_train
 CURRICULUM_WARMUP_STEPS="${CURRICULUM_WARMUP_STEPS:-1000}"
 CURRICULUM_TRANSITION_STEPS="${CURRICULUM_TRANSITION_STEPS:-2000}"
 CURRICULUM_WARMUP_PROBABILITIES="${CURRICULUM_WARMUP_PROBABILITIES:-0.50,0.30,0.20}"
-CURRICULUM_FINAL_PROBABILITIES="${CURRICULUM_FINAL_PROBABILITIES:-0.15,0.25,0.60}"
+CURRICULUM_FINAL_PROBABILITIES="${CURRICULUM_FINAL_PROBABILITIES:-0.30,0.30,0.40}"
 
 # Each sampled-arity query already specifies its active columns. Do not apply a
 # second random mask; keep mixed masking available only through the legacy flag.
 PREDICATE_MASK_MODE=full
 
+if [ "$((BATCH_SIZE % QUERIES_PER_STEP))" -ne 0 ]; then
+    echo "ERROR: BATCH_SIZE must be divisible by QUERIES_PER_STEP"
+    exit 1
+fi
 if [ ! -f "${QUERY_SPLIT_MANIFEST}" ]; then
     echo "ERROR: query split manifest not found: ${QUERY_SPLIT_MANIFEST}"
     exit 1
@@ -41,7 +46,7 @@ TEST_QUERY_COUNT=$(python list_accepted_queries.py \
     --query-split-manifest "${QUERY_SPLIT_MANIFEST}" \
     --query-split test | wc -l)
 
-export DATANAME MODEL_NAME GUIDE_DIR_NAME QUERY_DIR STEPS BATCH_SIZE LR
+export DATANAME MODEL_NAME GUIDE_DIR_NAME QUERY_DIR STEPS BATCH_SIZE QUERIES_PER_STEP LR
 export QUERY_SPLIT_MANIFEST QUERY_SPLIT
 export QUERY_SAMPLING_MODE CURRICULUM_SELECTIVITY_SOURCE
 export CURRICULUM_WARMUP_STEPS CURRICULUM_TRANSITION_STEPS
@@ -60,6 +65,7 @@ echo "Query split     : ${QUERY_SPLIT} from ${QUERY_SPLIT_MANIFEST}"
 echo "Query counts    : train=${TRAIN_QUERY_COUNT}, held-out test=${TEST_QUERY_COUNT}"
 echo "Optimizer steps : ${STEPS}"
 echo "Batch size      : ${BATCH_SIZE}"
+echo "Batch structure : ${QUERIES_PER_STEP} distinct queries x $((BATCH_SIZE / QUERIES_PER_STEP)) rows"
 echo "Masking         : disabled (queries used exactly as written)"
 echo "Warm curriculum : ${CURRICULUM_WARMUP_PROBABILITIES} (broad,medium,tight)"
 echo "Final curriculum: ${CURRICULUM_FINAL_PROBABILITIES} (broad,medium,tight)"

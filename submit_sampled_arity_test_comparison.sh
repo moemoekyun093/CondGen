@@ -7,9 +7,9 @@ cd /scratch/work/agrawaa4/TabDiff
 DATANAME="${DATANAME:-shoppers}"
 MODEL_NAME="${MODEL_NAME:-ft_periodic_seed0}"
 QUERY_DIR="${QUERY_DIR:-data90/${DATANAME}/queries}"
-DOOB_LABEL="${DOOB_LABEL:-doob_sampled_arity_qsplit_8000}"
+DOOB_LABEL="${DOOB_LABEL:-doob_sampled_arity_qsplit_multiq8_8000}"
 HARPOON_LABEL="${HARPOON_LABEL:-harpoon_eta02}"
-DOOB_GUIDE_DIR="${DOOB_GUIDE_DIR:-tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/doob_sampled_arity_qsplit_train_realized_curriculum_d48_l2_8000}"
+DOOB_GUIDE_DIR="${DOOB_GUIDE_DIR:-tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/doob_sampled_arity_qsplit_multiq8_realized_curriculum_d48_l2_8000}"
 QUERY_SPLIT_MANIFEST="${QUERY_SPLIT_MANIFEST:-data90/${DATANAME}/query_splits/sampled_arity_stratified_80_20_seed42.json}"
 QUERY_SPLIT=test
 SUITE_SAMPLE_ROOT="${SUITE_SAMPLE_ROOT:-conditional_samples/${DATANAME}/sampled_arity_unseen_query_comparison}"

@@ -206,6 +206,7 @@ def main() -> None:
         "raw_joint_violation_rate": float(1.0 - joint.mean()),
         "guidance_strength": float(args.guidance_strength),
         "num_timesteps": int(runtime.diffusion.num_timesteps),
+        "seed": int(args.seed),
     }
     with output.with_suffix(".constraints.json").open("w", encoding="utf-8") as stream:
         json.dump(report, stream, indent=2)

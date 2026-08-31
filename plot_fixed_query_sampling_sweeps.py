@@ -8,6 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import matplotlib.pyplot as plt
+from matplotlib.ticker import PercentFormatter
 import numpy as np
 import pandas as pd
 
@@ -49,16 +50,21 @@ def histogram_grid(records, lower, upper, bins, title, output):
     rows = int(np.ceil(len(records) / columns))
     fig, axes = plt.subplots(
         rows, columns, figsize=(5.2 * columns, 4.2 * rows),
-        squeeze=False, constrained_layout=True,
+        squeeze=False, constrained_layout=True, sharey=True,
     )
     for axis, record in zip(axes.flat, records):
+        in_view = int(
+            ((record["values"] >= view_lower) & (record["values"] <= view_upper)).sum()
+        )
         axis.hist(record["values"], bins=edges, color="tab:blue", alpha=0.78)
         axis.axvspan(lower, upper, color="tab:green", alpha=0.24)
         axis.axvline(lower, color="tab:green", linestyle="--", linewidth=1.1)
         axis.axvline(upper, color="tab:green", linestyle="--", linewidth=1.1)
         axis.set_xlim(view_lower, view_upper)
         axis.set_title(
-            f"{record['panel']}\nraw violation = {record['violation_rate']:.2%}"
+            f"{record['panel']}\n"
+            f"raw violation = {record['violation_rate']:.2%} | "
+            f"zoom contains {in_view}/{record['generated_rows']}"
         )
         axis.set_xlabel("TabDiff quantile-normalized value")
         axis.set_ylabel("Generated rows")
@@ -75,6 +81,7 @@ def line_plot(rows, x, xlabel, output):
     axis.plot(frame[x], frame["raw_violation_rate"], marker="o", linewidth=2)
     axis.set_xlabel(xlabel)
     axis.set_ylabel("Raw constraint violation rate")
+    axis.yaxis.set_major_formatter(PercentFormatter(1.0))
     axis.set_ylim(0, min(1.0, max(0.05, frame["raw_violation_rate"].max() * 1.15)))
     axis.grid(alpha=0.25)
     fig.savefig(output, dpi=190)
@@ -131,7 +138,7 @@ def main():
         )
         step_records.append(
             {"panel": f"{steps} reverse steps, λ=1", "values": values,
-             "violation_rate": violation}
+             "violation_rate": violation, "generated_rows": count}
         )
         metric_rows.append(
             {"sweep": "reverse_steps", "reverse_steps": steps,
@@ -147,7 +154,7 @@ def main():
         )
         strength_records.append(
             {"panel": f"50 reverse steps, λ={strength:g}", "values": values,
-             "violation_rate": violation}
+             "violation_rate": violation, "generated_rows": count}
         )
         metric_rows.append(
             {"sweep": "guidance_strength", "reverse_steps": 50,

@@ -2,10 +2,10 @@
 #SBATCH --job-name=doob_query_train
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
-#SBATCH --gres=min-vram:32g,min-cuda-cc:80
+#SBATCH --gres=min-vram:16g,min-cuda-cc:70
 #SBATCH --gpus=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=32G
+#SBATCH --mem=24G
 #SBATCH --time=12:00:00
 
 set -euo pipefail

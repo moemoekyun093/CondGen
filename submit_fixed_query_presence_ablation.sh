@@ -85,9 +85,10 @@ if [ "${#TRAIN_DEPENDENCIES[@]}" -gt 0 ]; then
     SAMPLE_DEPENDENCY+=(--dependency="afterok:${TRAIN_DEPENDENCY_TEXT}")
 fi
 if [ "${#MISSING_TASKS[@]}" -gt 0 ]; then
-    ARRAY_SPEC=$(IFS=,; echo "${MISSING_TASKS[*]}")
+    MISSING_TASKS_CSV=$(IFS=,; echo "${MISSING_TASKS[*]}")
+    export MISSING_TASKS_CSV
     SAMPLE_SUBMISSION=$(sbatch --parsable "${SAMPLE_DEPENDENCY[@]}" \
-        --array="${ARRAY_SPEC}%4" sample_fixed_query_presence_checkpoints.sh)
+        sample_fixed_query_presence_checkpoints.sh)
     SAMPLE_JOB="${SAMPLE_SUBMISSION%%;*}"
     PLOT_DEPENDENCY=(--dependency="afterok:${SAMPLE_JOB}")
 else

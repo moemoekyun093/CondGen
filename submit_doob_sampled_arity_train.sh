@@ -7,11 +7,15 @@ mkdir -p logs
 
 DATANAME="${DATANAME:-shoppers}"
 MODEL_NAME="${MODEL_NAME:-ft_periodic_seed0}"
-GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_sampled_arity_qsplit_multiq8_realized_curriculum_d48_l2_8000}"
+D_TOKEN="${D_TOKEN:-48}"
+NUM_LAYERS="${NUM_LAYERS:-2}"
+N_HEAD="${N_HEAD:-4}"
+FACTOR="${FACTOR:-2}"
+STEPS="${STEPS:-8000}"
+GUIDE_DIR_NAME="${GUIDE_DIR_NAME:-doob_sampled_arity_qsplit_multiq8_realized_curriculum_d${D_TOKEN}_l${NUM_LAYERS}_${STEPS}}"
 QUERY_DIR="${QUERY_DIR:-data90/${DATANAME}/queries}"
 QUERY_SPLIT_MANIFEST="${QUERY_SPLIT_MANIFEST:-data90/${DATANAME}/query_splits/sampled_arity_stratified_80_20_seed42.json}"
 QUERY_SPLIT=train
-STEPS="${STEPS:-8000}"
 BATCH_SIZE="${BATCH_SIZE:-1024}"
 QUERIES_PER_STEP="${QUERIES_PER_STEP:-8}"
 LR="${LR:-1e-3}"
@@ -47,6 +51,7 @@ TEST_QUERY_COUNT=$(python list_accepted_queries.py \
     --query-split test | wc -l)
 
 export DATANAME MODEL_NAME GUIDE_DIR_NAME QUERY_DIR STEPS BATCH_SIZE QUERIES_PER_STEP LR
+export D_TOKEN NUM_LAYERS N_HEAD FACTOR
 export QUERY_SPLIT_MANIFEST QUERY_SPLIT
 export QUERY_SAMPLING_MODE CURRICULUM_SELECTIVITY_SOURCE
 export CURRICULUM_WARMUP_STEPS CURRICULUM_TRANSITION_STEPS
@@ -66,6 +71,7 @@ echo "Query counts    : train=${TRAIN_QUERY_COUNT}, held-out test=${TEST_QUERY_C
 echo "Optimizer steps : ${STEPS}"
 echo "Batch size      : ${BATCH_SIZE}"
 echo "Batch structure : ${QUERIES_PER_STEP} distinct queries x $((BATCH_SIZE / QUERIES_PER_STEP)) rows"
+echo "Guide config    : d_token=${D_TOKEN}, layers=${NUM_LAYERS}, heads=${N_HEAD}, factor=${FACTOR}"
 echo "Masking         : disabled (queries used exactly as written)"
 echo "Warm curriculum : ${CURRICULUM_WARMUP_PROBABILITIES} (broad,medium,tight)"
 echo "Final curriculum: ${CURRICULUM_FINAL_PROBABILITIES} (broad,medium,tight)"

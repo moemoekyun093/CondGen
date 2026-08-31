@@ -17,6 +17,7 @@ from tabdiff.doob_h_evaluation import (
 )
 from tabdiff.metrics import TabMetrics
 from tabdiff.query_split import load_query_split
+from tabdiff.query_suite_samples import replicate_sample_path
 
 
 def parse_args() -> argparse.Namespace:
@@ -49,6 +50,13 @@ def parse_args() -> argparse.Namespace:
         help="Optional method label used for paired per-query metric differences",
     )
     parser.add_argument("--alpha-beta-seed", type=int, default=0)
+    parser.add_argument(
+        "--sample-seed-base",
+        action="append",
+        type=int,
+        default=[],
+        help="Repeat for sampling replicates. The first seed uses legacy direct CSVs.",
+    )
     parser.add_argument(
         "--alpha-beta-results",
         default=None,
@@ -274,7 +282,8 @@ def main() -> None:
         if not required.issubset(alpha_beta_frame.columns):
             raise ValueError("alpha-beta results CSV is missing required columns")
         for row in alpha_beta_frame.itertuples(index=False):
-            key = (str(row.method), str(row.query_id))
+            seed_base = int(getattr(row, "seed_base", 0))
+            key = (str(row.method), str(row.query_id), seed_base)
             if key in alpha_beta_lookup:
                 raise ValueError(f"duplicate Alpha/Beta result for {key}")
             alpha_beta_lookup[key] = (
@@ -321,7 +330,7 @@ def main() -> None:
         info = json.load(stream)
     output_dir = Path(args.output_dir)
     existing_full_metrics = {}
-    existing_per_query_path = output_dir / "per_query.csv"
+    existing_per_query_path = output_dir / "per_query_seed.csv"
     if args.reuse_existing_full_metrics and existing_per_query_path.is_file():
         existing_frame = pd.read_csv(existing_per_query_path)
         cache_columns = {
@@ -330,7 +339,11 @@ def main() -> None:
         }
         if cache_columns.issubset(existing_frame.columns):
             existing_full_metrics = {
-                (str(row.method), str(row.query_id)): row
+                (
+                    str(row.method),
+                    str(row.query_id),
+                    int(getattr(row, "seed_base", 0)),
+                ): row
                 for row in existing_frame.itertuples(index=False)
             }
             print(
@@ -368,30 +381,34 @@ def main() -> None:
         reference_path = reference_dir / f"{query_id}.csv"
         conditional_real.to_csv(reference_path, index=False)
 
+        seed_bases = args.sample_seed_base or [0]
         payloads = {}
         for label, sample_dir in methods.items():
-            samples_path = sample_dir / f"{query_id}.csv"
-            if not samples_path.is_file():
-                raise FileNotFoundError(samples_path)
-            samples = pd.read_csv(samples_path)
-            if list(samples.columns) != list(real.columns):
-                raise ValueError(f"column mismatch for {samples_path}")
-            constraint_report, joint_mask = raw_constraint_report(samples, query)
-            modality_report = raw_modality_constraint_report(samples, query)
-            payloads[label] = {
-                "samples_path": samples_path,
-                "samples": samples,
-                "valid_samples": samples.loc[joint_mask].reset_index(drop=True),
-                "constraint_report": constraint_report,
-                "modality_report": modality_report,
-            }
+            for seed_index, seed_base in enumerate(seed_bases):
+                samples_path = replicate_sample_path(
+                    sample_dir, query_id, seed_base, seed_index
+                )
+                if not samples_path.is_file():
+                    raise FileNotFoundError(samples_path)
+                samples = pd.read_csv(samples_path)
+                if list(samples.columns) != list(real.columns):
+                    raise ValueError(f"column mismatch for {samples_path}")
+                constraint_report, joint_mask = raw_constraint_report(samples, query)
+                modality_report = raw_modality_constraint_report(samples, query)
+                payloads[(label, seed_base)] = {
+                    "samples_path": samples_path,
+                    "samples": samples,
+                    "valid_samples": samples.loc[joint_mask].reset_index(drop=True),
+                    "constraint_report": constraint_report,
+                    "modality_report": modality_report,
+                }
 
-        for label, payload in payloads.items():
+        for (label, seed_base), payload in payloads.items():
             samples_path = payload["samples_path"]
             samples = payload["samples"]
             constraint_report = payload["constraint_report"]
             modality_report = payload["modality_report"]
-            cached = existing_full_metrics.get((label, query_id))
+            cached = existing_full_metrics.get((label, query_id, seed_base))
             if not reference_metrics_available:
                 metrics = {
                     "density/Shape": float("nan"),
@@ -412,7 +429,7 @@ def main() -> None:
                 }
             else:
                 metrics = tabular_metrics(reference_path, samples, info)
-            alpha_key = (label, query_id)
+            alpha_key = (label, query_id, seed_base)
             if args.alpha_beta_results is not None and alpha_key not in alpha_beta_lookup:
                 raise ValueError(f"missing official SynthCity result for {alpha_key}")
             if alpha_key in alpha_beta_lookup:
@@ -456,6 +473,7 @@ def main() -> None:
                 {
                     "method": label,
                     "query_id": query_id,
+                    "seed_base": seed_base,
                     "target_band": target_band,
                     "arity": arity,
                     "mean_transformed_interval_width": mean_interval_width,
@@ -506,14 +524,55 @@ def main() -> None:
                 }
             )
 
-    per_query = pd.DataFrame(rows)
+    per_query_seed = pd.DataFrame(rows)
     print("Feasible-only Shape/Trend reliability:")
     print(
-        per_query[["method", "query_id", "filtered_reliability"]]
+        per_query_seed[["method", "query_id", "filtered_reliability"]]
         ["filtered_reliability"]
         .value_counts()
         .to_string()
     )
+    aggregation = {}
+    for column in per_query_seed.columns:
+        if column in {"method", "query_id", "seed_base"}:
+            continue
+        if column == "samples":
+            aggregation[column] = lambda values: ";".join(map(str, values))
+        elif pd.api.types.is_bool_dtype(per_query_seed[column]):
+            aggregation[column] = "first"
+        elif pd.api.types.is_numeric_dtype(per_query_seed[column]):
+            aggregation[column] = "mean"
+        else:
+            aggregation[column] = "first"
+    per_query = (
+        per_query_seed.groupby(["method", "query_id"], sort=True, as_index=False)
+        .agg(aggregation)
+    )
+    replicate_metrics = [
+        "violation_rate",
+        "numeric_joint_miss_rate",
+        "categorical_joint_miss_rate",
+        "shape",
+        "trend",
+        "overall",
+        "c2st",
+        "c2st_xgb",
+        "alpha_precision",
+        "beta_recall",
+    ]
+    replicate_standard_deviations = (
+        per_query_seed.groupby(["method", "query_id"], sort=True)[replicate_metrics]
+        .std(ddof=0)
+        .add_suffix("_seed_std")
+        .reset_index()
+    )
+    per_query = per_query.merge(
+        replicate_standard_deviations,
+        on=["method", "query_id"],
+        how="left",
+        validate="one_to_one",
+    )
+    per_query["num_sampling_seeds"] = len(args.sample_seed_base or [0])
     by_mean_interval_width = None
     if query_coordinates is not None:
         query_widths = (
@@ -561,6 +620,14 @@ def main() -> None:
             raise ValueError("no numerical interval widths are available")
         grouped = by_mean_interval_width
     overall = aggregate(per_query, ["method"])
+    sampling_seed_variability = (
+        per_query.groupby("method", sort=True)[
+            [f"{metric}_seed_std" for metric in replicate_metrics]
+        ]
+        .mean()
+        .reset_index()
+    )
+    per_query_seed.to_csv(output_dir / "per_query_seed.csv", index=False)
     per_query.to_csv(output_dir / "per_query.csv", index=False)
     by_selectivity_band.to_csv(output_dir / "by_selectivity_band.csv", index=False)
     by_arity.to_csv(output_dir / "by_arity.csv", index=False)
@@ -569,6 +636,9 @@ def main() -> None:
             output_dir / "by_mean_interval_width.csv", index=False
         )
     overall.to_csv(output_dir / "overall.csv", index=False)
+    sampling_seed_variability.to_csv(
+        output_dir / "sampling_seed_variability.csv", index=False
+    )
     relative_grouped = None
     if args.baseline_method is not None:
         difference_metrics = [
@@ -627,8 +697,13 @@ def main() -> None:
                 "query_split": args.query_split,
                 "reference_data": str(real_path),
                 "num_queries": len(queries),
+                "num_sampling_seeds": len(args.sample_seed_base or [0]),
+                "sample_seed_bases": args.sample_seed_base or [0],
                 "methods": list(methods),
                 "overall": overall.to_dict(orient="records"),
+                "sampling_seed_variability": sampling_seed_variability.to_dict(
+                    orient="records"
+                ),
                 "group_by": grouping_column,
                 "grouped": grouped.to_dict(orient="records"),
                 "by_selectivity_band": by_selectivity_band.to_dict(orient="records"),
@@ -671,11 +746,11 @@ def main() -> None:
     try:
         from tabdiff.query_suite_plots import make_query_suite_plots
 
-        make_query_suite_plots(grouped, output_dir, grouping_column)
-        if (
-            by_mean_interval_width is not None
-            and grouping_column != "mean_interval_width_bin_midpoint"
-        ):
+        # Always emit all meaningful views from the same cached evaluations.
+        # The primary grouping controls baseline-delta tables, not which plots exist.
+        make_query_suite_plots(by_selectivity_band, output_dir, "target_band")
+        make_query_suite_plots(by_arity, output_dir, "arity")
+        if by_mean_interval_width is not None:
             make_query_suite_plots(
                 by_mean_interval_width,
                 output_dir,

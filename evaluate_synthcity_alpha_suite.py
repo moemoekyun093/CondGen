@@ -13,6 +13,8 @@ from synthcity.metrics import eval_statistical
 from synthcity.plugins.core.dataloader import GenericDataLoader
 
 from tabdiff.doob_h_evaluation import raw_constraint_report
+from tabdiff.query_split import load_query_split
+from tabdiff.query_suite_samples import replicate_sample_path
 
 
 def parse_args() -> argparse.Namespace:
@@ -23,6 +25,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--info-file", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--query-split-manifest", default=None)
+    parser.add_argument("--query-split", choices=("train", "test"), default=None)
+    parser.add_argument(
+        "--sample-seed-base",
+        action="append",
+        type=int,
+        default=[],
+        help="Repeat for sampling replicates. The first seed uses legacy direct CSVs.",
+    )
     return parser.parse_args()
 
 
@@ -62,7 +73,10 @@ def synthcity_features(
     real_num = real[numerical].to_numpy()
     synthetic_num = synthetic[numerical].to_numpy()
     if categorical:
-        encoder = OneHotEncoder()
+        # Invalid/previously unseen generated labels must not abort a 5-seed
+        # suite evaluation. They map to the all-zero block and are therefore
+        # still visible to the downstream distributional metric.
+        encoder = OneHotEncoder(handle_unknown="ignore")
         schema_cat = schema_real[categorical].to_numpy().astype(str)
         real_cat = real[categorical].to_numpy().astype(str)
         synthetic_cat = synthetic[categorical].to_numpy().astype(str)
@@ -120,14 +134,22 @@ def evaluate_pair(
 
 def main() -> None:
     args = parse_args()
+    if (args.query_split_manifest is None) != (args.query_split is None):
+        raise ValueError(
+            "--query-split-manifest and --query-split must be supplied together"
+        )
     query_dir = Path(args.query_dir)
     methods = parse_methods(args.method)
     real = pd.read_csv(args.real_data)
     with open(args.info_file, "r", encoding="utf-8") as stream:
         info = json.load(stream)
-    query_paths = sorted(query_dir.glob("qf_*.json"))
+    selected_ids = None
+    if args.query_split_manifest is not None:
+        selected_ids = set(load_query_split(args.query_split_manifest, args.query_split))
+    query_paths = sorted(query_dir.glob("q*.json"))
     if not query_paths:
         raise ValueError(f"no structured queries found in {query_dir}")
+    seed_bases = args.sample_seed_base or [0]
 
     evaluator_rows = []
     for query_index, query_path in enumerate(query_paths):
@@ -136,33 +158,45 @@ def main() -> None:
         if not query.get("accepted", True):
             continue
         query_id = query["query_id"]
+        if selected_ids is not None and query_id not in selected_ids:
+            continue
         _, real_mask = raw_constraint_report(real, query)
         conditional_real = real.loc[real_mask].reset_index(drop=True)
         for method, sample_dir in methods.items():
-            sample_path = sample_dir / f"{query_id}.csv"
-            if not sample_path.is_file():
-                raise FileNotFoundError(sample_path)
-            samples = pd.read_csv(sample_path)
-            alpha_precision, beta_recall = evaluate_pair(
-                real,
-                conditional_real,
-                samples,
-                info,
-                args.seed + query_index,
-            )
-            evaluator_rows.append(
-                {
-                    "method": method,
-                    "query_id": query_id,
-                    "alpha_precision": alpha_precision,
-                    "beta_recall": beta_recall,
-                    "backend": "synthcity.metrics.eval_statistical.AlphaPrecision",
-                }
-            )
-            print(
-                f"{method}/{query_id}: alpha={alpha_precision:.6f} "
-                f"beta={beta_recall:.6f}"
-            )
+            for seed_index, seed_base in enumerate(seed_bases):
+                sample_path = replicate_sample_path(
+                    sample_dir, query_id, seed_base, seed_index
+                )
+                if not sample_path.is_file():
+                    raise FileNotFoundError(sample_path)
+                samples = pd.read_csv(sample_path)
+                alpha_precision, beta_recall = evaluate_pair(
+                    real,
+                    conditional_real,
+                    samples,
+                    info,
+                    args.seed + query_index + 100000 * seed_index,
+                )
+                evaluator_rows.append(
+                    {
+                        "method": method,
+                        "query_id": query_id,
+                        "seed_base": seed_base,
+                        "alpha_precision": alpha_precision,
+                        "beta_recall": beta_recall,
+                        "backend": "synthcity.metrics.eval_statistical.AlphaPrecision",
+                    }
+                )
+                print(
+                    f"{method}/{query_id}/seed_{seed_base}: "
+                    f"alpha={alpha_precision:.6f} beta={beta_recall:.6f}"
+                )
+
+    if selected_ids is not None:
+        found_ids = {row["query_id"] for row in evaluator_rows}
+        if found_ids != selected_ids:
+            missing = sorted(selected_ids - found_ids)
+            raise ValueError(f"query split files missing for ids: {missing[:5]}")
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)

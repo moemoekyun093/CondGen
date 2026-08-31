@@ -109,6 +109,49 @@ def plot_final_method(
     plt.close(fig)
 
 
+def plot_real_distribution_zoom(
+    *, values, lower, upper, raw_hit_rate, bins, column, output,
+):
+    """Show the unconditional real-data mass near a narrow query interval."""
+    width = upper - lower
+    plot_lower = lower - 5.0 * width
+    plot_upper = upper + 5.0 * width
+    in_view = values[(values >= plot_lower) & (values <= plot_upper)]
+    histogram_bins = max(200, bins * 4)
+    edges = np.linspace(plot_lower, plot_upper, histogram_bins + 1)
+    fig, axis = plt.subplots(figsize=(12, 5.5), constrained_layout=True)
+    axis.hist(
+        in_view,
+        bins=edges,
+        color="0.25",
+        alpha=0.82,
+        label=f"full real data in view ({len(in_view):,} rows)",
+    )
+    if len(in_view):
+        rug_height = max(1.0, axis.get_ylim()[1] * 0.035)
+        axis.vlines(
+            in_view,
+            0,
+            rug_height,
+            color="tab:blue",
+            alpha=0.12,
+            linewidth=0.45,
+        )
+    axis.axvspan(lower, upper, color="tab:green", alpha=0.24, label="query interval")
+    axis.axvline(lower, color="tab:green", linestyle="--", linewidth=1.3)
+    axis.axvline(upper, color="tab:green", linestyle="--", linewidth=1.3)
+    axis.set_xlim(plot_lower, plot_upper)
+    axis.set_xlabel(f"{column} in TabDiff quantile-normalized space")
+    axis.set_ylabel("Real rows per narrow bin")
+    axis.set_title(
+        "Unconditional real-data distribution near the query interval\n"
+        f"window = query interval ±5 widths | full-real raw hit rate = {raw_hit_rate:.2%}"
+    )
+    axis.legend()
+    fig.savefig(output, dpi=200)
+    plt.close(fig)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--series", action="append", required=True)
@@ -118,6 +161,11 @@ def main() -> None:
     parser.add_argument("--data-dir", required=True)
     parser.add_argument("--info-file", required=True)
     parser.add_argument("--base-config", required=True)
+    parser.add_argument(
+        "--real-data",
+        default=None,
+        help="Full real CSV; defaults to synthetic/DATANAME/real.csv",
+    )
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--bins", type=int, default=50)
     args = parser.parse_args()
@@ -186,6 +234,48 @@ def main() -> None:
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    real_path = (
+        Path(args.real_data)
+        if args.real_data is not None
+        else Path("synthetic") / args.dataname / "real.csv"
+    )
+    if not real_path.is_file():
+        raise FileNotFoundError(f"full real reference not found: {real_path}")
+    real_frame = pd.read_csv(real_path)
+    real_raw_values = pd.to_numeric(real_frame[column], errors="coerce").to_numpy()
+    real_raw_hits = (
+        np.isfinite(real_raw_values)
+        & (real_raw_values >= raw_lower)
+        & (real_raw_values <= raw_upper)
+    )
+    real_transformed = transform_frame(
+        real_frame, numerical_names, numerical_transform
+    )[:, column_index]
+    real_summary = pd.DataFrame(
+        [
+            {
+                "column": column,
+                "real_rows": len(real_frame),
+                "raw_lower": raw_lower,
+                "raw_upper": raw_upper,
+                "transformed_lower": lower,
+                "transformed_upper": upper,
+                "transformed_interval_width": upper - lower,
+                "raw_rows_in_interval": int(real_raw_hits.sum()),
+                "raw_hit_rate": float(real_raw_hits.mean()),
+            }
+        ]
+    )
+    real_summary.to_csv(output_dir / "real_data_interval_summary.csv", index=False)
+    plot_real_distribution_zoom(
+        values=real_transformed,
+        lower=lower,
+        upper=upper,
+        raw_hit_rate=float(real_raw_hits.mean()),
+        bins=args.bins,
+        column=column,
+        output=output_dir / "real_data_distribution_transformed_extreme_zoom.png",
+    )
     metrics = pd.DataFrame(metric_rows)
     metrics.to_csv(
         output_dir / "transformed_metrics_by_checkpoint.csv", index=False

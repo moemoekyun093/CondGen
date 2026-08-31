@@ -16,6 +16,9 @@ MLP_GUIDE_DIR="${MLP_GUIDE_DIR:-tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/doob_fixe
 ENDPOINT_GUIDE_DIR="${ENDPOINT_GUIDE_DIR:-tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/doob_fixed_exit_bound_tokens_lu_d48_l4_2000}"
 CENTER_WIDTH_GUIDE_DIR="${CENTER_WIDTH_GUIDE_DIR:-tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/doob_fixed_exit_bound_tokens_center_logwidth_d48_l4_2000}"
 TOKEN_SAMPLE_ROOT="${TOKEN_SAMPLE_ROOT:-conditional_samples/${DATANAME}/fixed_query_bound_token_ablation}"
+MLP_SAMPLE_DIR="${MLP_SAMPLE_DIR:-conditional_samples/${DATANAME}/fixed_query_bound_ablation/mlp}"
+ENDPOINT_SAMPLE_DIR="${ENDPOINT_SAMPLE_DIR:-${TOKEN_SAMPLE_ROOT}/endpoints}"
+CENTER_WIDTH_SAMPLE_DIR="${CENTER_WIDTH_SAMPLE_DIR:-${TOKEN_SAMPLE_ROOT}/center_logwidth}"
 TOKEN_EVAL_DIR="${TOKEN_EVAL_DIR:-evaluations/${DATANAME}/fixed_query_bound_token_ablation}"
 HISTOGRAM_BINS="${HISTOGRAM_BINS:-50}"
 
@@ -27,26 +30,28 @@ mkdir -p logs evaluations/slurm "${TOKEN_SAMPLE_ROOT}" "${TOKEN_EVAL_DIR}"
 
 export DATANAME MODEL_NAME QUERY_DIR QUERY_ID STEPS CHECKPOINT_EVERY BATCH_SIZE
 export NUM_SAMPLES MLP_GUIDE_DIR ENDPOINT_GUIDE_DIR CENTER_WIDTH_GUIDE_DIR TOKEN_SAMPLE_ROOT
+export MLP_SAMPLE_DIR ENDPOINT_SAMPLE_DIR CENTER_WIDTH_SAMPLE_DIR
 export TOKEN_EVAL_DIR HISTOGRAM_BINS
 export QUERIES_PER_STEP=1 LR=1e-3 D_TOKEN=48 NUM_LAYERS=4 N_HEAD=4 FACTOR=2
 export QUERY_SAMPLING_MODE=uniform PREDICATE_MASK_MODE=full
 export QUERY_ARCHITECTURE=alternating_cross_attention
 export QUERY_SPLIT_MANIFEST="" QUERY_SPLIT=""
 
-checkpoint_series_complete() {
+final_checkpoint_complete() {
     local DIRECTORY="$1"
-    local STEP
-    for STEP in $(seq 200 200 2000); do
-        if [ ! -f "${DIRECTORY}/guide_${STEP}.pt" ]; then
-            return 1
-        fi
-    done
-    return 0
+    [ -f "${DIRECTORY}/guide_2000.pt" ]
+}
+
+final_sample_complete() {
+    local DIRECTORY="$1"
+    [ -f "${DIRECTORY}/step_2000.csv" ]
 }
 
 TRAIN_DEPENDENCIES=()
-if checkpoint_series_complete "${MLP_GUIDE_DIR}"; then
-    MLP_TRAIN="reused complete checkpoints"
+if final_sample_complete "${MLP_SAMPLE_DIR}"; then
+    MLP_TRAIN="not needed; reused step-2000 sample"
+elif final_checkpoint_complete "${MLP_GUIDE_DIR}"; then
+    MLP_TRAIN="reused step-2000 checkpoint"
 else
     SUBMISSION=$(sbatch --parsable \
         --export=ALL,QUERY_ARCHITECTURE=per_token_fusion,BOUND_EMBEDDING_MODE=mlp,NUM_LAYERS=2 \
@@ -54,8 +59,10 @@ else
     MLP_TRAIN="${SUBMISSION%%;*}"
     TRAIN_DEPENDENCIES+=("${MLP_TRAIN}")
 fi
-if checkpoint_series_complete "${ENDPOINT_GUIDE_DIR}"; then
-    ENDPOINT_TRAIN="reused complete checkpoints"
+if final_sample_complete "${ENDPOINT_SAMPLE_DIR}"; then
+    ENDPOINT_TRAIN="not needed; reused step-2000 sample"
+elif final_checkpoint_complete "${ENDPOINT_GUIDE_DIR}"; then
+    ENDPOINT_TRAIN="reused step-2000 checkpoint"
 else
     SUBMISSION=$(sbatch --parsable \
         --export=ALL,QUERY_ARCHITECTURE=alternating_cross_attention,BOUND_TOKEN_PARAMETERIZATION=endpoints,NUM_LAYERS=4 \
@@ -63,8 +70,10 @@ else
     ENDPOINT_TRAIN="${SUBMISSION%%;*}"
     TRAIN_DEPENDENCIES+=("${ENDPOINT_TRAIN}")
 fi
-if checkpoint_series_complete "${CENTER_WIDTH_GUIDE_DIR}"; then
-    CENTER_WIDTH_TRAIN="reused complete checkpoints"
+if final_sample_complete "${CENTER_WIDTH_SAMPLE_DIR}"; then
+    CENTER_WIDTH_TRAIN="not needed; reused step-2000 sample"
+elif final_checkpoint_complete "${CENTER_WIDTH_GUIDE_DIR}"; then
+    CENTER_WIDTH_TRAIN="reused step-2000 checkpoint"
 else
     SUBMISSION=$(sbatch --parsable \
         --export=ALL,QUERY_ARCHITECTURE=alternating_cross_attention,BOUND_TOKEN_PARAMETERIZATION=center_logwidth,NUM_LAYERS=4 \
@@ -74,15 +83,15 @@ else
 fi
 
 MISSING_TASKS=()
-for TASK in $(seq 0 29); do
+for TASK in 9 19 29; do
     STEP=$(((TASK % 10 + 1) * 200))
     case "$((TASK / 10))" in
-        0) LABEL=ordinary_mlp ;;
-        1) LABEL=endpoints ;;
-        2) LABEL=center_logwidth ;;
+        0) SAMPLE_DIR="${MLP_SAMPLE_DIR}" ;;
+        1) SAMPLE_DIR="${ENDPOINT_SAMPLE_DIR}" ;;
+        2) SAMPLE_DIR="${CENTER_WIDTH_SAMPLE_DIR}" ;;
     esac
-    OUTPUT="${TOKEN_SAMPLE_ROOT}/${LABEL}/step_$(printf '%04d' "${STEP}").csv"
-    if [ ! -f "${OUTPUT}" ] || [ ! -f "${OUTPUT%.csv}.constraints.json" ]; then
+    OUTPUT="${SAMPLE_DIR}/step_$(printf '%04d' "${STEP}").csv"
+    if [ ! -f "${OUTPUT}" ]; then
         MISSING_TASKS+=("${TASK}")
     fi
 done
@@ -100,7 +109,7 @@ if [ "${#MISSING_TASKS[@]}" -gt 0 ]; then
     SAMPLE_JOB="${SUBMISSION%%;*}"
     PLOT_DEPENDENCY=(--dependency="afterok:${SAMPLE_JOB}")
 else
-    SAMPLE_JOB="reused all checkpoint samples"
+    SAMPLE_JOB="not submitted; reused all step-2000 samples"
     PLOT_DEPENDENCY=()
 fi
 
@@ -114,12 +123,13 @@ echo "Query             : ${QUERY_ID}"
 echo "Baseline          : ordinary MLP per-column fusion, d48/L2"
 echo "Token models      : alternating self/cross attention, d48/L4"
 echo "Training          : 2000 optimizer steps per guide"
-echo "Snapshots         : every 200 steps"
+echo "Sampling          : step 2000 only (three methods, one bundled job)"
 echo "Ordinary MLP train: ${MLP_TRAIN}"
 echo "Lower/upper train : ${ENDPOINT_TRAIN}"
 echo "Center/log-w train: ${CENTER_WIDTH_TRAIN}"
 echo "Bundled sampling  : ${SAMPLE_JOB}"
 echo "Plot              : ${PLOT_JOB}"
 echo "Samples           : ${TOKEN_SAMPLE_ROOT}"
+echo "MLP samples       : ${MLP_SAMPLE_DIR}"
 echo "Evaluation        : ${TOKEN_EVAL_DIR}"
 echo "========================================"

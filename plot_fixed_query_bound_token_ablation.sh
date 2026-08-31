@@ -12,13 +12,14 @@ export PYTHONUNBUFFERED=1
 
 RELgDIFF_PYTHON="/scratch/work/agrawaa4/conda_envs/relgdiff/bin/python"
 "${RELgDIFF_PYTHON}" -u plot_fixed_query_checkpoint_histograms.py \
-    --series "ordinary_mlp=${TOKEN_SAMPLE_ROOT}/ordinary_mlp" \
-    --series "lower_upper_tokens=${TOKEN_SAMPLE_ROOT}/endpoints" \
-    --series "center_logwidth_tokens=${TOKEN_SAMPLE_ROOT}/center_logwidth" \
+    --series "ordinary_mlp=${MLP_SAMPLE_DIR}" \
+    --series "lower_upper_tokens=${ENDPOINT_SAMPLE_DIR}" \
+    --series "center_logwidth_tokens=${CENTER_WIDTH_SAMPLE_DIR}" \
     --query-file "${QUERY_DIR}/${QUERY_ID}.json" \
     --dataname "${DATANAME}" \
     --data-dir "data/${DATANAME}" \
     --info-file "data/${DATANAME}/info.json" \
     --base-config "tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/config.pkl" \
     --output-dir "${TOKEN_EVAL_DIR}" \
+    --steps 2000 \
     --bins "${HISTOGRAM_BINS:-50}"

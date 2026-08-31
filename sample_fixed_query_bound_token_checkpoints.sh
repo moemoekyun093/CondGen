@@ -36,25 +36,28 @@ for TASK_ID in "${TASK_IDS[@]}"; do
     if [ "${SERIES_INDEX}" -eq 0 ]; then
         SERIES_LABEL="ordinary_mlp"
         GUIDE_DIR="${MLP_GUIDE_DIR}"
+        SAMPLE_DIR="${MLP_SAMPLE_DIR}"
     elif [ "${SERIES_INDEX}" -eq 1 ]; then
         SERIES_LABEL="endpoints"
         GUIDE_DIR="${ENDPOINT_GUIDE_DIR}"
+        SAMPLE_DIR="${ENDPOINT_SAMPLE_DIR}"
     elif [ "${SERIES_INDEX}" -eq 2 ]; then
         SERIES_LABEL="center_logwidth"
         GUIDE_DIR="${CENTER_WIDTH_GUIDE_DIR}"
+        SAMPLE_DIR="${CENTER_WIDTH_SAMPLE_DIR}"
     else
         echo "ERROR: invalid bundled task ${TASK_ID}"
         exit 1
     fi
 
     GUIDE_CKPT="${GUIDE_DIR}/guide_${STEP}.pt"
-    OUTPUT="${TOKEN_SAMPLE_ROOT}/${SERIES_LABEL}/step_$(printf '%04d' "${STEP}").csv"
+    OUTPUT="${SAMPLE_DIR}/step_$(printf '%04d' "${STEP}").csv"
     if [ ! -f "${GUIDE_CKPT}" ]; then
         echo "ERROR: checkpoint not found: ${GUIDE_CKPT}"
         exit 1
     fi
     mkdir -p "$(dirname "${OUTPUT}")"
-    if [ -f "${OUTPUT}" ] && [ -f "${OUTPUT%.csv}.constraints.json" ]; then
+    if [ -f "${OUTPUT}" ]; then
         echo "Reusing ${OUTPUT}"
         continue
     fi

@@ -641,6 +641,8 @@ class StructuredDoobHGuide(nn.Module):
         factor: float = 2.0,
         bound_embedding_dim: int = 8,
         active_embedding_dim: int = 8,
+        query_presence_mode: str = "active_flags",
+        inactive_numerical_bound: float = 10.0,
         output_kind: str = "numerical",
     ) -> None:
         super().__init__()
@@ -648,6 +650,12 @@ class StructuredDoobHGuide(nn.Module):
             raise ValueError("output_kind must be numerical or categorical")
         if d_token % n_head != 0:
             raise ValueError("d_token must be divisible by n_head")
+        if query_presence_mode not in {"active_flags", "implicit_domain"}:
+            raise ValueError(
+                "query_presence_mode must be active_flags or implicit_domain"
+            )
+        if inactive_numerical_bound <= 0:
+            raise ValueError("inactive_numerical_bound must be positive")
         categories = tuple(int(value) for value in categories)
         if any(value < 2 for value in categories):
             raise ValueError("categories must include at least one real class and MASK")
@@ -657,6 +665,8 @@ class StructuredDoobHGuide(nn.Module):
         self.real_category_counts = tuple(value - 1 for value in categories)
         self.d_categorical_one_hot = sum(categories)
         self.output_kind = output_kind
+        self.query_presence_mode = query_presence_mode
+        self.inactive_numerical_bound = float(inactive_numerical_bound)
         self.scalar_h_gradient = False
         self._config = {
             "d_numerical": d_numerical,
@@ -668,6 +678,8 @@ class StructuredDoobHGuide(nn.Module):
             "factor": factor,
             "bound_embedding_dim": bound_embedding_dim,
             "active_embedding_dim": active_embedding_dim,
+            "query_presence_mode": query_presence_mode,
+            "inactive_numerical_bound": inactive_numerical_bound,
             "output_kind": output_kind,
         }
 
@@ -697,21 +709,31 @@ class StructuredDoobHGuide(nn.Module):
         self.lower_embedding = MonotoneScalarEmbedding(bound_embedding_dim)
         self.upper_embedding = MonotoneScalarEmbedding(bound_embedding_dim)
         numerical_query_dim = 2 + 2 * bound_embedding_dim
-        self.numerical_null = nn.Parameter(
-            torch.zeros(d_numerical, numerical_query_dim)
-        )
-        self.numerical_active_embedding = nn.Embedding(2, active_embedding_dim)
+        self.numerical_null = None
+        self.numerical_active_embedding = None
+        numerical_fusion_dim = d_token + numerical_query_dim
+        if query_presence_mode == "active_flags":
+            self.numerical_null = nn.Parameter(
+                torch.zeros(d_numerical, numerical_query_dim)
+            )
+            self.numerical_active_embedding = nn.Embedding(2, active_embedding_dim)
+            numerical_fusion_dim += active_embedding_dim
         self.numerical_query_fusion = nn.Sequential(
-            nn.Linear(d_token + numerical_query_dim + active_embedding_dim, d_token),
+            nn.Linear(numerical_fusion_dim, d_token),
             nn.SiLU(),
         )
 
-        self.categorical_null = nn.Parameter(
-            torch.zeros(len(categories), base_d_token)
-        )
-        self.categorical_active_embedding = nn.Embedding(2, active_embedding_dim)
+        self.categorical_null = None
+        self.categorical_active_embedding = None
+        categorical_fusion_dim = d_token + base_d_token
+        if query_presence_mode == "active_flags":
+            self.categorical_null = nn.Parameter(
+                torch.zeros(len(categories), base_d_token)
+            )
+            self.categorical_active_embedding = nn.Embedding(2, active_embedding_dim)
+            categorical_fusion_dim += active_embedding_dim
         self.categorical_query_fusion = nn.Sequential(
-            nn.Linear(d_token + base_d_token + active_embedding_dim, d_token),
+            nn.Linear(categorical_fusion_dim, d_token),
             nn.SiLU(),
         )
 
@@ -873,6 +895,21 @@ class StructuredDoobHGuide(nn.Module):
             torch.cat((state, time[:, None, :].expand_as(state)), dim=-1)
         )
 
+        if self.query_presence_mode == "implicit_domain":
+            large = self.inactive_numerical_bound
+            lower = torch.where(numerical_active.bool(), lower, -large)
+            upper = torch.where(numerical_active.bool(), upper, large)
+            categorical_allowed = categorical_allowed.clone()
+            offset = 0
+            for column, count in enumerate(self.real_category_counts):
+                column_slice = slice(offset, offset + count)
+                categorical_allowed[:, column_slice] = torch.where(
+                    categorical_active[:, column].bool().unsqueeze(1),
+                    categorical_allowed[:, column_slice],
+                    torch.ones_like(categorical_allowed[:, column_slice]),
+                )
+                offset += count
+
         # Passing -lower through a nondecreasing network makes the lower-bound
         # representation nonincreasing in the actual lower endpoint.
         lower_embedding = self.lower_embedding(-lower)
@@ -881,39 +918,39 @@ class StructuredDoobHGuide(nn.Module):
             ((-lower).unsqueeze(-1), upper.unsqueeze(-1), lower_embedding, upper_embedding),
             dim=-1,
         )
-        numerical_query = torch.where(
-            numerical_active.bool().unsqueeze(-1),
-            numerical_query,
-            self.numerical_null[None, :, :],
-        )
-        numerical_tokens = self.numerical_query_fusion(
-            torch.cat(
-                (
-                    state[:, : self.d_numerical],
-                    numerical_query,
-                    self.numerical_active_embedding(numerical_active.long()),
-                ),
-                dim=-1,
+        numerical_parts = [state[:, : self.d_numerical], numerical_query]
+        if self.query_presence_mode == "active_flags":
+            numerical_query = torch.where(
+                numerical_active.bool().unsqueeze(-1),
+                numerical_query,
+                self.numerical_null[None, :, :],
             )
+            numerical_parts = [
+                state[:, : self.d_numerical],
+                numerical_query,
+                self.numerical_active_embedding(numerical_active.long()),
+            ]
+        numerical_tokens = self.numerical_query_fusion(
+            torch.cat(numerical_parts, dim=-1)
         )
 
         # The last lookup in each tokenizer slice is MASK. The tokenizer's
         # feature bias is stored separately, so neither enters this clean set.
         categorical_query = self.categorical_set_embedding(categorical_allowed)
-        categorical_query = torch.where(
-            categorical_active.bool().unsqueeze(-1),
-            categorical_query,
-            self.categorical_null[None, :, :],
-        )
-        categorical_tokens = self.categorical_query_fusion(
-            torch.cat(
-                (
-                    state[:, self.d_numerical :],
-                    categorical_query,
-                    self.categorical_active_embedding(categorical_active.long()),
-                ),
-                dim=-1,
+        categorical_parts = [state[:, self.d_numerical :], categorical_query]
+        if self.query_presence_mode == "active_flags":
+            categorical_query = torch.where(
+                categorical_active.bool().unsqueeze(-1),
+                categorical_query,
+                self.categorical_null[None, :, :],
             )
+            categorical_parts = [
+                state[:, self.d_numerical :],
+                categorical_query,
+                self.categorical_active_embedding(categorical_active.long()),
+            ]
+        categorical_tokens = self.categorical_query_fusion(
+            torch.cat(categorical_parts, dim=-1)
         )
         tokens = torch.cat((numerical_tokens, categorical_tokens), dim=1)
         for block in self.blocks:

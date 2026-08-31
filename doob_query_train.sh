@@ -40,6 +40,9 @@ N_HEAD="${N_HEAD:-4}"
 FACTOR="${FACTOR:-2}"
 BOUND_EMBEDDING_DIM="${BOUND_EMBEDDING_DIM:-8}"
 ACTIVE_EMBEDDING_DIM="${ACTIVE_EMBEDDING_DIM:-8}"
+QUERY_PRESENCE_MODE="${QUERY_PRESENCE_MODE:-active_flags}"
+INACTIVE_NUMERICAL_BOUND="${INACTIVE_NUMERICAL_BOUND:-10.0}"
+CHECKPOINT_EVERY="${CHECKPOINT_EVERY:-500}"
 QUERY_SAMPLING_MODE="${QUERY_SAMPLING_MODE:-curriculum}"
 QUERY_SPLIT_MANIFEST="${QUERY_SPLIT_MANIFEST:-}"
 QUERY_SPLIT="${QUERY_SPLIT:-}"
@@ -87,6 +90,10 @@ fi
 echo "State tokenizer  : frozen base FT-periodic tokenizer"
 echo "Numerical query  : monotone lower/upper embeddings after time fusion"
 echo "Categorical query: sum of ReLU-frozen base category lookups"
+echo "Query presence   : ${QUERY_PRESENCE_MODE}"
+if [ "${QUERY_PRESENCE_MODE}" = "implicit_domain" ]; then
+    echo "Inactive num box : [-${INACTIVE_NUMERICAL_BOUND}, +${INACTIVE_NUMERICAL_BOUND}] in transformed space"
+fi
 echo "========================================"
 nvidia-smi
 
@@ -127,6 +134,8 @@ python -u train_doob_query_suite.py \
     --factor "${FACTOR}" \
     --bound-embedding-dim "${BOUND_EMBEDDING_DIM}" \
     --active-embedding-dim "${ACTIVE_EMBEDDING_DIM}" \
+    --query-presence-mode "${QUERY_PRESENCE_MODE}" \
+    --inactive-numerical-bound "${INACTIVE_NUMERICAL_BOUND}" \
     --query-sampling-mode "${QUERY_SAMPLING_MODE}" \
     --curriculum-selectivity-source "${CURRICULUM_SELECTIVITY_SOURCE}" \
     --curriculum-warmup-steps "${CURRICULUM_WARMUP_STEPS}" \
@@ -139,6 +148,7 @@ python -u train_doob_query_suite.py \
     --all-active-query-probability "${ALL_ACTIVE_QUERY_PROBABILITY}" \
     --all-inactive-query-probability "${ALL_INACTIVE_QUERY_PROBABILITY}" \
     --checkpoint-warmup 200 \
+    --checkpoint-every "${CHECKPOINT_EVERY}" \
     --device cuda
 
 echo "Finished structured-query Doob training"

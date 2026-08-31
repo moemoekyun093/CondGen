@@ -88,6 +88,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--factor", type=float, default=2.0)
     parser.add_argument("--bound-embedding-dim", type=int, default=8)
     parser.add_argument("--active-embedding-dim", type=int, default=8)
+    parser.add_argument(
+        "--query-presence-mode",
+        choices=("active_flags", "implicit_domain"),
+        default="active_flags",
+    )
+    parser.add_argument("--inactive-numerical-bound", type=float, default=10.0)
     parser.add_argument("--log-every", type=int, default=10)
     parser.add_argument("--checkpoint-warmup", type=int, default=200)
     parser.add_argument("--checkpoint-every", type=int, default=500)
@@ -356,6 +362,8 @@ def main() -> None:
         "factor": args.factor,
         "bound_embedding_dim": args.bound_embedding_dim,
         "active_embedding_dim": args.active_embedding_dim,
+        "query_presence_mode": args.query_presence_mode,
+        "inactive_numerical_bound": args.inactive_numerical_bound,
     }
     numerical = StructuredNumericalHScoreGuide(
         base_tokenizer=tokenizer, **architecture

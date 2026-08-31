@@ -393,6 +393,51 @@ class StructuredQueryGuideTest(unittest.TestCase):
         )
         self.assertFalse(torch.allclose(active, inactive))
 
+    def test_implicit_domain_has_no_active_embeddings(self):
+        guide = StructuredNumericalHScoreGuide(
+            base_tokenizer=self.make_tokenizer(),
+            d_numerical=2,
+            categories=[3, 4],
+            base_d_token=24,
+            d_token=16,
+            num_layers=1,
+            n_head=4,
+            bound_embedding_dim=4,
+            active_embedding_dim=3,
+            query_presence_mode="implicit_domain",
+            inactive_numerical_bound=10.0,
+        )
+        self.assertIsNone(guide.numerical_active_embedding)
+        self.assertIsNone(guide.categorical_active_embedding)
+        self.assertIsNone(guide.numerical_null)
+        self.assertIsNone(guide.categorical_null)
+
+        x_num = torch.zeros(1, 2)
+        x_cat = torch.zeros(1, 7)
+        x_cat[:, 0] = 1.0
+        x_cat[:, 3] = 1.0
+        inactive = guide._encode(
+            x_num,
+            x_cat,
+            torch.tensor([0.5]),
+            query_lower=torch.zeros(1, 2),
+            query_upper=torch.zeros(1, 2),
+            query_numerical_active=torch.zeros(1, 2),
+            query_categorical_allowed=torch.zeros(1, 5),
+            query_categorical_active=torch.zeros(1, 2),
+        )
+        explicit_domain = guide._encode(
+            x_num,
+            x_cat,
+            torch.tensor([0.5]),
+            query_lower=torch.full((1, 2), -10.0),
+            query_upper=torch.full((1, 2), 10.0),
+            query_numerical_active=torch.ones(1, 2),
+            query_categorical_allowed=torch.ones(1, 5),
+            query_categorical_active=torch.ones(1, 2),
+        )
+        torch.testing.assert_close(inactive, explicit_domain)
+
 
 class CategoricalDoobUpdateTest(unittest.TestCase):
     def test_shared_ratio_helper_is_differentiable(self):

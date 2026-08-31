@@ -138,34 +138,57 @@ def evaluate_samples(query: dict, sample_path: Path) -> dict:
 def make_plots(frame: pd.DataFrame, output_dir: Path) -> None:
     import matplotlib.pyplot as plt
 
-    grouped = frame.groupby(["split", "target_band"], sort=True)[
-        ["violation_rate", "numeric_joint_miss_rate", "categorical_joint_miss_rate"]
-    ].agg(["mean", "std"])
-    fig, axes = plt.subplots(1, 3, figsize=(16, 4.5), constrained_layout=True)
     labels = (
         ("violation_rate", "Joint violation"),
         ("numeric_joint_miss_rate", "Numerical joint miss"),
         ("categorical_joint_miss_rate", "Categorical joint miss"),
     )
-    for axis, (metric, title) in zip(axes, labels):
-        for split, color in (("train", "tab:blue"), ("test", "tab:orange")):
-            if split not in grouped.index.get_level_values(0):
-                continue
-            selected = grouped.loc[split]
-            x = selected.index.to_numpy(dtype=float)
-            mean = selected[(metric, "mean")].to_numpy(dtype=float)
-            std = selected[(metric, "std")].fillna(0).to_numpy(dtype=float)
-            axis.plot(x, mean, marker="o", label=split, color=color)
-            axis.fill_between(x, np.maximum(0, mean - std), np.minimum(1, mean + std), alpha=0.15, color=color)
-        axis.set_xscale("log")
-        axis.set_ylim(0, 1)
-        axis.set_title(title)
-        axis.set_xlabel("Target selectivity band")
-        axis.grid(alpha=0.25)
-    axes[0].set_ylabel("Miss rate")
-    axes[0].legend()
-    fig.savefig(output_dir / "train_vs_test_by_selectivity.png", dpi=180)
-    plt.close(fig)
+
+    def plot_group(group_column, x_label, filename, *, log_x=False):
+        selected_frame = frame.dropna(subset=[group_column])
+        grouped = selected_frame.groupby(["split", group_column], sort=True)[
+            [metric for metric, _ in labels]
+        ].agg(["mean", "std"])
+        fig, axes = plt.subplots(1, 3, figsize=(16, 4.5), constrained_layout=True)
+        for axis, (metric, title) in zip(axes, labels):
+            for split, color in (("train", "tab:blue"), ("test", "tab:orange")):
+                if split not in grouped.index.get_level_values(0):
+                    continue
+                selected = grouped.loc[split]
+                x = selected.index.to_numpy(dtype=float)
+                mean = selected[(metric, "mean")].to_numpy(dtype=float)
+                std = selected[(metric, "std")].fillna(0).to_numpy(dtype=float)
+                axis.plot(x, mean, marker="o", label=split, color=color)
+                axis.fill_between(
+                    x,
+                    np.maximum(0, mean - std),
+                    np.minimum(1, mean + std),
+                    alpha=0.15,
+                    color=color,
+                )
+            if log_x:
+                axis.set_xscale("log")
+            axis.set_ylim(0, 1)
+            axis.set_title(title)
+            axis.set_xlabel(x_label)
+            axis.grid(alpha=0.25)
+        axes[0].set_ylabel("Miss rate")
+        axes[0].legend()
+        fig.savefig(output_dir / filename, dpi=180)
+        plt.close(fig)
+
+    plot_group(
+        "target_band",
+        "Target selectivity band",
+        "train_vs_test_by_selectivity.png",
+        log_x=True,
+    )
+    plot_group("arity", "Query arity", "train_vs_test_by_arity.png")
+    plot_group(
+        "interval_width_bin_midpoint",
+        "Mean active interval width in transformed space",
+        "train_vs_test_by_interval_width.png",
+    )
 
     test = frame[frame["split"] == "test"].copy()
     fig, axes = plt.subplots(1, 3, figsize=(16, 4.5), constrained_layout=True)
@@ -216,12 +239,28 @@ def main() -> None:
     ):
         for query_id in query_ids:
             query = queries[query_id]
+            coordinate = coordinates[query_id]
+            active = np.asarray(coordinate["numerical_active"], dtype=bool)
+            widths = (
+                np.asarray(coordinate["numerical_upper"], dtype=float)
+                - np.asarray(coordinate["numerical_lower"], dtype=float)
+            )[active]
             row = {
                 "split": split,
                 "query_id": query_id,
                 "target_band": float(query["target_band"]),
                 "arity": int(query.get("arity", len(query["predicates"]))),
                 "modality_mix": str(query.get("modality_mix", "unknown")),
+                "num_active_numerical_intervals": int(active.sum()),
+                "mean_normalized_interval_width": (
+                    float(widths.mean()) if len(widths) else float("nan")
+                ),
+                "min_normalized_interval_width": (
+                    float(widths.min()) if len(widths) else float("nan")
+                ),
+                "max_normalized_interval_width": (
+                    float(widths.max()) if len(widths) else float("nan")
+                ),
                 **evaluate_samples(query, sample_dir / f"{query_id}.csv"),
             }
             if split == "test":
@@ -232,6 +271,23 @@ def main() -> None:
                 )
             rows.append(row)
     frame = pd.DataFrame(rows)
+    interval_widths = frame["mean_normalized_interval_width"].dropna()
+    quantile_edges = np.unique(
+        np.quantile(interval_widths, np.linspace(0.0, 1.0, 6))
+    )
+    frame["interval_width_bin"] = pd.NA
+    frame["interval_width_bin_midpoint"] = np.nan
+    if len(quantile_edges) >= 2:
+        bins = pd.cut(
+            frame["mean_normalized_interval_width"],
+            bins=quantile_edges,
+            include_lowest=True,
+            duplicates="drop",
+        )
+        frame["interval_width_bin"] = bins.astype("string")
+        frame["interval_width_bin_midpoint"] = [
+            interval.mid if pd.notna(interval) else np.nan for interval in bins
+        ]
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     frame.to_csv(output_dir / "per_query.csv", index=False)
@@ -249,6 +305,21 @@ def main() -> None:
     )
     grouped.columns = ["_".join(column) for column in grouped.columns]
     grouped.reset_index().to_csv(output_dir / "train_vs_test_by_selectivity.csv", index=False)
+    by_arity = frame.groupby(["split", "arity"], sort=True)[metrics].agg(
+        ["mean", "std", "count"]
+    )
+    by_arity.columns = ["_".join(column) for column in by_arity.columns]
+    by_arity.reset_index().to_csv(
+        output_dir / "train_vs_test_by_arity.csv", index=False
+    )
+    by_width = frame.dropna(subset=["interval_width_bin_midpoint"]).groupby(
+        ["split", "interval_width_bin", "interval_width_bin_midpoint"],
+        sort=True,
+    )[metrics].agg(["mean", "std", "count"])
+    by_width.columns = ["_".join(column) for column in by_width.columns]
+    by_width.reset_index().to_csv(
+        output_dir / "train_vs_test_by_interval_width.csv", index=False
+    )
     correlations = []
     for metric in metrics:
         selected = test_neighbours[["nearest_train_distance", metric]].dropna()

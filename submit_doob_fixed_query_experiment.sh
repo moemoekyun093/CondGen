@@ -17,6 +17,11 @@ SAMPLE_OUTPUT="${SAMPLE_DIR}/${QUERY_ID}.csv"
 EVAL_OUTPUT_DIR="${EVAL_OUTPUT_DIR:-evaluations/${DATANAME}/fixed_query_experiment/${METHOD_LABEL}}"
 NUM_SAMPLES="${NUM_SAMPLES:-1000}"
 VIOLATION_HISTOGRAM_BINS="${VIOLATION_HISTOGRAM_BINS:-40}"
+PRINT_HARPOON_ROWS="${PRINT_HARPOON_ROWS:-20}"
+HARPOON_LABEL="${HARPOON_LABEL:-harpoon_eta02}"
+HARPOON_SAMPLE="${HARPOON_SAMPLE:-}"
+HARPOON_NUM_SAMPLES="${HARPOON_NUM_SAMPLES:-1000}"
+HARPOON_GUIDANCE_SCALE="${HARPOON_GUIDANCE_SCALE:-0.2}"
 
 QUERY_SPEC="${QUERY_DIR}/${QUERY_ID}.json"
 if [ ! -f "${QUERY_SPEC}" ]; then
@@ -31,9 +36,27 @@ if [ "${ARITY}" -ne 1 ]; then
     exit 1
 fi
 
+if [ -z "${HARPOON_SAMPLE}" ]; then
+    HARPOON_CANDIDATES=(
+        "conditional_samples/${DATANAME}/sampled_arity_unseen_query_comparison/${HARPOON_LABEL}/${QUERY_ID}.csv"
+        "conditional_samples/${DATANAME}/query_suite_comparison/${HARPOON_LABEL}/${QUERY_ID}.csv"
+    )
+    for CANDIDATE in "${HARPOON_CANDIDATES[@]}"; do
+        if [ -f "${CANDIDATE}" ]; then
+            HARPOON_SAMPLE="${CANDIDATE}"
+            break
+        fi
+    done
+fi
+if [ -z "${HARPOON_SAMPLE}" ]; then
+    HARPOON_SAMPLE="conditional_samples/${DATANAME}/fixed_query_experiment/${HARPOON_LABEL}/${QUERY_ID}.csv"
+fi
+
 mkdir -p logs evaluations/slurm "${EVAL_OUTPUT_DIR}"
 export DATANAME MODEL_NAME QUERY_DIR QUERY_ID STEPS BATCH_SIZE METHOD_LABEL
 export GUIDE_DIR SAMPLE_OUTPUT EVAL_OUTPUT_DIR NUM_SAMPLES VIOLATION_HISTOGRAM_BINS
+export PRINT_HARPOON_ROWS HARPOON_LABEL HARPOON_SAMPLE
+export HARPOON_NUM_SAMPLES HARPOON_GUIDANCE_SCALE
 
 DEPENDENCIES=()
 if [ -f "${GUIDE_DIR}/best_guide.pt" ]; then
@@ -69,9 +92,18 @@ else
     DEPENDENCIES=("${SAMPLE_JOB}")
 fi
 
+if [ -f "${HARPOON_SAMPLE}" ] && [ -f "${HARPOON_SAMPLE%.csv}.constraints.json" ]; then
+    HARPOON_JOB="reused existing samples"
+else
+    HARPOON_SUBMISSION=$(sbatch --parsable sample_harpoon_fixed_query.sh)
+    HARPOON_JOB="${HARPOON_SUBMISSION%%;*}"
+    DEPENDENCIES+=("${HARPOON_JOB}")
+fi
+
 EVAL_DEPENDENCY=()
 if [ "${#DEPENDENCIES[@]}" -gt 0 ]; then
-    EVAL_DEPENDENCY+=(--dependency="afterok:${DEPENDENCIES[0]}")
+    DEPENDENCY_TEXT=$(IFS=:; echo "${DEPENDENCIES[*]}")
+    EVAL_DEPENDENCY+=(--dependency="afterok:${DEPENDENCY_TEXT}")
 fi
 EVAL_SUBMISSION=$(sbatch --parsable "${EVAL_DEPENDENCY[@]}" evaluate_doob_fixed_query.sh)
 EVAL_JOB="${EVAL_SUBMISSION%%;*}"
@@ -85,9 +117,11 @@ echo "Training support  : ${SUPPORT} rows"
 echo "Guide             : d48/L2, ${STEPS} optimizer steps"
 echo "Training          : ${TRAIN_JOB}"
 echo "Sampling          : ${SAMPLE_JOB}"
+echo "HARPOON sampling  : ${HARPOON_JOB}"
 echo "Evaluation        : ${EVAL_JOB}"
 echo "Checkpoint        : ${GUIDE_DIR}"
 echo "Samples           : ${SAMPLE_OUTPUT}"
 echo "Metrics           : ${EVAL_OUTPUT_DIR}"
 echo "Violation bins    : ${VIOLATION_HISTOGRAM_BINS}"
+echo "HARPOON baseline  : ${HARPOON_SAMPLE}"
 echo "========================================"

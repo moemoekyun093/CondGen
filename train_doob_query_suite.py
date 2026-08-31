@@ -66,6 +66,11 @@ def parse_args() -> argparse.Namespace:
         help="Train only accepted queries with this target selectivity band",
     )
     parser.add_argument("--output-dir", required=True)
+    parser.add_argument(
+        "--resume-from",
+        default=None,
+        help="Continue to --steps total steps from a structured guide checkpoint",
+    )
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--steps", type=int, default=12000)
@@ -248,9 +253,12 @@ def structured_joint_batch(
     return gradient_loss, categorical_loss
 
 
-def save_checkpoint(path, numerical, categorical, metadata, step, loss, ema):
-    torch.save(
-        {
+def save_checkpoint(
+    path, numerical, categorical, metadata, step, loss, ema,
+    *, raw_numerical=None, raw_categorical=None, optimizer=None,
+    smoothed_loss=None, best_loss=None,
+):
+    payload = {
             "architecture": "structured_query_v1",
             "numerical_guide": numerical.state_dict(),
             "categorical_guide": categorical.state_dict(),
@@ -258,9 +266,23 @@ def save_checkpoint(path, numerical, categorical, metadata, step, loss, ema):
             "step": step,
             "training_loss": loss,
             "ema": ema,
-        },
-        path,
-    )
+            "smoothed_loss": smoothed_loss,
+            "best_loss": best_loss,
+        }
+    if raw_numerical is not None:
+        payload["numerical_guide_raw"] = raw_numerical.state_dict()
+    if raw_categorical is not None:
+        payload["categorical_guide_raw"] = raw_categorical.state_dict()
+    if optimizer is not None:
+        payload["optimizer"] = optimizer.state_dict()
+    torch.save(payload, path)
+
+
+def torch_load(path, device):
+    try:
+        return torch.load(path, map_location=device, weights_only=False)
+    except TypeError:
+        return torch.load(path, map_location=device)
 
 
 def main() -> None:
@@ -408,6 +430,30 @@ def main() -> None:
     )
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    start_step = 0
+    resume_state = None
+    if args.resume_from is not None:
+        resume_path = Path(args.resume_from)
+        if not resume_path.is_file():
+            raise FileNotFoundError(f"resume checkpoint not found: {resume_path}")
+        resume_state = torch_load(resume_path, device)
+        if resume_state.get("architecture") != "structured_query_v1":
+            raise ValueError("resume checkpoint is not a structured-query guide")
+        start_step = int(resume_state["step"])
+        if args.steps <= start_step:
+            raise ValueError(
+                f"--steps must exceed resumed step {start_step}; got {args.steps}"
+            )
+        ema_numerical.load_state_dict(resume_state["numerical_guide"])
+        ema_categorical.load_state_dict(resume_state["categorical_guide"])
+        if "numerical_guide_raw" in resume_state:
+            numerical.load_state_dict(resume_state["numerical_guide_raw"])
+            categorical.load_state_dict(resume_state["categorical_guide_raw"])
+        else:
+            numerical.load_state_dict(resume_state["numerical_guide"])
+            categorical.load_state_dict(resume_state["categorical_guide"])
+        if "optimizer" in resume_state:
+            optimizer.load_state_dict(resume_state["optimizer"])
     metadata = {
         "dataname": args.dataname,
         "base_checkpoint": runtime.checkpoint_path,
@@ -514,8 +560,28 @@ def main() -> None:
     print(f"Combined trainable guide parameters: {guide_count:,} ({guide_count/base_count:.2%} of base)")
     print("No containment regularizer or BCE objective")
 
-    best = float("inf")
-    smoothed_loss = None
+    best = (
+        float(resume_state.get("best_loss", float("inf")))
+        if resume_state is not None and resume_state.get("best_loss") is not None
+        else float("inf")
+    )
+    smoothed_loss = (
+        resume_state.get("smoothed_loss")
+        if resume_state is not None
+        else None
+    )
+    if smoothed_loss is None and resume_state is not None:
+        smoothed_loss = float(resume_state["training_loss"])
+    if resume_state is not None:
+        state_kind = (
+            "full online/EMA/optimizer state"
+            if "optimizer" in resume_state
+            else "EMA weights with a fresh AdamW optimizer"
+        )
+        print(
+            f"Continuing from step {start_step} using {state_kind}; "
+            f"target total step={args.steps}"
+        )
     query_counts = {query.query_id: 0 for query in queries}
     band_counts = {}
     bucket_counts = {bucket: 0 for bucket in BUCKET_ORDER}
@@ -528,7 +594,7 @@ def main() -> None:
         # Select the best checkpoint only under the final target mixture.
         best_eligible_step = max(best_eligible_step, curriculum.final_phase_start)
     rows_per_query = args.batch_size // args.queries_per_step
-    for step in range(1, args.steps + 1):
+    for step in range(start_step + 1, args.steps + 1):
         if curriculum is None:
             presentations = [
                 (
@@ -645,6 +711,11 @@ def main() -> None:
                 step,
                 smoothed_loss,
                 True,
+                raw_numerical=numerical,
+                raw_categorical=categorical,
+                optimizer=optimizer,
+                smoothed_loss=smoothed_loss,
+                best_loss=best,
             )
         if step % args.checkpoint_every == 0:
             save_checkpoint(
@@ -655,6 +726,11 @@ def main() -> None:
                 step,
                 loss_value,
                 True,
+                raw_numerical=numerical,
+                raw_categorical=categorical,
+                optimizer=optimizer,
+                smoothed_loss=smoothed_loss,
+                best_loss=best,
             )
         if step == 1 or step % args.log_every == 0:
             print(
@@ -679,6 +755,11 @@ def main() -> None:
         args.steps,
         loss_value,
         True,
+        raw_numerical=numerical,
+        raw_categorical=categorical,
+        optimizer=optimizer,
+        smoothed_loss=smoothed_loss,
+        best_loss=best,
     )
     if not (output_dir / "best_guide.pt").is_file():
         save_checkpoint(
@@ -689,6 +770,11 @@ def main() -> None:
             args.steps,
             smoothed_loss,
             True,
+            raw_numerical=numerical,
+            raw_categorical=categorical,
+            optimizer=optimizer,
+            smoothed_loss=smoothed_loss,
+            best_loss=best,
         )
         best = smoothed_loss
     with (output_dir / "query_counts.json").open("w", encoding="utf-8") as stream:

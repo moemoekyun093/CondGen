@@ -473,6 +473,34 @@ class StructuredQueryGuideTest(unittest.TestCase):
         self.assertEqual(tokens.shape, (1, 4, 16))
         self.assertEqual(valid.tolist(), [[True, True, False, False]])
 
+    def test_per_token_mlp_accepts_center_logwidth_bounds(self):
+        guide = StructuredNumericalHScoreGuide(
+            base_tokenizer=self.make_tokenizer(),
+            d_numerical=2,
+            categories=[3, 4],
+            base_d_token=24,
+            d_token=16,
+            num_layers=2,
+            n_head=4,
+            bound_embedding_mode="mlp",
+            query_architecture="per_token_fusion",
+            bound_token_parameterization="center_logwidth",
+        )
+        x_cat = torch.zeros(1, 7)
+        x_cat[:, 0] = 1.0
+        x_cat[:, 3] = 1.0
+        encoded = guide._encode(
+            torch.zeros(1, 2),
+            x_cat,
+            torch.tensor([0.5]),
+            query_lower=torch.tensor([[-1.0, 0.0]]),
+            query_upper=torch.tensor([[1.0, 2.0]]),
+            query_numerical_active=torch.ones(1, 2),
+            query_categorical_allowed=torch.ones(1, 5),
+            query_categorical_active=torch.zeros(1, 2),
+        )
+        self.assertEqual(encoded.shape, (1, 4, 16))
+
     def test_no_active_bound_tokens_make_cross_layers_identity(self):
         guide = StructuredNumericalHScoreGuide(
             base_tokenizer=self.make_tokenizer(),

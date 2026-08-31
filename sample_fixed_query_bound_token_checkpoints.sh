@@ -30,9 +30,8 @@ echo "Count : ${#TASK_IDS[@]}"
 nvidia-smi
 
 for TASK_ID in "${TASK_IDS[@]}"; do
-    CHECKPOINT_INDEX=$((TASK_ID % 10 + 1))
-    STEP=$((CHECKPOINT_INDEX * 200))
-    SERIES_INDEX=$((TASK_ID / 10))
+    SERIES_INDEX="${TASK_ID}"
+    STEP="${SAMPLE_STEP:-2000}"
     if [ "${SERIES_INDEX}" -eq 0 ]; then
         SERIES_LABEL="ordinary_mlp"
         GUIDE_DIR="${MLP_GUIDE_DIR}"
@@ -42,6 +41,10 @@ for TASK_ID in "${TASK_IDS[@]}"; do
         GUIDE_DIR="${ENDPOINT_GUIDE_DIR}"
         SAMPLE_DIR="${ENDPOINT_SAMPLE_DIR}"
     elif [ "${SERIES_INDEX}" -eq 2 ]; then
+        SERIES_LABEL="ordinary_mlp_center_logwidth"
+        GUIDE_DIR="${MLP_CENTER_WIDTH_GUIDE_DIR}"
+        SAMPLE_DIR="${MLP_CENTER_WIDTH_SAMPLE_DIR}"
+    elif [ "${SERIES_INDEX}" -eq 3 ]; then
         SERIES_LABEL="center_logwidth"
         GUIDE_DIR="${CENTER_WIDTH_GUIDE_DIR}"
         SAMPLE_DIR="${CENTER_WIDTH_SAMPLE_DIR}"
@@ -73,7 +76,7 @@ for TASK_ID in "${TASK_IDS[@]}"; do
         --query-file "${QUERY_DIR}/${QUERY_ID}.json" \
         --num-samples "${NUM_SAMPLES:-1000}" \
         --batch-size "${NUM_SAMPLES:-1000}" \
-        --seed "$((64000 + CHECKPOINT_INDEX))" \
+        --seed "$((64000 + STEP + SERIES_INDEX))" \
         --output "${OUTPUT}" \
         --device cuda
 done

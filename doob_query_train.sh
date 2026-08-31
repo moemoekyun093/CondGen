@@ -46,6 +46,7 @@ BOUND_TOKEN_PARAMETERIZATION="${BOUND_TOKEN_PARAMETERIZATION:-endpoints}"
 QUERY_PRESENCE_MODE="${QUERY_PRESENCE_MODE:-active_flags}"
 INACTIVE_NUMERICAL_BOUND="${INACTIVE_NUMERICAL_BOUND:-10.0}"
 CHECKPOINT_EVERY="${CHECKPOINT_EVERY:-500}"
+RESUME_FROM="${RESUME_FROM:-}"
 QUERY_SAMPLING_MODE="${QUERY_SAMPLING_MODE:-curriculum}"
 QUERY_SPLIT_MANIFEST="${QUERY_SPLIT_MANIFEST:-}"
 QUERY_SPLIT="${QUERY_SPLIT:-}"
@@ -68,6 +69,9 @@ echo "Base checkpoint  : ${BASE_CKPT}"
 echo "Query suite      : ${QUERY_DIR}"
 echo "Output           : ${OUTPUT_DIR}"
 echo "Training steps   : ${STEPS}"
+if [ -n "${RESUME_FROM}" ]; then
+    echo "Resume from      : ${RESUME_FROM}"
+fi
 echo "Batch size       : ${BATCH_SIZE}"
 echo "Queries per step : ${QUERIES_PER_STEP}"
 echo "Learning rate    : ${LR}"
@@ -96,6 +100,8 @@ echo "Bound embedding  : ${BOUND_EMBEDDING_MODE}"
 echo "Query architecture: ${QUERY_ARCHITECTURE}"
 if [ "${QUERY_ARCHITECTURE}" = "alternating_cross_attention" ]; then
     echo "Bound tokens     : ${BOUND_TOKEN_PARAMETERIZATION}"
+else
+    echo "Bound coordinates: ${BOUND_TOKEN_PARAMETERIZATION}"
 fi
 echo "Categorical query: sum of ReLU-frozen base category lookups"
 echo "Query presence   : ${QUERY_PRESENCE_MODE}"
@@ -124,6 +130,10 @@ if [ -n "${QUERY_ID}" ]; then
     fi
     QUERY_ID_ARGS+=(--query-id "${QUERY_ID}")
 fi
+RESUME_ARGS=()
+if [ -n "${RESUME_FROM}" ]; then
+    RESUME_ARGS+=(--resume-from "${RESUME_FROM}")
+fi
 
 python -u train_doob_query_suite.py \
     --dataname "${DATANAME}" \
@@ -132,6 +142,7 @@ python -u train_doob_query_suite.py \
     "${QUERY_SPLIT_ARGS[@]}" \
     "${QUERY_ID_ARGS[@]}" \
     --output-dir "${OUTPUT_DIR}" \
+    "${RESUME_ARGS[@]}" \
     --steps "${STEPS}" \
     --batch-size "${BATCH_SIZE}" \
     --queries-per-step "${QUERIES_PER_STEP}" \

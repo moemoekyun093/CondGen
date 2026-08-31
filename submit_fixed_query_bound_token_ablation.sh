@@ -16,7 +16,15 @@ MLP_GUIDE_DIR="${MLP_GUIDE_DIR:-tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/doob_fixe
 ENDPOINT_GUIDE_DIR="${ENDPOINT_GUIDE_DIR:-tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/doob_fixed_exit_bound_tokens_lu_d48_l4_2000}"
 CENTER_WIDTH_GUIDE_DIR="${CENTER_WIDTH_GUIDE_DIR:-tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/doob_fixed_exit_bound_tokens_center_logwidth_d48_l4_2000}"
 TOKEN_SAMPLE_ROOT="${TOKEN_SAMPLE_ROOT:-conditional_samples/${DATANAME}/fixed_query_bound_token_ablation}"
-MLP_SAMPLE_DIR="${MLP_SAMPLE_DIR:-conditional_samples/${DATANAME}/fixed_query_bound_ablation/mlp}"
+if [ -z "${MLP_SAMPLE_DIR:-}" ]; then
+    if [ -f "${TOKEN_SAMPLE_ROOT}/ordinary_mlp/step_2000.csv" ]; then
+        MLP_SAMPLE_DIR="${TOKEN_SAMPLE_ROOT}/ordinary_mlp"
+    elif [ -f "conditional_samples/${DATANAME}/fixed_query_bound_ablation/mlp/step_2000.csv" ]; then
+        MLP_SAMPLE_DIR="conditional_samples/${DATANAME}/fixed_query_bound_ablation/mlp"
+    else
+        MLP_SAMPLE_DIR="${TOKEN_SAMPLE_ROOT}/ordinary_mlp"
+    fi
+fi
 ENDPOINT_SAMPLE_DIR="${ENDPOINT_SAMPLE_DIR:-${TOKEN_SAMPLE_ROOT}/endpoints}"
 CENTER_WIDTH_SAMPLE_DIR="${CENTER_WIDTH_SAMPLE_DIR:-${TOKEN_SAMPLE_ROOT}/center_logwidth}"
 TOKEN_EVAL_DIR="${TOKEN_EVAL_DIR:-evaluations/${DATANAME}/fixed_query_bound_token_ablation}"
@@ -35,6 +43,7 @@ export TOKEN_EVAL_DIR HISTOGRAM_BINS
 export QUERIES_PER_STEP=1 LR=1e-3 D_TOKEN=48 NUM_LAYERS=4 N_HEAD=4 FACTOR=2
 export QUERY_SAMPLING_MODE=uniform PREDICATE_MASK_MODE=full
 export QUERY_ARCHITECTURE=alternating_cross_attention
+export SAMPLE_STEP=2000
 export QUERY_SPLIT_MANIFEST="" QUERY_SPLIT=""
 
 final_checkpoint_complete() {
@@ -83,12 +92,12 @@ else
 fi
 
 MISSING_TASKS=()
-for TASK in 9 19 29; do
-    STEP=$(((TASK % 10 + 1) * 200))
-    case "$((TASK / 10))" in
+for TASK in 0 1 3; do
+    STEP="${SAMPLE_STEP}"
+    case "${TASK}" in
         0) SAMPLE_DIR="${MLP_SAMPLE_DIR}" ;;
         1) SAMPLE_DIR="${ENDPOINT_SAMPLE_DIR}" ;;
-        2) SAMPLE_DIR="${CENTER_WIDTH_SAMPLE_DIR}" ;;
+        3) SAMPLE_DIR="${CENTER_WIDTH_SAMPLE_DIR}" ;;
     esac
     OUTPUT="${SAMPLE_DIR}/step_$(printf '%04d' "${STEP}").csv"
     if [ ! -f "${OUTPUT}" ]; then

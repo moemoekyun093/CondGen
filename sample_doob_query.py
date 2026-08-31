@@ -159,7 +159,12 @@ def main() -> None:
         f"{int(predicate_mask.sum().item())}/{predicate_mask.numel()} "
         f"({active_specification['active_columns']})"
     )
-    print("Numerical constraints: clean intervals with monotone endpoint encodings")
+    print(
+        "Numerical constraints: "
+        f"{numerical_config.get('bound_token_parameterization', 'endpoints')} via "
+        f"{numerical_config.get('query_architecture', 'per_token_fusion')} "
+        f"({numerical_config.get('bound_embedding_mode', 'monotone')} value embedding)"
+    )
     print("Categorical constraints: sums of ReLU-frozen base category lookups")
     print("Categorical start: ordinary t=1 masked prior; no equality shortcut")
     samples = runtime.diffusion.sample_all(

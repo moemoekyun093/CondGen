@@ -741,6 +741,14 @@ class StructuredDoobHGuide(nn.Module):
             )
         if query_architecture == "alternating_cross_attention" and num_layers % 2:
             raise ValueError("alternating cross-attention requires an even num_layers")
+        if (
+            query_architecture == "per_token_fusion"
+            and bound_token_parameterization == "center_logwidth"
+            and bound_embedding_mode != "mlp"
+        ):
+            raise ValueError(
+                "per-token center/log-width parameterization requires ordinary MLP embeddings"
+            )
         if inactive_numerical_bound <= 0:
             raise ValueError("inactive_numerical_bound must be positive")
         categories = tuple(int(value) for value in categories)
@@ -1081,12 +1089,23 @@ class StructuredDoobHGuide(nn.Module):
                 )
                 offset += count
 
-        # Passing -lower through a nondecreasing network makes the lower-bound
-        # representation nonincreasing in the actual lower endpoint.
-        lower_embedding = self.lower_embedding(-lower)
-        upper_embedding = self.upper_embedding(upper)
+        if self.bound_token_parameterization == "center_logwidth":
+            first_value = 0.5 * (lower + upper)
+            second_value = torch.log((upper - lower).clamp_min(1e-6))
+        else:
+            # Passing -lower through a nondecreasing network makes the
+            # lower-bound representation nonincreasing in the endpoint.
+            first_value = -lower
+            second_value = upper
+        lower_embedding = self.lower_embedding(first_value)
+        upper_embedding = self.upper_embedding(second_value)
         numerical_query = torch.cat(
-            ((-lower).unsqueeze(-1), upper.unsqueeze(-1), lower_embedding, upper_embedding),
+            (
+                first_value.unsqueeze(-1),
+                second_value.unsqueeze(-1),
+                lower_embedding,
+                upper_embedding,
+            ),
             dim=-1,
         )
         numerical_parts = [state[:, : self.d_numerical], numerical_query]

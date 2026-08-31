@@ -40,6 +40,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=1000)
     parser.add_argument("--max-correction", type=float, default=5.0)
     parser.add_argument("--max-log-h-ratio", type=float, default=10.0)
+    parser.add_argument("--guidance-strength", type=float, default=1.0)
     parser.add_argument("--h-candidate-batch-size", type=int, default=65536)
     parser.add_argument("--num-timesteps", type=int, default=None)
     parser.add_argument("--output", required=True)
@@ -73,7 +74,12 @@ def torch_load(path, device):
 
 def main() -> None:
     args = parse_args()
-    if min(args.num_samples, args.batch_size, args.h_candidate_batch_size) <= 0:
+    if min(
+        args.num_samples,
+        args.batch_size,
+        args.h_candidate_batch_size,
+        args.guidance_strength,
+    ) <= 0:
         raise ValueError("sample and batch sizes must be positive")
     device = torch.device(args.device)
     torch.manual_seed(args.seed)
@@ -140,7 +146,7 @@ def main() -> None:
     runtime.diffusion.set_doob_h_guides(
         numerical,
         categorical,
-        strength=1.0,
+        strength=args.guidance_strength,
         max_correction=args.max_correction,
         max_log_ratio=args.max_log_h_ratio,
         candidate_batch_size=args.h_candidate_batch_size,
@@ -154,6 +160,7 @@ def main() -> None:
         runtime.diffusion.num_timesteps = args.num_timesteps
 
     print(f"Query: {query_id}")
+    print(f"Guidance strength lambda: {args.guidance_strength:g}")
     print(
         "Active predicates: "
         f"{int(predicate_mask.sum().item())}/{predicate_mask.numel()} "
@@ -197,6 +204,8 @@ def main() -> None:
         "query_id": query_id,
         "raw_joint_hit_rate": float(joint.mean()),
         "raw_joint_violation_rate": float(1.0 - joint.mean()),
+        "guidance_strength": float(args.guidance_strength),
+        "num_timesteps": int(runtime.diffusion.num_timesteps),
     }
     with output.with_suffix(".constraints.json").open("w", encoding="utf-8") as stream:
         json.dump(report, stream, indent=2)

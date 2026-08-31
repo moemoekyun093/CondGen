@@ -30,6 +30,10 @@ MLP_CENTER_WIDTH_SAMPLE_DIR="${MLP_CENTER_WIDTH_SAMPLE_DIR:-${SAMPLE_ROOT}/ordin
 ENDPOINT_SAMPLE_DIR="${ENDPOINT_SAMPLE_DIR:-${SAMPLE_ROOT}/lower_upper_tokens}"
 CENTER_WIDTH_SAMPLE_DIR="${CENTER_WIDTH_SAMPLE_DIR:-${SAMPLE_ROOT}/center_logwidth_tokens}"
 TOKEN_EVAL_DIR="${TOKEN_EVAL_DIR:-evaluations/${DATANAME}/fixed_query_bound_4000_ablation}"
+SWEEP_SAMPLE_ROOT="${SWEEP_SAMPLE_ROOT:-conditional_samples/${DATANAME}/fixed_query_center_logwidth_mlp_sampling_sweeps}"
+SWEEP_EVAL_DIR="${SWEEP_EVAL_DIR:-evaluations/${DATANAME}/fixed_query_center_logwidth_mlp_sampling_sweeps}"
+REVERSE_STEPS="${REVERSE_STEPS:-50,75,100,150,200}"
+GUIDANCE_STRENGTHS="${GUIDANCE_STRENGTHS:-1,2,5}"
 HISTOGRAM_BINS="${HISTOGRAM_BINS:-50}"
 
 if [ ! -f "${QUERY_DIR}/${QUERY_ID}.json" ]; then
@@ -40,6 +44,7 @@ mkdir -p logs evaluations/slurm "${SAMPLE_ROOT}" "${TOKEN_EVAL_DIR}"
 
 export DATANAME MODEL_NAME QUERY_DIR QUERY_ID STEPS SAMPLE_STEP CHECKPOINT_EVERY
 export BATCH_SIZE NUM_SAMPLES HISTOGRAM_BINS TOKEN_EVAL_DIR
+export SWEEP_SAMPLE_ROOT SWEEP_EVAL_DIR REVERSE_STEPS GUIDANCE_STRENGTHS
 export MLP_GUIDE_DIR MLP_CENTER_WIDTH_GUIDE_DIR ENDPOINT_GUIDE_DIR CENTER_WIDTH_GUIDE_DIR
 export MLP_SAMPLE_DIR MLP_CENTER_WIDTH_SAMPLE_DIR ENDPOINT_SAMPLE_DIR CENTER_WIDTH_SAMPLE_DIR
 export QUERIES_PER_STEP=1 LR=1e-3 D_TOKEN=48 N_HEAD=4 FACTOR=2
@@ -101,19 +106,39 @@ if [ "${#TRAIN_DEPENDENCIES[@]}" -gt 0 ]; then
 fi
 if [ "${#MISSING_TASKS[@]}" -gt 0 ]; then
     MISSING_TASKS_CSV=$(IFS=,; echo "${MISSING_TASKS[*]}")
-    export MISSING_TASKS_CSV
+else
+    MISSING_TASKS_CSV=""
+fi
+SWEEP_METHOD_DIR="${SWEEP_SAMPLE_ROOT}/ordinary_mlp_center_logwidth"
+SWEEP_MISSING=0
+IFS=',' read -r -a REVERSE_STEP_VALUES <<< "${REVERSE_STEPS}"
+IFS=',' read -r -a LAMBDA_VALUES <<< "${GUIDANCE_STRENGTHS}"
+for NUM_STEPS in "${REVERSE_STEP_VALUES[@]}"; do
+    [ -f "${SWEEP_METHOD_DIR}/steps_$(printf '%03d' "${NUM_STEPS}")_lambda_1.csv" ] \
+        || SWEEP_MISSING=1
+done
+for LAMBDA in "${LAMBDA_VALUES[@]}"; do
+    LAMBDA_TAG=$(printf '%g' "${LAMBDA}")
+    [ -f "${SWEEP_METHOD_DIR}/steps_050_lambda_${LAMBDA_TAG}.csv" ] \
+        || SWEEP_MISSING=1
+done
+export MISSING_TASKS_CSV
+if [ "${#MISSING_TASKS[@]}" -gt 0 ] || [ "${SWEEP_MISSING}" -eq 1 ]; then
     SUBMISSION=$(sbatch --parsable "${SAMPLE_DEPENDENCY[@]}" \
-        sample_fixed_query_bound_token_checkpoints.sh)
+        sample_fixed_query_sampling_sweeps.sh)
     SAMPLE_JOB="${SUBMISSION%%;*}"
     PLOT_DEPENDENCY=(--dependency="afterok:${SAMPLE_JOB}")
 else
-    SAMPLE_JOB="not submitted; reused all step-4000 samples"
+    SAMPLE_JOB="not submitted; reused standard and sweep samples"
     PLOT_DEPENDENCY=()
 fi
 
 SUBMISSION=$(sbatch --parsable "${PLOT_DEPENDENCY[@]}" \
     plot_fixed_query_bound_4000_ablation.sh)
 PLOT_JOB="${SUBMISSION%%;*}"
+SUBMISSION=$(sbatch --parsable "${PLOT_DEPENDENCY[@]}" \
+    plot_fixed_query_sampling_sweeps.sh)
+SWEEP_PLOT_JOB="${SUBMISSION%%;*}"
 
 echo "========================================"
 echo "Fixed-query 4000-step bound ablation submitted"
@@ -122,8 +147,10 @@ echo "MLP lower/upper          : ${MLP_TRAIN}"
 echo "MLP center/log-width     : ${MLP_CENTER_WIDTH_TRAIN}"
 echo "Token lower/upper        : ${ENDPOINT_TRAIN}"
 echo "Token center/log-width   : ${CENTER_WIDTH_TRAIN}"
-echo "Bundled step-4000 sample : ${SAMPLE_JOB}"
+echo "Bundled all sampling     : ${SAMPLE_JOB}"
 echo "Plot                     : ${PLOT_JOB}"
+echo "Center/log-w sweep plot  : ${SWEEP_PLOT_JOB}"
 echo "Samples                  : ${SAMPLE_ROOT}"
 echo "Evaluation               : ${TOKEN_EVAL_DIR}"
+echo "Sampling sweep           : ${SWEEP_EVAL_DIR}"
 echo "========================================"

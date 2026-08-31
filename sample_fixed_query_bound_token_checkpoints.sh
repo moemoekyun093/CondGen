@@ -34,9 +34,12 @@ for TASK_ID in "${TASK_IDS[@]}"; do
     STEP=$((CHECKPOINT_INDEX * 200))
     SERIES_INDEX=$((TASK_ID / 10))
     if [ "${SERIES_INDEX}" -eq 0 ]; then
+        SERIES_LABEL="ordinary_mlp"
+        GUIDE_DIR="${MLP_GUIDE_DIR}"
+    elif [ "${SERIES_INDEX}" -eq 1 ]; then
         SERIES_LABEL="endpoints"
         GUIDE_DIR="${ENDPOINT_GUIDE_DIR}"
-    elif [ "${SERIES_INDEX}" -eq 1 ]; then
+    elif [ "${SERIES_INDEX}" -eq 2 ]; then
         SERIES_LABEL="center_logwidth"
         GUIDE_DIR="${CENTER_WIDTH_GUIDE_DIR}"
     else

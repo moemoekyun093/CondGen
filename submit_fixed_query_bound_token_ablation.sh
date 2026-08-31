@@ -1,5 +1,5 @@
 #!/bin/bash
-# Compare lower/upper and center/log-width constraint-token parameterizations.
+# Compare ordinary per-column MLP fusion with two constraint-token parameterizations.
 
 set -euo pipefail
 cd /scratch/work/agrawaa4/TabDiff
@@ -12,6 +12,7 @@ STEPS=2000
 CHECKPOINT_EVERY=200
 BATCH_SIZE="${BATCH_SIZE:-1024}"
 NUM_SAMPLES="${NUM_SAMPLES:-1000}"
+MLP_GUIDE_DIR="${MLP_GUIDE_DIR:-tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/doob_fixed_exit_mlp_bounds_d48_l2_2000}"
 ENDPOINT_GUIDE_DIR="${ENDPOINT_GUIDE_DIR:-tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/doob_fixed_exit_bound_tokens_lu_d48_l4_2000}"
 CENTER_WIDTH_GUIDE_DIR="${CENTER_WIDTH_GUIDE_DIR:-tabdiff/ckpt/${DATANAME}/${MODEL_NAME}/doob_fixed_exit_bound_tokens_center_logwidth_d48_l4_2000}"
 TOKEN_SAMPLE_ROOT="${TOKEN_SAMPLE_ROOT:-conditional_samples/${DATANAME}/fixed_query_bound_token_ablation}"
@@ -25,7 +26,7 @@ fi
 mkdir -p logs evaluations/slurm "${TOKEN_SAMPLE_ROOT}" "${TOKEN_EVAL_DIR}"
 
 export DATANAME MODEL_NAME QUERY_DIR QUERY_ID STEPS CHECKPOINT_EVERY BATCH_SIZE
-export NUM_SAMPLES ENDPOINT_GUIDE_DIR CENTER_WIDTH_GUIDE_DIR TOKEN_SAMPLE_ROOT
+export NUM_SAMPLES MLP_GUIDE_DIR ENDPOINT_GUIDE_DIR CENTER_WIDTH_GUIDE_DIR TOKEN_SAMPLE_ROOT
 export TOKEN_EVAL_DIR HISTOGRAM_BINS
 export QUERIES_PER_STEP=1 LR=1e-3 D_TOKEN=48 NUM_LAYERS=4 N_HEAD=4 FACTOR=2
 export QUERY_SAMPLING_MODE=uniform PREDICATE_MASK_MODE=full
@@ -44,11 +45,20 @@ checkpoint_series_complete() {
 }
 
 TRAIN_DEPENDENCIES=()
+if checkpoint_series_complete "${MLP_GUIDE_DIR}"; then
+    MLP_TRAIN="reused complete checkpoints"
+else
+    SUBMISSION=$(sbatch --parsable \
+        --export=ALL,QUERY_ARCHITECTURE=per_token_fusion,BOUND_EMBEDDING_MODE=mlp,NUM_LAYERS=2 \
+        doob_query_train.sh "${MLP_GUIDE_DIR}")
+    MLP_TRAIN="${SUBMISSION%%;*}"
+    TRAIN_DEPENDENCIES+=("${MLP_TRAIN}")
+fi
 if checkpoint_series_complete "${ENDPOINT_GUIDE_DIR}"; then
     ENDPOINT_TRAIN="reused complete checkpoints"
 else
     SUBMISSION=$(sbatch --parsable \
-        --export=ALL,BOUND_TOKEN_PARAMETERIZATION=endpoints \
+        --export=ALL,QUERY_ARCHITECTURE=alternating_cross_attention,BOUND_TOKEN_PARAMETERIZATION=endpoints,NUM_LAYERS=4 \
         doob_query_train.sh "${ENDPOINT_GUIDE_DIR}")
     ENDPOINT_TRAIN="${SUBMISSION%%;*}"
     TRAIN_DEPENDENCIES+=("${ENDPOINT_TRAIN}")
@@ -57,16 +67,20 @@ if checkpoint_series_complete "${CENTER_WIDTH_GUIDE_DIR}"; then
     CENTER_WIDTH_TRAIN="reused complete checkpoints"
 else
     SUBMISSION=$(sbatch --parsable \
-        --export=ALL,BOUND_TOKEN_PARAMETERIZATION=center_logwidth \
+        --export=ALL,QUERY_ARCHITECTURE=alternating_cross_attention,BOUND_TOKEN_PARAMETERIZATION=center_logwidth,NUM_LAYERS=4 \
         doob_query_train.sh "${CENTER_WIDTH_GUIDE_DIR}")
     CENTER_WIDTH_TRAIN="${SUBMISSION%%;*}"
     TRAIN_DEPENDENCIES+=("${CENTER_WIDTH_TRAIN}")
 fi
 
 MISSING_TASKS=()
-for TASK in $(seq 0 19); do
+for TASK in $(seq 0 29); do
     STEP=$(((TASK % 10 + 1) * 200))
-    if [ "$((TASK / 10))" -eq 0 ]; then LABEL=endpoints; else LABEL=center_logwidth; fi
+    case "$((TASK / 10))" in
+        0) LABEL=ordinary_mlp ;;
+        1) LABEL=endpoints ;;
+        2) LABEL=center_logwidth ;;
+    esac
     OUTPUT="${TOKEN_SAMPLE_ROOT}/${LABEL}/step_$(printf '%04d' "${STEP}").csv"
     if [ ! -f "${OUTPUT}" ] || [ ! -f "${OUTPUT%.csv}.constraints.json" ]; then
         MISSING_TASKS+=("${TASK}")
@@ -97,9 +111,11 @@ PLOT_JOB="${SUBMISSION%%;*}"
 echo "========================================"
 echo "Fixed-query bound-token ablation submitted"
 echo "Query             : ${QUERY_ID}"
-echo "Architecture      : alternating self/cross attention, d48/L4"
+echo "Baseline          : ordinary MLP per-column fusion, d48/L2"
+echo "Token models      : alternating self/cross attention, d48/L4"
 echo "Training          : 2000 optimizer steps per guide"
 echo "Snapshots         : every 200 steps"
+echo "Ordinary MLP train: ${MLP_TRAIN}"
 echo "Lower/upper train : ${ENDPOINT_TRAIN}"
 echo "Center/log-w train: ${CENTER_WIDTH_TRAIN}"
 echo "Bundled sampling  : ${SAMPLE_JOB}"

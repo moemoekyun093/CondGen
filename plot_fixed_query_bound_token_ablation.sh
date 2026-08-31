@@ -12,6 +12,7 @@ export PYTHONUNBUFFERED=1
 
 RELgDIFF_PYTHON="/scratch/work/agrawaa4/conda_envs/relgdiff/bin/python"
 "${RELgDIFF_PYTHON}" -u plot_fixed_query_checkpoint_histograms.py \
+    --series "ordinary_mlp=${TOKEN_SAMPLE_ROOT}/ordinary_mlp" \
     --series "lower_upper_tokens=${TOKEN_SAMPLE_ROOT}/endpoints" \
     --series "center_logwidth_tokens=${TOKEN_SAMPLE_ROOT}/center_logwidth" \
     --query-file "${QUERY_DIR}/${QUERY_ID}.json" \

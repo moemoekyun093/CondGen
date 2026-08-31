@@ -68,15 +68,45 @@ fi
 QUERY_SPLIT_MANIFEST="${DIAGNOSTIC_QUERY_SPLIT_MANIFEST}"
 QUERY_SPLIT=train
 export QUERY_SPLIT_MANIFEST QUERY_SPLIT
-TRAIN_SUBMISSION=$(sbatch --parsable "${DEPENDENCY_ARGS[@]}" \
-    --array="0-$((TRAIN_COUNT - 1))%${MAX_CONCURRENT}" doob_query_suite_sample.sh)
-TRAIN_ARRAY="${TRAIN_SUBMISSION%%;*}"
+mapfile -t TRAIN_QUERY_FILES < <(
+    python list_accepted_queries.py "${QUERY_DIR}" \
+        --query-split-manifest "${DIAGNOSTIC_QUERY_SPLIT_MANIFEST}" \
+        --query-split train
+)
+MISSING_TRAIN_INDICES=()
+for INDEX in "${!TRAIN_QUERY_FILES[@]}"; do
+    QUERY_ID="$(basename "${TRAIN_QUERY_FILES[INDEX]}" .json)"
+    SAMPLE="${TRAIN_SAMPLE_ROOT}/${METHOD_LABEL}/${QUERY_ID}.csv"
+    if [ ! -f "${SAMPLE}" ]; then
+        MISSING_TRAIN_INDICES+=("${INDEX}")
+    fi
+done
 
-COORDINATE_SUBMISSION=$(sbatch --parsable export_query_model_coordinates.sh)
-COORDINATE_JOB="${COORDINATE_SUBMISSION%%;*}"
+EVAL_DEPENDENCIES=()
+if [ "${#MISSING_TRAIN_INDICES[@]}" -eq 0 ]; then
+    TRAIN_ARRAY="reused ${TRAIN_COUNT} existing samples"
+else
+    ARRAY_INDICES=$(IFS=,; echo "${MISSING_TRAIN_INDICES[*]}")
+    TRAIN_SUBMISSION=$(sbatch --parsable "${DEPENDENCY_ARGS[@]}" \
+        --array="${ARRAY_INDICES}%${MAX_CONCURRENT}" doob_query_suite_sample.sh)
+    TRAIN_ARRAY="${TRAIN_SUBMISSION%%;*}"
+    EVAL_DEPENDENCIES+=("${TRAIN_ARRAY}")
+fi
 
-EVAL_SUBMISSION=$(sbatch --parsable \
-    --dependency="afterok:${TRAIN_ARRAY}:${COORDINATE_JOB}" \
+if [ -f "${QUERY_COORDINATES}" ]; then
+    COORDINATE_JOB="reused existing coordinates"
+else
+    COORDINATE_SUBMISSION=$(sbatch --parsable export_query_model_coordinates.sh)
+    COORDINATE_JOB="${COORDINATE_SUBMISSION%%;*}"
+    EVAL_DEPENDENCIES+=("${COORDINATE_JOB}")
+fi
+
+EVAL_DEPENDENCY_ARGS=()
+if [ "${#EVAL_DEPENDENCIES[@]}" -gt 0 ]; then
+    EVAL_DEPENDENCY=$(IFS=:; echo "${EVAL_DEPENDENCIES[*]}")
+    EVAL_DEPENDENCY_ARGS+=(--dependency="afterok:${EVAL_DEPENDENCY}")
+fi
+EVAL_SUBMISSION=$(sbatch --parsable "${EVAL_DEPENDENCY_ARGS[@]}" \
     evaluate_query_generalization.sh)
 EVAL_JOB="${EVAL_SUBMISSION%%;*}"
 

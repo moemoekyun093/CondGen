@@ -89,6 +89,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--bound-embedding-dim", type=int, default=8)
     parser.add_argument("--active-embedding-dim", type=int, default=8)
     parser.add_argument(
+        "--bound-embedding-mode",
+        choices=("monotone", "mlp"),
+        default="monotone",
+    )
+    parser.add_argument(
+        "--query-architecture",
+        choices=("per_token_fusion", "alternating_cross_attention"),
+        default="per_token_fusion",
+    )
+    parser.add_argument(
+        "--bound-token-parameterization",
+        choices=("endpoints", "center_logwidth"),
+        default="endpoints",
+    )
+    parser.add_argument(
         "--query-presence-mode",
         choices=("active_flags", "implicit_domain"),
         default="active_flags",
@@ -362,6 +377,9 @@ def main() -> None:
         "factor": args.factor,
         "bound_embedding_dim": args.bound_embedding_dim,
         "active_embedding_dim": args.active_embedding_dim,
+        "bound_embedding_mode": args.bound_embedding_mode,
+        "query_architecture": args.query_architecture,
+        "bound_token_parameterization": args.bound_token_parameterization,
         "query_presence_mode": args.query_presence_mode,
         "inactive_numerical_bound": args.inactive_numerical_bound,
     }

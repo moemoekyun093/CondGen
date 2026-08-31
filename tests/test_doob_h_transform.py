@@ -6,10 +6,12 @@ import torch
 
 from tabdiff.models.doob_h_transform import (
     CategoricalHTransformGuide,
+    ConstraintCrossAttentionBlock,
     NumericalBoxQuery,
     NumericalDoobHGuide,
     NumericalHScoreGuide,
     MonotoneScalarEmbedding,
+    ScalarMLPEmbedding,
     StructuredCategoricalHTransformGuide,
     StructuredNumericalHScoreGuide,
     categorical_candidate_log_h,
@@ -18,7 +20,7 @@ from tabdiff.models.doob_h_transform import (
     sample_conditional_batch,
     sample_constraint_mask,
 )
-from tabdiff.modules.main_modules import PeriodicTokenizer
+from tabdiff.modules.main_modules import FTBlock, PeriodicTokenizer
 from tabdiff.doob_h_runtime import infer_denoiser_type
 from tabdiff.doob_query_suite import _model_column_names
 from tabdiff.models.unified_ctime_diffusion import UnifiedCtimeDiffusion
@@ -304,6 +306,13 @@ class StructuredQueryGuideTest(unittest.TestCase):
         encoded = embedding(values)
         self.assertTrue(torch.all(encoded[1:] >= encoded[:-1]))
 
+    def test_unconstrained_scalar_embedding_has_ordinary_linear_layers(self):
+        embedding = ScalarMLPEmbedding(embedding_dim=6)
+        values = torch.tensor([-2.0, 0.0, 3.0])
+        self.assertEqual(embedding(values).shape, (3, 6))
+        self.assertIsInstance(embedding.input, torch.nn.Linear)
+        self.assertIsInstance(embedding.output, torch.nn.Linear)
+
     def test_structured_architecture_uses_external_frozen_tokenizer(self):
         tokenizer = self.make_tokenizer()
         kwargs = dict(
@@ -437,6 +446,72 @@ class StructuredQueryGuideTest(unittest.TestCase):
             query_categorical_active=torch.ones(1, 2),
         )
         torch.testing.assert_close(inactive, explicit_domain)
+
+    def test_bound_tokens_alternate_self_and_cross_attention(self):
+        guide = StructuredNumericalHScoreGuide(
+            base_tokenizer=self.make_tokenizer(),
+            d_numerical=2,
+            categories=[3, 4],
+            base_d_token=24,
+            d_token=16,
+            num_layers=4,
+            n_head=4,
+            query_architecture="alternating_cross_attention",
+            bound_token_parameterization="endpoints",
+        )
+        self.assertIsInstance(guide.blocks[0], FTBlock)
+        self.assertIsInstance(guide.blocks[1], ConstraintCrossAttentionBlock)
+        self.assertIsInstance(guide.blocks[2], FTBlock)
+        self.assertIsInstance(guide.blocks[3], ConstraintCrossAttentionBlock)
+        lower = torch.tensor([[-1.0, 0.0]])
+        upper = torch.tensor([[1.0, 2.0]])
+        tokens, valid = guide.numerical_constraint_tokens(
+            lower,
+            upper,
+            torch.tensor([[1.0, 0.0]]),
+        )
+        self.assertEqual(tokens.shape, (1, 4, 16))
+        self.assertEqual(valid.tolist(), [[True, True, False, False]])
+
+    def test_no_active_bound_tokens_make_cross_layers_identity(self):
+        guide = StructuredNumericalHScoreGuide(
+            base_tokenizer=self.make_tokenizer(),
+            d_numerical=2,
+            categories=[3, 4],
+            base_d_token=24,
+            d_token=16,
+            num_layers=4,
+            n_head=4,
+            query_architecture="alternating_cross_attention",
+            bound_token_parameterization="center_logwidth",
+        )
+        guide.eval()
+        x_num = torch.zeros(1, 2)
+        x_cat = torch.zeros(1, 7)
+        x_cat[:, 0] = 1.0
+        x_cat[:, 3] = 1.0
+        common = dict(
+            query_numerical_active=torch.zeros(1, 2),
+            query_categorical_allowed=torch.zeros(1, 5),
+            query_categorical_active=torch.zeros(1, 2),
+        )
+        first = guide._encode(
+            x_num,
+            x_cat,
+            torch.tensor([0.5]),
+            query_lower=torch.tensor([[-1.0, 0.0]]),
+            query_upper=torch.tensor([[1.0, 2.0]]),
+            **common,
+        )
+        second = guide._encode(
+            x_num,
+            x_cat,
+            torch.tensor([0.5]),
+            query_lower=torch.tensor([[-5.0, -3.0]]),
+            query_upper=torch.tensor([[5.0, 8.0]]),
+            **common,
+        )
+        torch.testing.assert_close(first, second)
 
 
 class CategoricalDoobUpdateTest(unittest.TestCase):

@@ -40,6 +40,9 @@ N_HEAD="${N_HEAD:-4}"
 FACTOR="${FACTOR:-2}"
 BOUND_EMBEDDING_DIM="${BOUND_EMBEDDING_DIM:-8}"
 ACTIVE_EMBEDDING_DIM="${ACTIVE_EMBEDDING_DIM:-8}"
+BOUND_EMBEDDING_MODE="${BOUND_EMBEDDING_MODE:-monotone}"
+QUERY_ARCHITECTURE="${QUERY_ARCHITECTURE:-per_token_fusion}"
+BOUND_TOKEN_PARAMETERIZATION="${BOUND_TOKEN_PARAMETERIZATION:-endpoints}"
 QUERY_PRESENCE_MODE="${QUERY_PRESENCE_MODE:-active_flags}"
 INACTIVE_NUMERICAL_BOUND="${INACTIVE_NUMERICAL_BOUND:-10.0}"
 CHECKPOINT_EVERY="${CHECKPOINT_EVERY:-500}"
@@ -88,7 +91,12 @@ if [ "${PREDICATE_MASK_MODE}" = "mixed" ]; then
     echo "Random active p  : ${RANDOM_PREDICATE_ACTIVE_PROBABILITY}"
 fi
 echo "State tokenizer  : frozen base FT-periodic tokenizer"
-echo "Numerical query  : monotone lower/upper embeddings after time fusion"
+echo "Numerical query  : lower/upper embeddings after time fusion"
+echo "Bound embedding  : ${BOUND_EMBEDDING_MODE}"
+echo "Query architecture: ${QUERY_ARCHITECTURE}"
+if [ "${QUERY_ARCHITECTURE}" = "alternating_cross_attention" ]; then
+    echo "Bound tokens     : ${BOUND_TOKEN_PARAMETERIZATION}"
+fi
 echo "Categorical query: sum of ReLU-frozen base category lookups"
 echo "Query presence   : ${QUERY_PRESENCE_MODE}"
 if [ "${QUERY_PRESENCE_MODE}" = "implicit_domain" ]; then
@@ -134,6 +142,9 @@ python -u train_doob_query_suite.py \
     --factor "${FACTOR}" \
     --bound-embedding-dim "${BOUND_EMBEDDING_DIM}" \
     --active-embedding-dim "${ACTIVE_EMBEDDING_DIM}" \
+    --bound-embedding-mode "${BOUND_EMBEDDING_MODE}" \
+    --query-architecture "${QUERY_ARCHITECTURE}" \
+    --bound-token-parameterization "${BOUND_TOKEN_PARAMETERIZATION}" \
     --query-presence-mode "${QUERY_PRESENCE_MODE}" \
     --inactive-numerical-bound "${INACTIVE_NUMERICAL_BOUND}" \
     --query-sampling-mode "${QUERY_SAMPLING_MODE}" \

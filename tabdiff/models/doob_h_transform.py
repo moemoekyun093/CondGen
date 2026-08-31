@@ -619,6 +619,74 @@ class MonotoneScalarEmbedding(nn.Module):
         return torch.nn.functional.softplus(self.output(hidden))
 
 
+class ScalarMLPEmbedding(nn.Module):
+    """Unconstrained MLP matching the monotone embedder's depth/activations."""
+
+    def __init__(self, embedding_dim: int, hidden_dim: int | None = None) -> None:
+        super().__init__()
+        hidden_dim = int(hidden_dim or embedding_dim)
+        self.input = nn.Linear(1, hidden_dim)
+        self.output = nn.Linear(hidden_dim, embedding_dim)
+
+    def forward(self, value: Tensor) -> Tensor:
+        hidden = torch.nn.functional.softplus(self.input(value.unsqueeze(-1)))
+        return torch.nn.functional.softplus(self.output(hidden))
+
+
+class ConstraintCrossAttentionBlock(nn.Module):
+    """State-to-constraint cross-attention with an exact no-query identity path."""
+
+    def __init__(self, d_token: int, n_heads: int, d_ffn_factor: float = 2.0) -> None:
+        super().__init__()
+        self.norm_state = nn.LayerNorm(d_token)
+        self.norm_constraint = nn.LayerNorm(d_token)
+        self.attention = nn.MultiheadAttention(
+            d_token,
+            n_heads,
+            batch_first=True,
+        )
+        self.norm_ffn = nn.LayerNorm(d_token)
+        hidden = int(d_token * d_ffn_factor)
+        self.ffn = nn.Sequential(
+            nn.Linear(d_token, hidden),
+            nn.GELU(),
+            nn.Linear(hidden, d_token),
+        )
+        self.t_proj = nn.Sequential(nn.SiLU(), nn.Linear(d_token, d_token))
+
+    def forward(
+        self,
+        state: Tensor,
+        constraints: Tensor,
+        constraint_valid: Tensor,
+        time: Tensor,
+    ) -> Tensor:
+        if constraint_valid.shape != constraints.shape[:2]:
+            raise ValueError("constraint validity mask has the wrong shape")
+        has_constraint = constraint_valid.any(dim=1)
+        # torch MultiheadAttention produces NaNs if every key is masked. Expose
+        # one zero placeholder only for those rows, then discard their update.
+        safe_constraints = constraints.clone()
+        safe_valid = constraint_valid.clone()
+        empty = ~has_constraint
+        if empty.any():
+            safe_constraints[empty, 0] = 0.0
+            safe_valid[empty, 0] = True
+        time_update = self.t_proj(time).unsqueeze(1)
+        query = self.norm_state(state + time_update)
+        keys = self.norm_constraint(safe_constraints)
+        update, _ = self.attention(
+            query,
+            keys,
+            keys,
+            key_padding_mask=~safe_valid,
+            need_weights=False,
+        )
+        candidate = state + update
+        candidate = candidate + self.ffn(self.norm_ffn(candidate))
+        return torch.where(has_constraint[:, None, None], candidate, state)
+
+
 class StructuredDoobHGuide(nn.Module):
     """Lightweight guide conditioned on numerical intervals and category sets.
 
@@ -641,6 +709,9 @@ class StructuredDoobHGuide(nn.Module):
         factor: float = 2.0,
         bound_embedding_dim: int = 8,
         active_embedding_dim: int = 8,
+        bound_embedding_mode: str = "monotone",
+        query_architecture: str = "per_token_fusion",
+        bound_token_parameterization: str = "endpoints",
         query_presence_mode: str = "active_flags",
         inactive_numerical_bound: float = 10.0,
         output_kind: str = "numerical",
@@ -654,6 +725,22 @@ class StructuredDoobHGuide(nn.Module):
             raise ValueError(
                 "query_presence_mode must be active_flags or implicit_domain"
             )
+        if bound_embedding_mode not in {"monotone", "mlp"}:
+            raise ValueError("bound_embedding_mode must be monotone or mlp")
+        if query_architecture not in {
+            "per_token_fusion",
+            "alternating_cross_attention",
+        }:
+            raise ValueError(
+                "query_architecture must be per_token_fusion or "
+                "alternating_cross_attention"
+            )
+        if bound_token_parameterization not in {"endpoints", "center_logwidth"}:
+            raise ValueError(
+                "bound_token_parameterization must be endpoints or center_logwidth"
+            )
+        if query_architecture == "alternating_cross_attention" and num_layers % 2:
+            raise ValueError("alternating cross-attention requires an even num_layers")
         if inactive_numerical_bound <= 0:
             raise ValueError("inactive_numerical_bound must be positive")
         categories = tuple(int(value) for value in categories)
@@ -666,6 +753,8 @@ class StructuredDoobHGuide(nn.Module):
         self.d_categorical_one_hot = sum(categories)
         self.output_kind = output_kind
         self.query_presence_mode = query_presence_mode
+        self.query_architecture = query_architecture
+        self.bound_token_parameterization = bound_token_parameterization
         self.inactive_numerical_bound = float(inactive_numerical_bound)
         self.scalar_h_gradient = False
         self._config = {
@@ -678,6 +767,9 @@ class StructuredDoobHGuide(nn.Module):
             "factor": factor,
             "bound_embedding_dim": bound_embedding_dim,
             "active_embedding_dim": active_embedding_dim,
+            "bound_embedding_mode": bound_embedding_mode,
+            "query_architecture": query_architecture,
+            "bound_token_parameterization": bound_token_parameterization,
             "query_presence_mode": query_presence_mode,
             "inactive_numerical_bound": inactive_numerical_bound,
             "output_kind": output_kind,
@@ -706,40 +798,69 @@ class StructuredDoobHGuide(nn.Module):
             nn.SiLU(),
         )
 
-        self.lower_embedding = MonotoneScalarEmbedding(bound_embedding_dim)
-        self.upper_embedding = MonotoneScalarEmbedding(bound_embedding_dim)
-        numerical_query_dim = 2 + 2 * bound_embedding_dim
+        self.lower_embedding = None
+        self.upper_embedding = None
         self.numerical_null = None
         self.numerical_active_embedding = None
-        numerical_fusion_dim = d_token + numerical_query_dim
-        if query_presence_mode == "active_flags":
-            self.numerical_null = nn.Parameter(
-                torch.zeros(d_numerical, numerical_query_dim)
-            )
-            self.numerical_active_embedding = nn.Embedding(2, active_embedding_dim)
-            numerical_fusion_dim += active_embedding_dim
-        self.numerical_query_fusion = nn.Sequential(
-            nn.Linear(numerical_fusion_dim, d_token),
-            nn.SiLU(),
-        )
-
+        self.numerical_query_fusion = None
         self.categorical_null = None
         self.categorical_active_embedding = None
-        categorical_fusion_dim = d_token + base_d_token
-        if query_presence_mode == "active_flags":
-            self.categorical_null = nn.Parameter(
-                torch.zeros(len(categories), base_d_token)
-            )
-            self.categorical_active_embedding = nn.Embedding(2, active_embedding_dim)
-            categorical_fusion_dim += active_embedding_dim
-        self.categorical_query_fusion = nn.Sequential(
-            nn.Linear(categorical_fusion_dim, d_token),
-            nn.SiLU(),
-        )
+        self.categorical_query_fusion = None
+        self.constraint_column_embedding = None
+        self.constraint_role_embedding = None
+        self.constraint_value_embedding = None
 
-        self.blocks = nn.ModuleList(
-            [FTBlock(d_token, n_head, d_ffn_factor=factor) for _ in range(num_layers)]
-        )
+        if query_architecture == "per_token_fusion":
+            embedding_class = (
+                MonotoneScalarEmbedding
+                if bound_embedding_mode == "monotone"
+                else ScalarMLPEmbedding
+            )
+            self.lower_embedding = embedding_class(bound_embedding_dim)
+            self.upper_embedding = embedding_class(bound_embedding_dim)
+            numerical_query_dim = 2 + 2 * bound_embedding_dim
+            numerical_fusion_dim = d_token + numerical_query_dim
+            if query_presence_mode == "active_flags":
+                self.numerical_null = nn.Parameter(
+                    torch.zeros(d_numerical, numerical_query_dim)
+                )
+                self.numerical_active_embedding = nn.Embedding(2, active_embedding_dim)
+                numerical_fusion_dim += active_embedding_dim
+            self.numerical_query_fusion = nn.Sequential(
+                nn.Linear(numerical_fusion_dim, d_token),
+                nn.SiLU(),
+            )
+            categorical_fusion_dim = d_token + base_d_token
+            if query_presence_mode == "active_flags":
+                self.categorical_null = nn.Parameter(
+                    torch.zeros(len(categories), base_d_token)
+                )
+                self.categorical_active_embedding = nn.Embedding(2, active_embedding_dim)
+                categorical_fusion_dim += active_embedding_dim
+            self.categorical_query_fusion = nn.Sequential(
+                nn.Linear(categorical_fusion_dim, d_token),
+                nn.SiLU(),
+            )
+            self.blocks = nn.ModuleList(
+                [FTBlock(d_token, n_head, d_ffn_factor=factor) for _ in range(num_layers)]
+            )
+        else:
+            self.constraint_column_embedding = nn.Embedding(d_numerical, d_token)
+            self.constraint_role_embedding = nn.Embedding(2, d_token)
+            self.constraint_value_embedding = ScalarMLPEmbedding(d_token)
+            blocks = []
+            for layer in range(num_layers):
+                if layer % 2 == 0:
+                    blocks.append(FTBlock(d_token, n_head, d_ffn_factor=factor))
+                else:
+                    blocks.append(
+                        ConstraintCrossAttentionBlock(
+                            d_token,
+                            n_head,
+                            d_ffn_factor=factor,
+                        )
+                    )
+            self.blocks = nn.ModuleList(blocks)
         self.final_norm = nn.LayerNorm(d_token)
         self.correction_head = (
             nn.Linear(d_token, 1) if output_kind == "numerical" else None
@@ -800,6 +921,32 @@ class StructuredDoobHGuide(nn.Module):
             allowed_offset += real_count
             tokenizer_offset += total_count
         return torch.stack(categorical_query_parts, dim=1)
+
+    def numerical_constraint_tokens(
+        self,
+        lower: Tensor,
+        upper: Tensor,
+        active: Tensor,
+    ) -> tuple[Tensor, Tensor]:
+        """Create two masked query tokens for every active numerical column."""
+        if self.query_architecture != "alternating_cross_attention":
+            raise RuntimeError("constraint tokens require cross-attention architecture")
+        if self.bound_token_parameterization == "endpoints":
+            values = torch.stack((lower, upper), dim=2)
+        else:
+            center = 0.5 * (lower + upper)
+            log_width = torch.log((upper - lower).clamp_min(1e-6))
+            values = torch.stack((center, log_width), dim=2)
+        value_tokens = self.constraint_value_embedding(values)
+        columns = self.constraint_column_embedding.weight[None, :, None, :]
+        roles = self.constraint_role_embedding.weight[None, None, :, :]
+        tokens = value_tokens + columns + roles
+        valid = active.bool().unsqueeze(2).expand(-1, -1, 2)
+        tokens = torch.where(valid.unsqueeze(-1), tokens, torch.zeros_like(tokens))
+        return (
+            tokens.reshape(tokens.shape[0], 2 * self.d_numerical, -1),
+            valid.reshape(valid.shape[0], 2 * self.d_numerical),
+        )
 
     def _encode(
         self,
@@ -894,6 +1041,30 @@ class StructuredDoobHGuide(nn.Module):
         state = self.state_time_fusion(
             torch.cat((state, time[:, None, :].expand_as(state)), dim=-1)
         )
+
+        if self.query_architecture == "alternating_cross_attention":
+            if categorical_active.bool().any():
+                raise ValueError(
+                    "the first bound-token architecture supports numerical "
+                    "constraints only"
+                )
+            constraint_tokens, constraint_valid = self.numerical_constraint_tokens(
+                lower,
+                upper,
+                numerical_active,
+            )
+            tokens = state
+            for block in self.blocks:
+                if isinstance(block, ConstraintCrossAttentionBlock):
+                    tokens = block(
+                        tokens,
+                        constraint_tokens,
+                        constraint_valid,
+                        time,
+                    )
+                else:
+                    tokens = block(tokens, time)
+            return self.final_norm(tokens)
 
         if self.query_presence_mode == "implicit_domain":
             large = self.inactive_numerical_bound

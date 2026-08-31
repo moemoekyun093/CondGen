@@ -231,6 +231,20 @@ def main() -> None:
     query_dir = Path(args.query_dir)
     queries = load_queries(query_dir)
     all_train_ids = load_query_split(args.source_manifest, "train")
+    with Path(args.diagnostic_manifest).open("r", encoding="utf-8") as stream:
+        diagnostic_manifest = json.load(stream)
+    arity_filter = diagnostic_manifest.get("arity_filter")
+    if arity_filter is not None:
+        all_train_ids = [
+            query_id
+            for query_id in all_train_ids
+            if int(
+                queries[query_id].get(
+                    "arity", len(queries[query_id]["predicates"])
+                )
+            )
+            == int(arity_filter)
+        ]
     sampled_train_ids = load_query_split(args.diagnostic_manifest, "train")
     test_ids = load_query_split(args.diagnostic_manifest, "test")
     with Path(args.query_coordinates).open("r", encoding="utf-8") as stream:

@@ -34,9 +34,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", required=True)
     parser.add_argument(
         "--group-by",
-        choices=("target_band", "arity"),
+        choices=("target_band", "arity", "mean_interval_width"),
         default="target_band",
     )
+    parser.add_argument(
+        "--query-coordinates",
+        default=None,
+        help="Exact transformed query coordinates exported by export_query_model_coordinates.py",
+    )
+    parser.add_argument("--interval-width-bins", type=int, default=10)
     parser.add_argument(
         "--baseline-method",
         default=None,
@@ -255,6 +261,8 @@ def main() -> None:
         raise ValueError("query-id cannot be combined with a query split manifest")
     if args.filtered_min_rows <= 0:
         raise ValueError("filtered-min-rows must be positive")
+    if args.interval_width_bins < 2:
+        raise ValueError("interval-width-bins must be at least 2")
     query_dir = Path(args.query_dir)
     real_path = Path(args.real_data)
     info_path = Path(args.info_file)
@@ -294,6 +302,20 @@ def main() -> None:
             f"query split selects {len(selected_query_ids)} ids but "
             f"{len(queries)} accepted query files were loaded"
         )
+    query_coordinates = None
+    if args.query_coordinates is not None:
+        with Path(args.query_coordinates).open("r", encoding="utf-8") as stream:
+            query_coordinates = json.load(stream)["queries"]
+        missing_coordinates = {
+            query["query_id"] for _, query in queries
+        } - set(query_coordinates)
+        if missing_coordinates:
+            raise ValueError(
+                "query coordinate file is missing selected ids: "
+                f"{sorted(missing_coordinates)[:5]}"
+            )
+    elif args.group_by == "mean_interval_width":
+        raise ValueError("--query-coordinates is required for mean interval width")
     real = pd.read_csv(real_path)
     with info_path.open("r", encoding="utf-8") as stream:
         info = json.load(stream)
@@ -325,6 +347,16 @@ def main() -> None:
         query_id = query["query_id"]
         target_band = float(query["target_band"])
         arity = int(query.get("arity", len(query["predicates"])))
+        mean_interval_width = float("nan")
+        if query_coordinates is not None:
+            coordinate = query_coordinates[query_id]
+            active = np.asarray(coordinate["numerical_active"], dtype=bool)
+            widths = (
+                np.asarray(coordinate["numerical_upper"], dtype=float)
+                - np.asarray(coordinate["numerical_lower"], dtype=float)
+            )[active]
+            if len(widths):
+                mean_interval_width = float(widths.mean())
         real_report, real_mask = raw_constraint_report(real, query)
         conditional_real = real.loc[real_mask].reset_index(drop=True)
         reference_metrics_available = len(conditional_real) >= 2
@@ -426,6 +458,7 @@ def main() -> None:
                     "query_id": query_id,
                     "target_band": target_band,
                     "arity": arity,
+                    "mean_transformed_interval_width": mean_interval_width,
                     "num_numeric_constraints": modality_report["numeric"]["num_constraints"],
                     "num_categorical_constraints": modality_report["categorical"]["num_constraints"],
                     "generated_rows": len(samples),
@@ -481,16 +514,60 @@ def main() -> None:
         .value_counts()
         .to_string()
     )
-    grouping_column = args.group_by
+    by_mean_interval_width = None
+    if query_coordinates is not None:
+        query_widths = (
+            per_query[["query_id", "mean_transformed_interval_width"]]
+            .drop_duplicates("query_id")
+            .dropna(subset=["mean_transformed_interval_width"])
+        )
+        edges = np.unique(
+            np.quantile(
+                query_widths["mean_transformed_interval_width"],
+                np.linspace(0.0, 1.0, args.interval_width_bins + 1),
+            )
+        )
+        per_query["mean_interval_width_bin"] = pd.NA
+        per_query["mean_interval_width_bin_midpoint"] = np.nan
+        if len(edges) >= 2:
+            width_bins = pd.cut(
+                per_query["mean_transformed_interval_width"],
+                bins=edges,
+                include_lowest=True,
+                duplicates="drop",
+            )
+            per_query["mean_interval_width_bin"] = width_bins.astype("string")
+            per_query["mean_interval_width_bin_midpoint"] = [
+                interval.mid if pd.notna(interval) else np.nan
+                for interval in width_bins
+            ]
+            by_mean_interval_width = aggregate(
+                per_query.dropna(subset=["mean_interval_width_bin_midpoint"]),
+                ["method", "mean_interval_width_bin_midpoint"],
+            )
+    grouping_column = (
+        "mean_interval_width_bin_midpoint"
+        if args.group_by == "mean_interval_width"
+        else args.group_by
+    )
     by_selectivity_band = aggregate(per_query, ["method", "target_band"])
     by_arity = aggregate(per_query, ["method", "arity"])
-    grouped = (
-        by_selectivity_band if grouping_column == "target_band" else by_arity
-    )
+    if grouping_column == "target_band":
+        grouped = by_selectivity_band
+    elif grouping_column == "arity":
+        grouped = by_arity
+    else:
+        if by_mean_interval_width is None:
+            raise ValueError("no numerical interval widths are available")
+        grouped = by_mean_interval_width
     overall = aggregate(per_query, ["method"])
     per_query.to_csv(output_dir / "per_query.csv", index=False)
     by_selectivity_band.to_csv(output_dir / "by_selectivity_band.csv", index=False)
     by_arity.to_csv(output_dir / "by_arity.csv", index=False)
+    if by_mean_interval_width is not None:
+        by_mean_interval_width.to_csv(
+            output_dir / "by_mean_interval_width.csv", index=False
+        )
     overall.to_csv(output_dir / "overall.csv", index=False)
     relative_grouped = None
     if args.baseline_method is not None:
@@ -556,6 +633,11 @@ def main() -> None:
                 "grouped": grouped.to_dict(orient="records"),
                 "by_selectivity_band": by_selectivity_band.to_dict(orient="records"),
                 "by_arity": by_arity.to_dict(orient="records"),
+                "by_mean_interval_width": (
+                    None
+                    if by_mean_interval_width is None
+                    else by_mean_interval_width.to_dict(orient="records")
+                ),
                 "baseline_method": args.baseline_method,
                 "filtered_feasible_evaluation": {
                     "minimum_rows_per_side": args.filtered_min_rows,
@@ -590,6 +672,15 @@ def main() -> None:
         from tabdiff.query_suite_plots import make_query_suite_plots
 
         make_query_suite_plots(grouped, output_dir, grouping_column)
+        if (
+            by_mean_interval_width is not None
+            and grouping_column != "mean_interval_width_bin_midpoint"
+        ):
+            make_query_suite_plots(
+                by_mean_interval_width,
+                output_dir,
+                "mean_interval_width_bin_midpoint",
+            )
     except ModuleNotFoundError as error:
         if error.name != "matplotlib":
             raise

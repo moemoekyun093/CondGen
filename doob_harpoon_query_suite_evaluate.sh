@@ -21,6 +21,7 @@ REAL_DATA="${REAL_DATA:-synthetic/${DATANAME}/real.csv}"
 INFO_FILE="${INFO_FILE:-data/${DATANAME}/info.json}"
 EVAL_GROUP_BY="${EVAL_GROUP_BY:-target_band}"
 EVAL_BASELINE_METHOD="${EVAL_BASELINE_METHOD:-}"
+QUERY_COORDINATES="${QUERY_COORDINATES:-data90/${DATANAME}/query_splits/query_model_coordinates.json}"
 
 QUERY_FILTER_ARGS=()
 if [ -n "${QUERY_SPLIT_MANIFEST:-}" ]; then
@@ -39,6 +40,14 @@ fi
 
 mkdir -p evaluations/slurm "${SUITE_EVAL_DIR}"
 
+if [ ! -f "${QUERY_COORDINATES}" ]; then
+    python -u export_query_model_coordinates.py \
+        --dataname "${DATANAME}" \
+        --base-exp-name "${MODEL_NAME:-ft_periodic_seed0}" \
+        --query-dir "${QUERY_DIR}" \
+        --output "${QUERY_COORDINATES}"
+fi
+
 python -u evaluate_doob_query_suite.py \
     --query-dir "${QUERY_DIR}" \
     --method "${DOOB_LABEL}=${SUITE_SAMPLE_ROOT}/${DOOB_LABEL}" \
@@ -46,6 +55,7 @@ python -u evaluate_doob_query_suite.py \
     --real-data "${REAL_DATA}" \
     --info-file "${INFO_FILE}" \
     --group-by "${EVAL_GROUP_BY}" \
+    --query-coordinates "${QUERY_COORDINATES}" \
     "${QUERY_FILTER_ARGS[@]}" \
     "${BASELINE_ARGS[@]}" \
     --output-dir "${SUITE_EVAL_DIR}"

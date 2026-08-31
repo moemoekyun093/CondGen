@@ -29,14 +29,25 @@ def make_query_suite_plots(grouped: pd.DataFrame, output_dir: Path, group_by: st
         if group_by == "target_band":
             axis.set_xscale("log")
         axis.set_ylim(0, 1)
-        axis.set_xlabel("Target selectivity band" if group_by == "target_band" else "Active predicates")
+        axis.set_xlabel(
+            "Target selectivity band"
+            if group_by == "target_band"
+            else "Mean active interval width in transformed space"
+            if group_by == "mean_interval_width_bin_midpoint"
+            else "Active predicates"
+        )
         axis.set_ylabel(ylabel)
         axis.set_title(title)
         axis.grid(alpha=0.25)
     axes[0].yaxis.set_major_formatter(PercentFormatter(1.0))
     axes[0].legend()
     figure.tight_layout()
-    figure.savefig(output_dir / f"query_suite_by_{group_by}.png", dpi=180)
+    filename_group = (
+        "mean_interval_width"
+        if group_by == "mean_interval_width_bin_midpoint"
+        else group_by
+    )
+    figure.savefig(output_dir / f"query_suite_by_{filename_group}.png", dpi=180)
     plt.close(figure)
 
     definitions = (
@@ -58,11 +69,17 @@ def make_query_suite_plots(grouped: pd.DataFrame, output_dir: Path, group_by: st
         if group_by == "target_band":
             axis.set_xscale("log")
         axis.set_ylim(0, 1)
-        axis.set_xlabel("Target selectivity band" if group_by == "target_band" else "Active predicates")
+        axis.set_xlabel(
+            "Target selectivity band"
+            if group_by == "target_band"
+            else "Mean active interval width in transformed space"
+            if group_by == "mean_interval_width_bin_midpoint"
+            else "Active predicates"
+        )
         axis.set_ylabel("Score (higher is better)")
         axis.set_title(title)
         axis.grid(alpha=0.25)
     axes.flat[0].legend()
     figure.tight_layout()
-    figure.savefig(output_dir / f"quality_metrics_by_{group_by}.png", dpi=180)
+    figure.savefig(output_dir / f"quality_metrics_by_{filename_group}.png", dpi=180)
     plt.close(figure)

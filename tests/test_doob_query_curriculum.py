@@ -94,6 +94,41 @@ class QueryCurriculumTest(unittest.TestCase):
         self.assertEqual(bucket, "broad")
         self.assertEqual(band, "25-50%")
 
+    def test_multi_query_sample_is_distinct(self):
+        queries = [
+            DummyQuery(f"broad-{index}", 0.4) for index in range(4)
+        ] + [
+            DummyQuery(f"tight-{index}", 0.005) for index in range(4)
+        ]
+        sampler = QueryCurriculumSampler(
+            queries,
+            total_steps=3,
+            warmup_steps=1,
+            transition_steps=1,
+            warmup_probabilities=(0.5, 0.0, 0.5),
+            final_probabilities=(0.5, 0.0, 0.5),
+            tight_max_band=0.01,
+            broad_min_band=0.1,
+        )
+        selected = sampler.sample_distinct(1, random.Random(0), 6)
+        query_ids = [query.query_id for query, _, _, _ in selected]
+        self.assertEqual(len(query_ids), 6)
+        self.assertEqual(len(set(query_ids)), 6)
+
+    def test_multi_query_sample_rejects_oversized_request(self):
+        sampler = QueryCurriculumSampler(
+            [DummyQuery("only", 0.005)],
+            total_steps=3,
+            warmup_steps=1,
+            transition_steps=1,
+            warmup_probabilities=(0.0, 0.0, 1.0),
+            final_probabilities=(0.0, 0.0, 1.0),
+            tight_max_band=0.01,
+            broad_min_band=0.1,
+        )
+        with self.assertRaisesRegex(ValueError, "distinct queries"):
+            sampler.sample_distinct(1, random.Random(0), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -70,6 +70,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--steps", type=int, default=12000)
     parser.add_argument("--batch-size", type=int, default=1024)
+    parser.add_argument(
+        "--queries-per-step",
+        type=int,
+        default=1,
+        help="Distinct query definitions represented in each optimizer batch",
+    )
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--weight-decay", type=float, default=1e-4)
     parser.add_argument("--ema-decay", type=float, default=0.997)
@@ -245,8 +251,15 @@ def main() -> None:
         )
     if args.query_split_manifest is not None and args.query_id:
         raise ValueError("query-id cannot be combined with a query split manifest")
-    if min(args.steps, args.batch_size, args.h_candidate_batch_size) <= 0:
+    if min(
+        args.steps,
+        args.batch_size,
+        args.queries_per_step,
+        args.h_candidate_batch_size,
+    ) <= 0:
         raise ValueError("steps and batch sizes must be positive")
+    if args.batch_size % args.queries_per_step != 0:
+        raise ValueError("batch-size must be divisible by queries-per-step")
     if args.predicate_mask_mode == "mixed":
         mask_probabilities = (
             args.random_predicate_active_probability,
@@ -289,6 +302,8 @@ def main() -> None:
                 "query selection contains ids absent from the accepted suite: "
                 f"{missing_ids[:5]}"
             )
+    if args.queries_per_step > len(queries):
+        raise ValueError("queries-per-step exceeds the number of loaded queries")
     numerical_names, categorical_names = _model_column_names(runtime.info)
     core_indices = None
     query_hit_matrices = None
@@ -380,11 +395,13 @@ def main() -> None:
             "split": args.query_split,
             "target_band": args.target_band,
             "sampling": (
-                "curriculum_bucket_then_uniform_band_then_uniform_query_then_"
+                "curriculum_weighted_distinct_queries_then_"
                 "uniform_support_with_replacement"
                 if curriculum is not None
-                else "uniform_over_queries_then_uniform_support_with_replacement"
+                else "uniform_distinct_queries_then_uniform_support_with_replacement"
             ),
+            "queries_per_optimizer_step": args.queries_per_step,
+            "rows_per_query": args.batch_size // args.queries_per_step,
             "curriculum_buckets": (
                 curriculum.summary() if curriculum is not None else None
             ),
@@ -451,6 +468,10 @@ def main() -> None:
             f"Final stratified mixture begins at step {curriculum.final_phase_start}"
         )
     print("Endpoint sampling: uniform satisfying rows, with replacement")
+    print(
+        f"Optimizer batch composition: {args.queries_per_step} distinct queries x "
+        f"{args.batch_size // args.queries_per_step} rows"
+    )
     if args.predicate_mask_mode == "mixed":
         print(
             "Predicate masking: "
@@ -479,56 +500,87 @@ def main() -> None:
         # Losses from different curriculum phases are not directly comparable.
         # Select the best checkpoint only under the final target mixture.
         best_eligible_step = max(best_eligible_step, curriculum.final_phase_start)
+    rows_per_query = args.batch_size // args.queries_per_step
     for step in range(1, args.steps + 1):
         if curriculum is None:
-            query = random.choice(queries)
-            sampled_band = query.specification["target_band"]
-            bucket = "uniform"
-            phase = "uniform"
+            presentations = [
+                (
+                    query,
+                    "uniform",
+                    query.specification["target_band"],
+                    "uniform",
+                )
+                for query in random.sample(queries, args.queries_per_step)
+            ]
         else:
-            query, bucket, sampled_band, phase = curriculum.sample(step, random)
-        query_counts[query.query_id] += 1
-        band_key = str(sampled_band)
-        band_counts[band_key] = band_counts.get(band_key, 0) + 1
-        if bucket in bucket_counts:
-            bucket_counts[bucket] += 1
+            presentations = curriculum.sample_distinct(
+                step,
+                random,
+                args.queries_per_step,
+            )
+        phase = presentations[0][3]
         phase_counts[phase] += 1
-        if args.predicate_mask_mode == "mixed":
-            predicate_mask, mask_kind = sample_predicate_mask(
-                len(query.specification["predicates"]),
-                device=device,
-                random_active_probability=args.random_predicate_active_probability,
-                all_active_probability=args.all_active_query_probability,
-                all_inactive_probability=args.all_inactive_query_probability,
+        x0_parts = []
+        query_kwargs_parts = {}
+        selected_ids = []
+        support_sizes = []
+        active_arities = []
+        step_bucket_counts = {}
+        step_mask_counts = {}
+        for query, bucket, sampled_band, _ in presentations:
+            query_counts[query.query_id] += 1
+            selected_ids.append(query.query_id)
+            band_key = str(sampled_band)
+            band_counts[band_key] = band_counts.get(band_key, 0) + 1
+            if bucket in bucket_counts:
+                bucket_counts[bucket] += 1
+            step_bucket_counts[bucket] = step_bucket_counts.get(bucket, 0) + 1
+            if args.predicate_mask_mode == "mixed":
+                predicate_mask, mask_kind = sample_predicate_mask(
+                    len(query.specification["predicates"]),
+                    device=device,
+                    random_active_probability=args.random_predicate_active_probability,
+                    all_active_probability=args.all_active_query_probability,
+                    all_inactive_probability=args.all_inactive_query_probability,
+                )
+                eligible = eligible_indices_for_predicate_mask(
+                    query_hit_matrices[query.query_id],
+                    core_indices,
+                    predicate_mask,
+                ).to(device)
+            else:
+                predicate_mask = torch.ones(
+                    len(query.specification["predicates"]),
+                    dtype=torch.bool,
+                    device=device,
+                )
+                mask_kind = "all_active"
+                # Preserve exact full-query support for every query subbatch.
+                eligible = query.eligible_indices.to(device)
+            mask_counts[mask_kind] += 1
+            step_mask_counts[mask_kind] = step_mask_counts.get(mask_kind, 0) + 1
+            active_arity = int(predicate_mask.sum().item())
+            active_arities.append(active_arity)
+            support_sizes.append(len(eligible))
+            arity_counts[str(active_arity)] = arity_counts.get(str(active_arity), 0) + 1
+            x0_parts.append(
+                sample_conditional_batch(x_all, eligible, rows_per_query)
             )
-            eligible = eligible_indices_for_predicate_mask(
-                query_hit_matrices[query.query_id],
-                core_indices,
+            single_query_kwargs = mask_query_kwargs(
+                query.model_kwargs(device, x_all.dtype),
+                query.specification,
                 predicate_mask,
-            ).to(device)
-        else:
-            predicate_mask = torch.ones(
-                len(query.specification["predicates"]),
-                dtype=torch.bool,
-                device=device,
+                numerical_names,
+                categorical_names,
             )
-            mask_kind = "all_active"
-            # Preserve the original full-query training path exactly.
-            eligible = query.eligible_indices.to(device)
-        mask_counts[mask_kind] += 1
-        active_arity = int(predicate_mask.sum().item())
-        arity_counts[str(active_arity)] = arity_counts.get(str(active_arity), 0) + 1
-        x0 = sample_conditional_batch(x_all, eligible, args.batch_size)
-        single_query_kwargs = mask_query_kwargs(
-            query.model_kwargs(device, x_all.dtype),
-            query.specification,
-            predicate_mask,
-            numerical_names,
-            categorical_names,
-        )
+            for name, value in single_query_kwargs.items():
+                query_kwargs_parts.setdefault(name, []).append(
+                    value[None, :].expand(rows_per_query, -1)
+                )
+        x0 = torch.cat(x0_parts, dim=0)
         query_kwargs = {
-            name: value[None, :].expand(args.batch_size, -1)
-            for name, value in single_query_kwargs.items()
+            name: torch.cat(parts, dim=0)
+            for name, parts in query_kwargs_parts.items()
         }
         optimizer.zero_grad(set_to_none=True)
         gradient_loss, categorical_loss = structured_joint_batch(
@@ -579,9 +631,13 @@ def main() -> None:
             )
         if step == 1 or step % args.log_every == 0:
             print(
-                f"step={step:05d} query={query.query_id} support={len(eligible)} "
-                f"mask={mask_kind} arity={active_arity} "
-                f"phase={phase} bucket={bucket} band={sampled_band} "
+                f"step={step:05d} queries={len(selected_ids)} "
+                f"first_query={selected_ids[0]} "
+                f"support_min_med_max={min(support_sizes)}/"
+                f"{int(np.median(support_sizes))}/{max(support_sizes)} "
+                f"arity_min_max={min(active_arities)}/{max(active_arities)} "
+                f"phase={phase} buckets={step_bucket_counts} "
+                f"masks={step_mask_counts} "
                 f"total={loss_value:.6f} gradient_mse={gradient_loss.item():.6f} "
                 f"categorical_loss={categorical_loss.item():.6f} "
                 f"smoothed_total={smoothed_loss:.6f}",

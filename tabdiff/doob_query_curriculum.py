@@ -155,6 +155,34 @@ class QueryCurriculumSampler:
         query = rng.choice(self.by_bucket[bucket][band])
         return query, bucket, band, phase
 
+    def sample_distinct(self, step: int, rng, count: int):
+        """Weighted sampling without replacement under the current curriculum."""
+        if count <= 0:
+            raise ValueError("distinct query count must be positive")
+        phase, probabilities = self.phase_and_probabilities(step)
+        candidates = []
+        weights = []
+        for bucket, bucket_probability in zip(BUCKET_ORDER, probabilities):
+            bands = sorted(self.by_bucket[bucket])
+            if not bands:
+                continue
+            for band in bands:
+                queries = self.by_bucket[bucket][band]
+                query_weight = bucket_probability / len(bands) / len(queries)
+                for query in queries:
+                    candidates.append((query, bucket, band, phase))
+                    weights.append(query_weight)
+        if count > len(candidates):
+            raise ValueError(
+                f"requested {count} distinct queries from only {len(candidates)}"
+            )
+        selected = []
+        for _ in range(count):
+            index = rng.choices(range(len(candidates)), weights=weights, k=1)[0]
+            selected.append(candidates.pop(index))
+            weights.pop(index)
+        return selected
+
     def summary(self) -> dict:
         return {
             bucket: {

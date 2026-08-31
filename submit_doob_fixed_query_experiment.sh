@@ -16,6 +16,7 @@ SAMPLE_DIR="${SAMPLE_DIR:-conditional_samples/${DATANAME}/fixed_query_experiment
 SAMPLE_OUTPUT="${SAMPLE_DIR}/${QUERY_ID}.csv"
 EVAL_OUTPUT_DIR="${EVAL_OUTPUT_DIR:-evaluations/${DATANAME}/fixed_query_experiment/${METHOD_LABEL}}"
 NUM_SAMPLES="${NUM_SAMPLES:-1000}"
+VIOLATION_HISTOGRAM_BINS="${VIOLATION_HISTOGRAM_BINS:-40}"
 
 QUERY_SPEC="${QUERY_DIR}/${QUERY_ID}.json"
 if [ ! -f "${QUERY_SPEC}" ]; then
@@ -32,7 +33,7 @@ fi
 
 mkdir -p logs evaluations/slurm "${EVAL_OUTPUT_DIR}"
 export DATANAME MODEL_NAME QUERY_DIR QUERY_ID STEPS BATCH_SIZE METHOD_LABEL
-export GUIDE_DIR SAMPLE_OUTPUT EVAL_OUTPUT_DIR NUM_SAMPLES
+export GUIDE_DIR SAMPLE_OUTPUT EVAL_OUTPUT_DIR NUM_SAMPLES VIOLATION_HISTOGRAM_BINS
 
 DEPENDENCIES=()
 if [ -f "${GUIDE_DIR}/best_guide.pt" ]; then
@@ -88,4 +89,5 @@ echo "Evaluation        : ${EVAL_JOB}"
 echo "Checkpoint        : ${GUIDE_DIR}"
 echo "Samples           : ${SAMPLE_OUTPUT}"
 echo "Metrics           : ${EVAL_OUTPUT_DIR}"
+echo "Violation bins    : ${VIOLATION_HISTOGRAM_BINS}"
 echo "========================================"

@@ -18,3 +18,9 @@ RELgDIFF_PYTHON="/scratch/work/agrawaa4/conda_envs/relgdiff/bin/python"
     --real-data "synthetic/${DATANAME}/real.csv" \
     --info-file "data/${DATANAME}/info.json" \
     --output-dir "${EVAL_OUTPUT_DIR}"
+
+"${RELgDIFF_PYTHON}" -u evaluate_fixed_query_violation_magnitude.py \
+    --samples "${SAMPLE_OUTPUT}" \
+    --query-file "${QUERY_DIR}/${QUERY_ID}.json" \
+    --output-dir "${EVAL_OUTPUT_DIR}" \
+    --bins "${VIOLATION_HISTOGRAM_BINS:-40}"

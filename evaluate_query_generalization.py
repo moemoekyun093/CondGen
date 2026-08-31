@@ -24,6 +24,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--train-samples", required=True)
     parser.add_argument("--test-samples", required=True)
     parser.add_argument("--query-coordinates", required=True)
+    parser.add_argument("--num-plot-bins", type=int, default=10)
     parser.add_argument("--output-dir", required=True)
     return parser.parse_args()
 
@@ -135,7 +136,7 @@ def evaluate_samples(query: dict, sample_path: Path) -> dict:
     }
 
 
-def make_plots(frame: pd.DataFrame, output_dir: Path) -> None:
+def make_plots(frame: pd.DataFrame, output_dir: Path, num_plot_bins: int) -> None:
     import matplotlib.pyplot as plt
 
     labels = (
@@ -196,6 +197,24 @@ def make_plots(frame: pd.DataFrame, output_dir: Path) -> None:
         axis.scatter(test["nearest_train_distance"], test[metric], alpha=0.65, s=24)
         finite = test[["nearest_train_distance", metric]].dropna()
         correlation = finite.corr(method="spearman").iloc[0, 1] if len(finite) >= 2 else float("nan")
+        if finite["nearest_train_distance"].nunique() >= 2:
+            distance_bins = pd.qcut(
+                finite["nearest_train_distance"],
+                q=min(num_plot_bins, finite["nearest_train_distance"].nunique()),
+                duplicates="drop",
+            )
+            binned = finite.groupby(distance_bins, observed=True).agg(
+                nearest_train_distance=("nearest_train_distance", "mean"),
+                metric_mean=(metric, "mean"),
+            )
+            axis.plot(
+                binned["nearest_train_distance"],
+                binned["metric_mean"],
+                color="black",
+                marker="o",
+                linewidth=2,
+                label=f"{num_plot_bins}-bin mean",
+            )
         axis.set_title(f"{title}; Spearman={correlation:.3f}")
         axis.set_xlabel("Nearest training-query distance")
         axis.set_ylim(0, 1)
@@ -207,6 +226,8 @@ def make_plots(frame: pd.DataFrame, output_dir: Path) -> None:
 
 def main() -> None:
     args = parse_args()
+    if args.num_plot_bins < 2:
+        raise ValueError("num-plot-bins must be at least 2")
     query_dir = Path(args.query_dir)
     queries = load_queries(query_dir)
     all_train_ids = load_query_split(args.source_manifest, "train")
@@ -273,7 +294,10 @@ def main() -> None:
     frame = pd.DataFrame(rows)
     interval_widths = frame["mean_normalized_interval_width"].dropna()
     quantile_edges = np.unique(
-        np.quantile(interval_widths, np.linspace(0.0, 1.0, 6))
+        np.quantile(
+            interval_widths,
+            np.linspace(0.0, 1.0, args.num_plot_bins + 1),
+        )
     )
     frame["interval_width_bin"] = pd.NA
     frame["interval_width_bin_midpoint"] = np.nan
@@ -331,7 +355,7 @@ def main() -> None:
             }
         )
     pd.DataFrame(correlations).to_csv(output_dir / "distance_correlations.csv", index=False)
-    make_plots(frame, output_dir)
+    make_plots(frame, output_dir, args.num_plot_bins)
     print(f"Evaluated {len(sampled_train_ids)} sampled training queries")
     print(f"Evaluated {len(test_ids)} unseen test queries")
     print(f"Nearest neighbours searched over all {len(all_train_ids)} training queries")

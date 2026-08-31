@@ -18,4 +18,5 @@ RELgDIFF_PYTHON="/scratch/work/agrawaa4/conda_envs/relgdiff/bin/python"
     --train-samples "${TRAIN_SAMPLE_ROOT}/${METHOD_LABEL}" \
     --test-samples "${TEST_SAMPLE_DIR}" \
     --query-coordinates "${QUERY_COORDINATES}" \
+    --num-plot-bins "${NUM_PLOT_BINS:-10}" \
     --output-dir "${OUTPUT_DIR}"

@@ -18,6 +18,7 @@ OUTPUT_DIR="${OUTPUT_DIR:-evaluations/${DATANAME}/query_generalization_d48_l2_80
 REAL_DATA="${REAL_DATA:-synthetic/${DATANAME}/real.csv}"
 QUERY_COORDINATES="${QUERY_COORDINATES:-data90/${DATANAME}/query_splits/query_model_coordinates.json}"
 MAX_CONCURRENT="${MAX_CONCURRENT:-8}"
+NUM_PLOT_BINS="${NUM_PLOT_BINS:-10}"
 TRAIN_JOB_ID="${TRAIN_JOB_ID:-}"
 
 python create_query_generalization_manifest.py \
@@ -38,6 +39,7 @@ export DATANAME MODEL_NAME METHOD_LABEL GUIDE_DIR GUIDE_SPECS QUERY_DIR
 export SOURCE_QUERY_SPLIT_MANIFEST DIAGNOSTIC_QUERY_SPLIT_MANIFEST
 export TRAIN_SAMPLE_ROOT TEST_SAMPLE_DIR SUITE_SAMPLE_ROOT OUTPUT_DIR REAL_DATA
 export QUERY_COORDINATES QUERY_TEST_SUPPORTED_ONLY
+export NUM_PLOT_BINS
 
 DEPENDENCY_ARGS=()
 if [ -n "${TRAIN_JOB_ID}" ]; then
@@ -116,6 +118,7 @@ echo "Model                    : ${METHOD_LABEL}"
 echo "Random train queries     : ${TRAIN_COUNT} (${TRAIN_QUERIES_PER_BAND} per band)"
 echo "Unseen test queries      : ${TEST_COUNT}"
 echo "Nearest-neighbour pool   : all training queries from source manifest"
+echo "Continuous plot bins     : ${NUM_PLOT_BINS}"
 echo "Train sampling array     : ${TRAIN_ARRAY}"
 echo "Test samples             : reused ${TEST_COUNT} existing CSVs"
 echo "Coordinate export        : ${COORDINATE_JOB}"

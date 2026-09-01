@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ProcessPoolExecutor
 import json
 from pathlib import Path
 
@@ -17,6 +18,55 @@ from tabdiff.query_split import load_query_split
 from tabdiff.query_suite_samples import replicate_sample_path
 
 
+_WORKER_REAL = None
+_WORKER_INFO = None
+
+
+def initialize_worker(real: pd.DataFrame, info: dict) -> None:
+    global _WORKER_REAL, _WORKER_INFO
+    _WORKER_REAL = real
+    _WORKER_INFO = info
+
+
+def evaluate_query_replicates(task):
+    query_index, query, methods, seed_bases, metric_seed = task
+    real = _WORKER_REAL
+    info = _WORKER_INFO
+    if real is None or info is None:
+        raise RuntimeError("Alpha/Beta worker was not initialized")
+    query_id = query["query_id"]
+    _, real_mask = raw_constraint_report(real, query)
+    conditional_real = real.loc[real_mask].reset_index(drop=True)
+    rows = []
+    for method, sample_dir_string in methods.items():
+        sample_dir = Path(sample_dir_string)
+        for seed_index, seed_base in enumerate(seed_bases):
+            sample_path = replicate_sample_path(
+                sample_dir, query_id, seed_base, seed_index
+            )
+            if not sample_path.is_file():
+                raise FileNotFoundError(sample_path)
+            samples = pd.read_csv(sample_path)
+            alpha_precision, beta_recall = evaluate_pair(
+                real,
+                conditional_real,
+                samples,
+                info,
+                metric_seed + query_index + 100000 * seed_index,
+            )
+            rows.append(
+                {
+                    "method": method,
+                    "query_id": query_id,
+                    "seed_base": seed_base,
+                    "alpha_precision": alpha_precision,
+                    "beta_recall": beta_recall,
+                    "backend": "synthcity.metrics.eval_statistical.AlphaPrecision",
+                }
+            )
+    return rows
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--query-dir", required=True)
@@ -25,6 +75,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--info-file", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--query-split-manifest", default=None)
     parser.add_argument("--query-split", choices=("train", "test"), default=None)
     parser.add_argument(
@@ -138,6 +189,8 @@ def main() -> None:
         raise ValueError(
             "--query-split-manifest and --query-split must be supplied together"
         )
+    if args.workers <= 0:
+        raise ValueError("--workers must be positive")
     query_dir = Path(args.query_dir)
     methods = parse_methods(args.method)
     real = pd.read_csv(args.real_data)
@@ -151,7 +204,7 @@ def main() -> None:
         raise ValueError(f"no structured queries found in {query_dir}")
     seed_bases = args.sample_seed_base or [0]
 
-    evaluator_rows = []
+    selected_queries = []
     for query_index, query_path in enumerate(query_paths):
         with query_path.open("r", encoding="utf-8") as stream:
             query = json.load(stream)
@@ -160,37 +213,36 @@ def main() -> None:
         query_id = query["query_id"]
         if selected_ids is not None and query_id not in selected_ids:
             continue
-        _, real_mask = raw_constraint_report(real, query)
-        conditional_real = real.loc[real_mask].reset_index(drop=True)
-        for method, sample_dir in methods.items():
-            for seed_index, seed_base in enumerate(seed_bases):
-                sample_path = replicate_sample_path(
-                    sample_dir, query_id, seed_base, seed_index
-                )
-                if not sample_path.is_file():
-                    raise FileNotFoundError(sample_path)
-                samples = pd.read_csv(sample_path)
-                alpha_precision, beta_recall = evaluate_pair(
-                    real,
-                    conditional_real,
-                    samples,
-                    info,
-                    args.seed + query_index + 100000 * seed_index,
-                )
-                evaluator_rows.append(
-                    {
-                        "method": method,
-                        "query_id": query_id,
-                        "seed_base": seed_base,
-                        "alpha_precision": alpha_precision,
-                        "beta_recall": beta_recall,
-                        "backend": "synthcity.metrics.eval_statistical.AlphaPrecision",
-                    }
-                )
-                print(
-                    f"{method}/{query_id}/seed_{seed_base}: "
-                    f"alpha={alpha_precision:.6f} beta={beta_recall:.6f}"
-                )
+        selected_queries.append((query_index, query))
+
+    method_strings = {label: str(path) for label, path in methods.items()}
+    tasks = [
+        (query_index, query, method_strings, seed_bases, args.seed)
+        for query_index, query in selected_queries
+    ]
+    initialize_worker(real, info)
+    if args.workers == 1:
+        query_results = map(evaluate_query_replicates, tasks)
+    else:
+        executor = ProcessPoolExecutor(
+            max_workers=args.workers,
+            initializer=initialize_worker,
+            initargs=(real, info),
+        )
+        query_results = executor.map(evaluate_query_replicates, tasks)
+
+    evaluator_rows = []
+    try:
+        for rows in query_results:
+            evaluator_rows.extend(rows)
+            query_id = rows[0]["query_id"]
+            print(
+                f"Completed {query_id}: {len(rows)} method/seed evaluations "
+                f"({len(evaluator_rows)}/{len(tasks) * len(methods) * len(seed_bases)})"
+            )
+    finally:
+        if args.workers > 1:
+            executor.shutdown(wait=True, cancel_futures=True)
 
     if selected_ids is not None:
         found_ids = {row["query_id"] for row in evaluator_rows}

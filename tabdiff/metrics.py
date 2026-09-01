@@ -587,6 +587,7 @@ class XGBoostDetection(ScikitLearnClassifierDetectionMetric):
             enable_categorical=True,
             tree_method="hist",
             random_state=0,
+            n_jobs=1,
         )
 
 def reorder(real_data, syn_data, info):

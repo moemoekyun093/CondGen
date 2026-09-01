@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ProcessPoolExecutor
 import json
 import math
 from pathlib import Path
@@ -44,6 +45,7 @@ def parse_args() -> argparse.Namespace:
         help="Exact transformed query coordinates exported by export_query_model_coordinates.py",
     )
     parser.add_argument("--interval-width-bins", type=int, default=10)
+    parser.add_argument("--workers", type=int, default=1)
     parser.add_argument(
         "--baseline-method",
         default=None,
@@ -133,6 +135,11 @@ def tabular_metrics(reference_path: Path, samples: pd.DataFrame, info: dict) -> 
     )
     metrics, _ = evaluator.evaluate(samples.copy())
     return {name: float(value) for name, value in metrics.items()}
+
+
+def tabular_metrics_task(task):
+    reference_path, samples, info = task
+    return tabular_metrics(Path(reference_path), samples, info)
 
 
 def confidence_interval(hit_rate: float, count: int) -> tuple[float, float]:
@@ -271,6 +278,8 @@ def main() -> None:
         raise ValueError("filtered-min-rows must be positive")
     if args.interval_width_bins < 2:
         raise ValueError("interval-width-bins must be at least 2")
+    if args.workers <= 0:
+        raise ValueError("--workers must be positive")
     query_dir = Path(args.query_dir)
     real_path = Path(args.real_data)
     info_path = Path(args.info_file)
@@ -356,6 +365,9 @@ def main() -> None:
     reference_dir.mkdir(parents=True, exist_ok=True)
 
     rows = []
+    metric_executor = (
+        None if args.workers == 1 else ProcessPoolExecutor(max_workers=args.workers)
+    )
     for query_index, (_, query) in enumerate(queries):
         query_id = query["query_id"]
         target_band = float(query["target_band"])
@@ -403,6 +415,35 @@ def main() -> None:
                     "modality_report": modality_report,
                 }
 
+        metric_request_keys = []
+        metric_request_payloads = []
+        for (label, seed_base), payload in payloads.items():
+            samples_path = payload["samples_path"]
+            cached = existing_full_metrics.get((label, query_id, seed_base))
+            cache_matches = cached is not None and str(cached.samples) == str(
+                samples_path
+            )
+            if reference_metrics_available and not cache_matches:
+                metric_request_keys.append(("full", label, seed_base))
+                metric_request_payloads.append(
+                    (str(reference_path), payload["samples"], info)
+                )
+            minimum_side_rows = min(
+                len(conditional_real), len(payload["valid_samples"])
+            )
+            if minimum_side_rows >= args.filtered_min_rows:
+                metric_request_keys.append(("filtered", label, seed_base))
+                metric_request_payloads.append(
+                    (str(reference_path), payload["valid_samples"], info)
+                )
+        if metric_executor is None:
+            metric_values = map(tabular_metrics_task, metric_request_payloads)
+        else:
+            metric_values = metric_executor.map(
+                tabular_metrics_task, metric_request_payloads
+            )
+        metric_results = dict(zip(metric_request_keys, metric_values))
+
         for (label, seed_base), payload in payloads.items():
             samples_path = payload["samples_path"]
             samples = payload["samples"]
@@ -428,7 +469,7 @@ def main() -> None:
                     "c2st_xgb_auc": float(cached.c2st_xgb_auc),
                 }
             else:
-                metrics = tabular_metrics(reference_path, samples, info)
+                metrics = metric_results[("full", label, seed_base)]
             alpha_key = (label, query_id, seed_base)
             if args.alpha_beta_results is not None and alpha_key not in alpha_beta_lookup:
                 raise ValueError(f"missing official SynthCity result for {alpha_key}")
@@ -462,7 +503,7 @@ def main() -> None:
                     if minimum_side_rows < 200
                     else "preferred_200_plus_rows"
                 )
-                filtered = tabular_metrics(reference_path, valid_samples, info)
+                filtered = metric_results[("filtered", label, seed_base)]
                 filtered_shape = filtered["density/Shape"]
                 filtered_trend = filtered["density/Trend"]
                 filtered_overall = filtered["density/Overall"]
@@ -524,6 +565,8 @@ def main() -> None:
                 }
             )
 
+    if metric_executor is not None:
+        metric_executor.shutdown(wait=True, cancel_futures=True)
     per_query_seed = pd.DataFrame(rows)
     print("Feasible-only Shape/Trend reliability:")
     print(

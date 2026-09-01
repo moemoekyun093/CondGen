@@ -9,6 +9,9 @@
 set -euo pipefail
 cd /scratch/work/agrawaa4/TabDiff
 export PYTHONUNBUFFERED=1
+export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
+export MKL_NUM_THREADS="${MKL_NUM_THREADS:-1}"
+export OPENBLAS_NUM_THREADS="${OPENBLAS_NUM_THREADS:-1}"
 
 ALPHA_ENV="${ALPHA_ENV:-/scratch/work/agrawaa4/conda_envs/alpha}"
 if [ ! -x "${ALPHA_ENV}/bin/python" ]; then
@@ -25,6 +28,7 @@ HARPOON_LABEL="${HARPOON_LABEL:?set HARPOON_LABEL}"
 SAMPLE_ROOT="${SUITE_SAMPLE_ROOT:?set SUITE_SAMPLE_ROOT}"
 SEED_BASES="${SEED_BASES:?set SEED_BASES}"
 OUTPUT="${ALPHA_BETA_RESULTS:?set ALPHA_BETA_RESULTS}"
+EVAL_WORKERS="${EVAL_WORKERS:-${SLURM_CPUS_PER_TASK:-4}}"
 
 seed_args=()
 IFS=',' read -r -a seeds <<< "${SEED_BASES}"
@@ -39,6 +43,7 @@ done
     --method "${DOOB_LABEL}=${SAMPLE_ROOT}/${DOOB_LABEL}" \
     --method "${HARPOON_LABEL}=${SAMPLE_ROOT}/${HARPOON_LABEL}" \
     "${seed_args[@]}" \
+    --workers "${EVAL_WORKERS}" \
     --real-data "${REAL_DATA:-synthetic/${DATANAME}/real.csv}" \
     --info-file "${INFO_FILE:-data/${DATANAME}/info.json}" \
     --output "${OUTPUT}"

@@ -10,6 +10,9 @@ set -euo pipefail
 
 cd /scratch/work/agrawaa4/TabDiff
 export PYTHONUNBUFFERED=1
+export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
+export MKL_NUM_THREADS="${MKL_NUM_THREADS:-1}"
+export OPENBLAS_NUM_THREADS="${OPENBLAS_NUM_THREADS:-1}"
 
 NORMAL_EVAL_ENV="${NORMAL_EVAL_ENV:-/scratch/work/agrawaa4/conda_envs/relgdiff}"
 EVAL_PYTHON="${EVAL_PYTHON:-${NORMAL_EVAL_ENV}/bin/python}"
@@ -32,6 +35,7 @@ QUERY_COORDINATES="${QUERY_COORDINATES:-data90/${DATANAME}/query_splits/query_mo
 INTERVAL_WIDTH_BINS="${INTERVAL_WIDTH_BINS:-10}"
 ALPHA_BETA_RESULTS="${ALPHA_BETA_RESULTS:-}"
 SEED_BASES="${SEED_BASES:-}"
+EVAL_WORKERS="${EVAL_WORKERS:-${SLURM_CPUS_PER_TASK:-4}}"
 
 QUERY_FILTER_ARGS=()
 if [ -n "${QUERY_SPLIT_MANIFEST:-}" ]; then
@@ -83,6 +87,7 @@ fi
     --group-by "${EVAL_GROUP_BY}" \
     --query-coordinates "${QUERY_COORDINATES}" \
     --interval-width-bins "${INTERVAL_WIDTH_BINS}" \
+    --workers "${EVAL_WORKERS}" \
     "${QUERY_FILTER_ARGS[@]}" \
     "${BASELINE_ARGS[@]}" \
     "${ALPHA_ARGS[@]}" \

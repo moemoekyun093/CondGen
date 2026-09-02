@@ -12,8 +12,8 @@
 
 set -euo pipefail
 
-PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
-cd "${PROJECT_ROOT}"
+TABDIFF_PROJECT_ROOT="${TABDIFF_PROJECT_ROOT:-/scratch/work/agrawaa4/TabDiff}"
+cd "${TABDIFF_PROJECT_ROOT}"
 export PYTHONUNBUFFERED=1
 
 METHOD_KIND="${METHOD_KIND:?set METHOD_KIND to doob, harpoon, diffputer, or great}"

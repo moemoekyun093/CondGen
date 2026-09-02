@@ -9,8 +9,8 @@
 #SBATCH --time=24:00:00
 
 set -euo pipefail
-PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
-cd "${PROJECT_ROOT}"
+TABDIFF_PROJECT_ROOT="${TABDIFF_PROJECT_ROOT:-/scratch/work/agrawaa4/TabDiff}"
+cd "${TABDIFF_PROJECT_ROOT}"
 export PYTHONUNBUFFERED=1
 
 METHOD="${METHOD:?set METHOD to diffputer or great}"

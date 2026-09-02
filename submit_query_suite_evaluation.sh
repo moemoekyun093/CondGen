@@ -1,8 +1,9 @@
 #!/bin/bash
 # Evaluate already-generated samples for arbitrary methods and seed count.
 set -euo pipefail
-PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
-cd "${PROJECT_ROOT}"
+TABDIFF_PROJECT_ROOT="${TABDIFF_PROJECT_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+cd "${TABDIFF_PROJECT_ROOT}"
+export TABDIFF_PROJECT_ROOT
 
 DATANAME=""
 QUERY_DIR=""

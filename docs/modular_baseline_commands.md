@@ -2,6 +2,8 @@
 
 All paths below are runtime parameters. Replace `shoppers` with any dataset
 whose `data/<name>/train.csv`, `test.csv`, and `info.json` exist.
+The submission scripts export the checkout as `TABDIFF_PROJECT_ROOT`, because
+Slurm runs worker copies from its spool directory rather than the source path.
 
 ## Train
 

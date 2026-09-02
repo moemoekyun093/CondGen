@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail
-PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
-cd "${PROJECT_ROOT}"
+TABDIFF_PROJECT_ROOT="${TABDIFF_PROJECT_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+cd "${TABDIFF_PROJECT_ROOT}"
+export TABDIFF_PROJECT_ROOT
 
 METHOD=""
 DATANAME=""

@@ -12,10 +12,11 @@
 
 set -euo pipefail
 
-cd /scratch/work/agrawaa4/TabDiff
+PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+cd "${PROJECT_ROOT}"
 export PYTHONUNBUFFERED=1
 
-METHOD_KIND="${METHOD_KIND:?set METHOD_KIND to doob or harpoon}"
+METHOD_KIND="${METHOD_KIND:?set METHOD_KIND to doob, harpoon, diffputer, or great}"
 METHOD_LABEL="${METHOD_LABEL:?set METHOD_LABEL}"
 DATANAME="${DATANAME:-shoppers}"
 MODEL_NAME="${MODEL_NAME:-ft_periodic_seed0}"
@@ -30,8 +31,8 @@ NUM_SAMPLES="${NUM_SAMPLES:-1000}"
 BATCH_SIZE="${BATCH_SIZE:-1000}"
 NUM_TIMESTEPS="${NUM_TIMESTEPS:-50}"
 
-if [[ ! "${METHOD_KIND}" =~ ^(doob|harpoon)$ ]]; then
-    echo "ERROR: METHOD_KIND must be doob or harpoon"
+if [[ ! "${METHOD_KIND}" =~ ^(doob|harpoon|diffputer|great)$ ]]; then
+    echo "ERROR: METHOD_KIND must be doob, harpoon, diffputer, or great"
     exit 1
 fi
 if [[ ! "${METHOD_LABEL}" =~ ^[A-Za-z0-9_.-]+$ ]]; then
@@ -104,7 +105,7 @@ for ((unit = BUNDLE_INDEX; unit < TOTAL_UNITS; unit += BUNDLE_COUNT)); do
             --seed "${sample_seed}" \
             --output "${output}" \
             --device cuda
-    else
+    elif [ "${METHOD_KIND}" = "harpoon" ]; then
         python -u sample_harpoon_full_query.py \
             --dataname "${DATANAME}" \
             --query-file "${query_file}" \
@@ -117,6 +118,31 @@ for ((unit = BUNDLE_INDEX; unit < TOTAL_UNITS; unit += BUNDLE_COUNT)); do
             --batch-size "${BATCH_SIZE}" \
             --guidance-scale "${HARPOON_GUIDANCE_SCALE:-0.2}" \
             --seed "${sample_seed}" \
+            --device cuda
+    else
+        if [ "${METHOD_KIND}" = "great" ]; then
+            BASELINE_PYTHON="${GREAT_PYTHON:-/scratch/work/agrawaa4/conda_envs/relgdiff/bin/python}"
+        else
+            BASELINE_PYTHON="${DIFFPUTER_PYTHON:-/scratch/work/agrawaa4/conda_envs/tabdiff/bin/python}"
+        fi
+        if [ ! -x "${BASELINE_PYTHON}" ]; then
+            echo "ERROR: baseline Python not found: ${BASELINE_PYTHON}"
+            exit 1
+        fi
+        "${BASELINE_PYTHON}" -u sample_native_query_baseline.py \
+            --method "${METHOD_KIND}" \
+            --model-path "${BASELINE_MODEL_PATH:?set BASELINE_MODEL_PATH}" \
+            --query-file "${query_file}" \
+            --dataname "${DATANAME}" \
+            --train-data "${TRAIN_DATA:-data/${DATANAME}/train.csv}" \
+            --test-data "${TEST_DATA:-data/${DATANAME}/test.csv}" \
+            --info-file "${INFO_FILE:-data/${DATANAME}/info.json}" \
+            --harpoon-root "${HARPOON_ROOT:-baselines/harpoon}" \
+            --great-root "${GREAT_ROOT:-baselines/great}" \
+            --num-samples "${NUM_SAMPLES}" \
+            --batch-size "${BATCH_SIZE}" \
+            --seed "${sample_seed}" \
+            --output "${output}" \
             --device cuda
     fi
     sampled=$((sampled + 1))

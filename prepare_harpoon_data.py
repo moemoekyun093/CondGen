@@ -1,4 +1,4 @@
-"""Expose processed TabDiff Adult/Shoppers tables to the HARPOON baseline."""
+"""Expose any processed TabDiff table to the vendored HARPOON code."""
 
 from __future__ import annotations
 
@@ -11,17 +11,20 @@ import pandas as pd
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dataname", choices=("shoppers",), default="shoppers")
+    parser.add_argument("--dataname", required=True)
     parser.add_argument("--harpoon-root", default="baselines/harpoon")
+    parser.add_argument("--train-data")
+    parser.add_argument("--test-data")
+    parser.add_argument("--info-file")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
     source_dir = Path("data") / args.dataname
-    train_path = source_dir / "train.csv"
-    test_path = source_dir / "test.csv"
-    info_path = source_dir / "info.json"
+    train_path = Path(args.train_data or source_dir / "train.csv")
+    test_path = Path(args.test_data or source_dir / "test.csv")
+    info_path = Path(args.info_file or source_dir / "info.json")
     for path in (train_path, test_path, info_path):
         if not path.is_file():
             raise FileNotFoundError(path)

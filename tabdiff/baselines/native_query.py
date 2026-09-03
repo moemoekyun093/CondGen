@@ -131,7 +131,14 @@ def sample_great(
     seed: int,
     max_retries: int = 5,
 ) -> tuple[pd.DataFrame, dict]:
-    sys.path.insert(0, str(great_root.resolve()))
+    great_root = great_root.resolve()
+    package = great_root / "be_great" / "__init__.py"
+    if not package.is_file():
+        raise FileNotFoundError(
+            f"GReaT source package not found at {package}. Initialize the pinned "
+            "submodule with: git submodule update --init --recursive baselines/great"
+        )
+    sys.path.insert(0, str(great_root))
     from be_great import GReaT
 
     # GReaT 0.0.9 uses the removed NumPy alias internally. Keep this

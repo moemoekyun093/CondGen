@@ -91,7 +91,14 @@ def train_diffputer(args, table, output_dir: Path) -> None:
 
 
 def train_great(args, table, output_dir: Path) -> None:
-    sys.path.insert(0, str(Path(args.great_root).resolve()))
+    great_root = Path(args.great_root).resolve()
+    package = great_root / "be_great" / "__init__.py"
+    if not package.is_file():
+        raise FileNotFoundError(
+            f"GReaT source package not found at {package}. Initialize the pinned "
+            "submodule with: git submodule update --init --recursive baselines/great"
+        )
+    sys.path.insert(0, str(great_root))
     from be_great import GReaT
 
     epochs = args.epochs if args.epochs is not None else 5

@@ -315,7 +315,11 @@ def main() -> None:
         test_supported_only=args.test_supported_only,
         query_ids=selected_query_ids,
     )
-    if selected_query_ids is not None and len(queries) != len(selected_query_ids):
+    if (
+        selected_query_ids is not None
+        and not args.test_supported_only
+        and len(queries) != len(selected_query_ids)
+    ):
         raise ValueError(
             f"query split selects {len(selected_query_ids)} ids but "
             f"{len(queries)} accepted query files were loaded"

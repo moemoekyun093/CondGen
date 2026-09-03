@@ -13,37 +13,46 @@ SAMPLE_ROOT=""
 NUM_SEEDS=5
 SEED_BASES=""
 MAX_BUNDLES=4
-TARGET_MISSING_PER_BUNDLE=50
+TARGET_MISSING_PER_BUNDLE="${TARGET_MISSING_PER_BUNDLE:-50}"
 NUM_SAMPLES=1000
 NUM_TIMESTEPS=50
 EVALUATION_OUTPUT=""
 RUN_SYNTHCITY=1
 TRAIN_DEPENDENCY=""
+QUERY_TEST_SUPPORTED_ONLY=0
 METHODS=()
 
 usage() {
     cat <<'EOF'
 Usage: bash submit_query_suite_sampling.sh --dataname NAME --query-dir DIR \
-  --query-split-manifest FILE --method LABEL=KIND:MODEL_PATH [--method ...]
+  [--query-split-manifest FILE] --method LABEL=KIND:MODEL_PATH [--method ...]
 
 KIND is doob, harpoon, diffputer, or great. MODEL_PATH is a guide directory,
 HARPOON checkpoint, DiffPuter adapter directory/checkpoint, or GReaT directory.
 
 Options:
   --query-split train|test   Default: test
+  --query-split-manifest F   Optional query-definition split; omit for all queries
   --sample-root DIR          Default: conditional_samples/NAME/modular_suite
   --num-seeds N              Default: 5 (seed bases 10000,20000,...)
   --seed-bases CSV           Explicit seeds; overrides --num-seeds
   --max-bundles N            Long GPU jobs per method, default 4
   --num-samples N            Rows per query/seed, default 1000
   --num-timesteps N          Doob reverse steps, default 50
+  --great-max-length N       GReaT prompt-plus-output limit, default 512
   --base-checkpoint FILE     Required when any KIND is doob
   --train-data FILE          Baseline training CSV (default data/NAME/train.csv)
   --test-data FILE           Baseline test CSV (default data/NAME/test.csv)
   --info-file FILE           Dataset metadata (default data/NAME/info.json)
   --evaluation-output DIR    Also submit evaluation after all missing samples
+  --group-by FIELD           Evaluation grouping (default: target_band)
+  --query-coordinates FILE   Exact transformed coordinates for width analysis
+  --filtered-min-rows N      Minimum valid rows for filtered quality metrics
+  --real-data FILE           Evaluation reference (default synthetic/NAME/real.csv)
   --skip-synthcity           With --evaluation-output, omit Alpha/Beta
   --dependency JOB[:JOB...]  Wait for model training before sampling
+  --baseline-method LABEL    Paired-difference baseline during automatic evaluation
+  --test-supported-only      Keep only query files marked test_supported
 EOF
 }
 while [ "$#" -gt 0 ]; do
@@ -59,19 +68,25 @@ while [ "$#" -gt 0 ]; do
         --max-bundles) MAX_BUNDLES="$2"; shift 2 ;;
         --num-samples) NUM_SAMPLES="$2"; shift 2 ;;
         --num-timesteps) NUM_TIMESTEPS="$2"; shift 2 ;;
+        --great-max-length) GREAT_MAX_LENGTH="$2"; export GREAT_MAX_LENGTH; shift 2 ;;
         --base-checkpoint) BASE_CHECKPOINT="$2"; export BASE_CHECKPOINT; shift 2 ;;
         --train-data) TRAIN_DATA="$2"; export TRAIN_DATA; shift 2 ;;
         --test-data) TEST_DATA="$2"; export TEST_DATA; shift 2 ;;
         --info-file) INFO_FILE="$2"; export INFO_FILE; shift 2 ;;
         --evaluation-output) EVALUATION_OUTPUT="$2"; shift 2 ;;
+        --group-by) EVAL_GROUP_BY="$2"; shift 2 ;;
+        --query-coordinates) QUERY_COORDINATES="$2"; shift 2 ;;
+        --filtered-min-rows) FILTERED_MIN_ROWS="$2"; shift 2 ;;
+        --real-data) REAL_DATA="$2"; shift 2 ;;
         --skip-synthcity) RUN_SYNTHCITY=0; shift ;;
         --dependency) TRAIN_DEPENDENCY="$2"; shift 2 ;;
+        --baseline-method) EVAL_BASELINE_METHOD="$2"; shift 2 ;;
+        --test-supported-only) QUERY_TEST_SUPPORTED_ONLY=1; shift ;;
         -h|--help) usage; exit 0 ;;
         *) echo "ERROR: unknown option $1"; usage; exit 1 ;;
     esac
 done
-if [ -z "${DATANAME}" ] || [ -z "${QUERY_DIR}" ] || \
-   [ -z "${QUERY_SPLIT_MANIFEST}" ] || [ "${#METHODS[@]}" -eq 0 ]; then
+if [ -z "${DATANAME}" ] || [ -z "${QUERY_DIR}" ] || [ "${#METHODS[@]}" -eq 0 ]; then
     usage
     exit 1
 fi
@@ -87,8 +102,12 @@ if [ -z "${SEED_BASES}" ]; then
     done
 fi
 SAMPLE_ROOT="${SAMPLE_ROOT:-conditional_samples/${DATANAME}/modular_suite}"
-mapfile -t QUERY_FILES < <(python list_accepted_queries.py "${QUERY_DIR}" \
-    --query-split-manifest "${QUERY_SPLIT_MANIFEST}" --query-split "${QUERY_SPLIT}")
+query_filter_args=()
+if [ -n "${QUERY_SPLIT_MANIFEST}" ]; then
+    query_filter_args+=(--query-split-manifest "${QUERY_SPLIT_MANIFEST}" --query-split "${QUERY_SPLIT}")
+fi
+[ "${QUERY_TEST_SUPPORTED_ONLY}" = 1 ] && query_filter_args+=(--test-supported-only)
+mapfile -t QUERY_FILES < <(python list_accepted_queries.py "${QUERY_DIR}" "${query_filter_args[@]}")
 IFS=',' read -r -a seeds <<< "${SEED_BASES}"
 mkdir -p logs/query_suite "${SAMPLE_ROOT}"
 JOB_IDS=()
@@ -128,7 +147,7 @@ for spec in "${METHODS[@]}"; do
     bundles=$(((missing + TARGET_MISSING_PER_BUNDLE - 1) / TARGET_MISSING_PER_BUNDLE))
     [ "${bundles}" -gt "${MAX_BUNDLES}" ] && bundles="${MAX_BUNDLES}"
     export METHOD_KIND="${kind}" METHOD_LABEL="${label}" BUNDLE_COUNT="${bundles}"
-    export DATANAME QUERY_DIR QUERY_SPLIT_MANIFEST QUERY_SPLIT SAMPLE_ROOT SEED_BASES
+    export DATANAME QUERY_DIR QUERY_SPLIT_MANIFEST QUERY_SPLIT QUERY_TEST_SUPPORTED_ONLY SAMPLE_ROOT SEED_BASES
     export NUM_SAMPLES NUM_TIMESTEPS
     unset DOOB_GUIDE_DIR HARPOON_CHECKPOINT BASELINE_MODEL_PATH || true
     case "${kind}" in
@@ -160,11 +179,18 @@ if [ -n "${EVALUATION_OUTPUT}" ]; then
     evaluation_args=(
         --dataname "${DATANAME}"
         --query-dir "${QUERY_DIR}"
-        --query-split-manifest "${QUERY_SPLIT_MANIFEST}"
-        --query-split "${QUERY_SPLIT}"
         --seed-bases "${SEED_BASES}"
         --output-dir "${EVALUATION_OUTPUT}"
     )
+    [ -n "${EVAL_GROUP_BY:-}" ] && evaluation_args+=(--group-by "${EVAL_GROUP_BY}")
+    [ -n "${QUERY_COORDINATES:-}" ] && evaluation_args+=(--query-coordinates "${QUERY_COORDINATES}")
+    [ -n "${FILTERED_MIN_ROWS:-}" ] && evaluation_args+=(--filtered-min-rows "${FILTERED_MIN_ROWS}")
+    [ -n "${REAL_DATA:-}" ] && evaluation_args+=(--real-data "${REAL_DATA}")
+    [ -n "${INFO_FILE:-}" ] && evaluation_args+=(--info-file "${INFO_FILE}")
+    if [ -n "${QUERY_SPLIT_MANIFEST}" ]; then
+        evaluation_args+=(--query-split-manifest "${QUERY_SPLIT_MANIFEST}" --query-split "${QUERY_SPLIT}")
+    fi
+    [ "${QUERY_TEST_SUPPORTED_ONLY}" = 1 ] && evaluation_args+=(--test-supported-only)
     for spec in "${METHODS[@]}"; do
         label="${spec%%=*}"
         evaluation_args+=(--method "${label}=${SAMPLE_ROOT}/${label}")
@@ -174,5 +200,6 @@ if [ -n "${EVALUATION_OUTPUT}" ]; then
         evaluation_args+=(--dependency "${dependency}")
     fi
     [ "${RUN_SYNTHCITY}" = "0" ] && evaluation_args+=(--skip-synthcity)
+    [ -n "${EVAL_BASELINE_METHOD:-}" ] && evaluation_args+=(--baseline-method "${EVAL_BASELINE_METHOD}")
     bash submit_query_suite_evaluation.sh "${evaluation_args[@]}"
 fi

@@ -32,12 +32,25 @@ split_args=()
 if [ -n "${QUERY_SPLIT_MANIFEST:-}" ]; then
     split_args+=(--query-split-manifest "${QUERY_SPLIT_MANIFEST}" --query-split "${QUERY_SPLIT:-test}")
 fi
+[ "${QUERY_TEST_SUPPORTED_ONLY:-0}" = 1 ] && split_args+=(--test-supported-only)
 baseline_args=()
 [ -n "${EVAL_BASELINE_METHOD:-}" ] && baseline_args+=(--baseline-method "${EVAL_BASELINE_METHOD}")
 alpha_args=()
 [ -n "${ALPHA_BETA_RESULTS:-}" ] && alpha_args+=(--alpha-beta-results "${ALPHA_BETA_RESULTS}")
 coordinate_args=()
-[ -n "${QUERY_COORDINATES:-}" ] && coordinate_args+=(--query-coordinates "${QUERY_COORDINATES}")
+if [ -n "${QUERY_COORDINATES:-}" ]; then
+    if [ ! -f "${QUERY_COORDINATES}" ]; then
+        coordinate_base_args=()
+        [ -n "${BASE_CHECKPOINT:-}" ] && coordinate_base_args+=(--base-ckpt "${BASE_CHECKPOINT}")
+        "${EVAL_PYTHON}" -u export_query_model_coordinates.py \
+            --dataname "${DATANAME}" \
+            --base-exp-name "${MODEL_NAME:-ft_periodic_seed0}" \
+            --query-dir "${QUERY_DIR}" \
+            "${coordinate_base_args[@]}" \
+            --output "${QUERY_COORDINATES}"
+    fi
+    coordinate_args+=(--query-coordinates "${QUERY_COORDINATES}")
+fi
 
 mkdir -p evaluations/slurm "${SUITE_EVAL_DIR}"
 "${EVAL_PYTHON}" -u evaluate_doob_query_suite.py \

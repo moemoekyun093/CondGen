@@ -16,14 +16,16 @@ RUN_SYNTHCITY=1
 GROUP_BY="target_band"
 METHODS=()
 DEPENDENCY=""
+QUERY_TEST_SUPPORTED_ONLY=0
 
 usage() {
     cat <<'EOF'
 Usage: bash submit_query_suite_evaluation.sh --dataname NAME --query-dir DIR \
-  --query-split-manifest FILE --method LABEL=SAMPLE_DIRECTORY [--method ...]
+  [--query-split-manifest FILE] --method LABEL=SAMPLE_DIRECTORY [--method ...]
 
 Options:
   --query-split train|test    Default: test
+  --query-split-manifest F    Optional query-definition split; omit for all queries
   --output-dir DIR            Required destination for CSVs and plots
   --num-seeds N               Default: 5
   --seed-bases CSV            Explicit bases; overrides --num-seeds
@@ -35,6 +37,7 @@ Options:
   --info-file FILE            Default: data/NAME/info.json
   --query-coordinates FILE    Exact transformed interval coordinates
   --filtered-min-rows N       Default: 50
+  --test-supported-only       Keep only query files marked test_supported
 EOF
 }
 while [ "$#" -gt 0 ]; do
@@ -50,6 +53,7 @@ while [ "$#" -gt 0 ]; do
         --group-by) GROUP_BY="$2"; shift 2 ;;
         --query-coordinates) QUERY_COORDINATES="$2"; export QUERY_COORDINATES; shift 2 ;;
         --filtered-min-rows) FILTERED_MIN_ROWS="$2"; export FILTERED_MIN_ROWS; shift 2 ;;
+        --test-supported-only) QUERY_TEST_SUPPORTED_ONLY=1; shift ;;
         --baseline-method) EVAL_BASELINE_METHOD="$2"; export EVAL_BASELINE_METHOD; shift 2 ;;
         --dependency) DEPENDENCY="$2"; shift 2 ;;
         --skip-synthcity) RUN_SYNTHCITY=0; shift ;;
@@ -59,8 +63,7 @@ while [ "$#" -gt 0 ]; do
         *) echo "ERROR: unknown option $1"; usage; exit 1 ;;
     esac
 done
-if [ -z "${DATANAME}" ] || [ -z "${QUERY_DIR}" ] || \
-   [ -z "${QUERY_SPLIT_MANIFEST}" ] || [ -z "${OUTPUT_DIR}" ] || \
+if [ -z "${DATANAME}" ] || [ -z "${QUERY_DIR}" ] || [ -z "${OUTPUT_DIR}" ] || \
    [ "${#METHODS[@]}" -eq 0 ]; then
     usage
     exit 1
@@ -97,7 +100,7 @@ for spec in "${METHODS[@]}"; do
     METHOD_SPECS+="${spec}"
 done
 mkdir -p evaluations/slurm "${OUTPUT_DIR}"
-export DATANAME QUERY_DIR QUERY_SPLIT_MANIFEST QUERY_SPLIT SEED_BASES METHOD_SPECS
+export DATANAME QUERY_DIR QUERY_SPLIT_MANIFEST QUERY_SPLIT QUERY_TEST_SUPPORTED_ONLY SEED_BASES METHOD_SPECS
 export SUITE_EVAL_DIR="${OUTPUT_DIR}" EVAL_GROUP_BY="${GROUP_BY}"
 dep_args=()
 [ -n "${DEPENDENCY}" ] && dep_args+=(--dependency="afterok:${DEPENDENCY}")

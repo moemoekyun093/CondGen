@@ -27,6 +27,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--great-root", default="baselines/great")
     parser.add_argument("--num-samples", type=int, default=1000)
     parser.add_argument("--batch-size", type=int, default=1000)
+    parser.add_argument(
+        "--great-max-length",
+        type=int,
+        default=512,
+        help="Maximum total prompt-plus-output token length for GReaT",
+    )
     parser.add_argument("--seed", type=int, default=10000)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     return parser.parse_args()
@@ -65,6 +71,7 @@ def main() -> None:
             num_rows=args.num_samples,
             batch_size=args.batch_size,
             seed=args.seed,
+            max_length=args.great_max_length,
         )
     report, _ = raw_constraint_report(frame, query)
     metadata["constraint_report"] = report

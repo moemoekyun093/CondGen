@@ -21,7 +21,7 @@ METHOD_LABEL="${METHOD_LABEL:?set METHOD_LABEL}"
 DATANAME="${DATANAME:-shoppers}"
 MODEL_NAME="${MODEL_NAME:-ft_periodic_seed0}"
 QUERY_DIR="${QUERY_DIR:?set QUERY_DIR}"
-QUERY_SPLIT_MANIFEST="${QUERY_SPLIT_MANIFEST:?set QUERY_SPLIT_MANIFEST}"
+QUERY_SPLIT_MANIFEST="${QUERY_SPLIT_MANIFEST:-}"
 QUERY_SPLIT="${QUERY_SPLIT:-test}"
 SAMPLE_ROOT="${SAMPLE_ROOT:?set SAMPLE_ROOT}"
 SEED_BASES="${SEED_BASES:-10000,20000,30000,40000,50000}"
@@ -40,10 +40,18 @@ if [[ ! "${METHOD_LABEL}" =~ ^[A-Za-z0-9_.-]+$ ]]; then
     exit 1
 fi
 
-mapfile -t QUERY_FILES < <(
-    python list_accepted_queries.py "${QUERY_DIR}" \
-        --query-split-manifest "${QUERY_SPLIT_MANIFEST}" \
+query_filter_args=()
+if [ -n "${QUERY_SPLIT_MANIFEST}" ]; then
+    query_filter_args+=(
+        --query-split-manifest "${QUERY_SPLIT_MANIFEST}"
         --query-split "${QUERY_SPLIT}"
+    )
+fi
+if [ "${QUERY_TEST_SUPPORTED_ONLY:-0}" = "1" ]; then
+    query_filter_args+=(--test-supported-only)
+fi
+mapfile -t QUERY_FILES < <(
+    python list_accepted_queries.py "${QUERY_DIR}" "${query_filter_args[@]}"
 )
 IFS=',' read -r -a BASE_SEEDS <<< "${SEED_BASES}"
 NUM_QUERIES="${#QUERY_FILES[@]}"
@@ -121,7 +129,7 @@ for ((unit = BUNDLE_INDEX; unit < TOTAL_UNITS; unit += BUNDLE_COUNT)); do
             --device cuda
     else
         if [ "${METHOD_KIND}" = "great" ]; then
-            BASELINE_PYTHON="${GREAT_PYTHON:-/scratch/work/agrawaa4/conda_envs/relgdiff/bin/python}"
+            BASELINE_PYTHON="${GREAT_PYTHON:-/scratch/work/agrawaa4/conda_envs/great/bin/python}"
         else
             BASELINE_PYTHON="${DIFFPUTER_PYTHON:-/scratch/work/agrawaa4/conda_envs/tabdiff/bin/python}"
         fi
@@ -141,6 +149,7 @@ for ((unit = BUNDLE_INDEX; unit < TOTAL_UNITS; unit += BUNDLE_COUNT)); do
             --great-root "${GREAT_ROOT:-baselines/great}" \
             --num-samples "${NUM_SAMPLES}" \
             --batch-size "${BATCH_SIZE}" \
+            --great-max-length "${GREAT_MAX_LENGTH:-512}" \
             --seed "${sample_seed}" \
             --output "${output}" \
             --device cuda

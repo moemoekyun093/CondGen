@@ -22,7 +22,7 @@ fi
 
 DATANAME="${DATANAME:-shoppers}"
 QUERY_DIR="${QUERY_DIR:?set QUERY_DIR}"
-QUERY_SPLIT_MANIFEST="${QUERY_SPLIT_MANIFEST:?set QUERY_SPLIT_MANIFEST}"
+QUERY_SPLIT_MANIFEST="${QUERY_SPLIT_MANIFEST:-}"
 QUERY_SPLIT="${QUERY_SPLIT:-test}"
 SAMPLE_ROOT="${SUITE_SAMPLE_ROOT:-}"
 SEED_BASES="${SEED_BASES:?set SEED_BASES}"
@@ -51,10 +51,18 @@ else
     )
 fi
 
+split_args=()
+if [ -n "${QUERY_SPLIT_MANIFEST}" ]; then
+    split_args+=(
+        --query-split-manifest "${QUERY_SPLIT_MANIFEST}"
+        --query-split "${QUERY_SPLIT}"
+    )
+fi
+[ "${QUERY_TEST_SUPPORTED_ONLY:-0}" = "1" ] && split_args+=(--test-supported-only)
+
 "${ALPHA_ENV}/bin/python" -u evaluate_synthcity_alpha_suite.py \
     --query-dir "${QUERY_DIR}" \
-    --query-split-manifest "${QUERY_SPLIT_MANIFEST}" \
-    --query-split "${QUERY_SPLIT}" \
+    "${split_args[@]}" \
     "${method_args[@]}" \
     "${seed_args[@]}" \
     --workers "${EVAL_WORKERS}" \

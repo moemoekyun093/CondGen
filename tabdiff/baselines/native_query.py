@@ -130,7 +130,10 @@ def sample_great(
     batch_size: int,
     seed: int,
     max_retries: int = 5,
+    max_length: int = 512,
 ) -> tuple[pd.DataFrame, dict]:
+    if max_length <= 0:
+        raise ValueError("GReaT max_length must be positive")
     great_root = great_root.resolve()
     package = great_root / "be_great" / "__init__.py"
     if not package.is_file():
@@ -159,6 +162,7 @@ def sample_great(
             imputed = model.impute(
                 masked,
                 k=min(200, len(masked)),
+                max_length=max_length,
                 max_retries=max_retries,
                 device="cuda" if torch.cuda.is_available() else "cpu",
             )
@@ -203,5 +207,12 @@ def sample_great(
             values.loc[invalid] = rng.choice(table.train[column].astype(str), invalid.sum())
         generated[column] = values
     repairs["rows_exhausting_generation_retries"] = fallback_rows
-    metadata.update({"method": "great_native_imputation", "seed": seed, "repairs": repairs})
+    metadata.update(
+        {
+            "method": "great_native_imputation",
+            "seed": seed,
+            "max_length": max_length,
+            "repairs": repairs,
+        }
+    )
     return generated.loc[:, table.train.columns], metadata

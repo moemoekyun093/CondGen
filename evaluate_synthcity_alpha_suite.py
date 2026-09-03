@@ -79,6 +79,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--query-split-manifest", default=None)
     parser.add_argument("--query-split", choices=("train", "test"), default=None)
     parser.add_argument(
+        "--test-supported-only",
+        action="store_true",
+        help="Keep only query files marked as supported by the held-out row split",
+    )
+    parser.add_argument(
         "--sample-seed-base",
         action="append",
         type=int,
@@ -210,6 +215,8 @@ def main() -> None:
             query = json.load(stream)
         if not query.get("accepted", True):
             continue
+        if args.test_supported_only and not query.get("test_supported", False):
+            continue
         query_id = query["query_id"]
         if selected_ids is not None and query_id not in selected_ids:
             continue
@@ -220,6 +227,8 @@ def main() -> None:
         (query_index, query, method_strings, seed_bases, args.seed)
         for query_index, query in selected_queries
     ]
+    if not tasks:
+        raise ValueError("no accepted queries remain after applying the query filters")
     initialize_worker(real, info)
     if args.workers == 1:
         query_results = map(evaluate_query_replicates, tasks)
@@ -244,7 +253,7 @@ def main() -> None:
         if args.workers > 1:
             executor.shutdown(wait=True, cancel_futures=True)
 
-    if selected_ids is not None:
+    if selected_ids is not None and not args.test_supported_only:
         found_ids = {row["query_id"] for row in evaluator_rows}
         if found_ids != selected_ids:
             missing = sorted(selected_ids - found_ids)

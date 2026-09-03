@@ -17,7 +17,7 @@ METHOD="${METHOD:?set METHOD to diffputer or great}"
 DATANAME="${DATANAME:?set DATANAME}"
 OUTPUT_DIR="${OUTPUT_DIR:?set OUTPUT_DIR}"
 if [ "${METHOD}" = "great" ]; then
-    PYTHON_BIN="${GREAT_PYTHON:-/scratch/work/agrawaa4/conda_envs/relgdiff/bin/python}"
+    PYTHON_BIN="${GREAT_PYTHON:-/scratch/work/agrawaa4/conda_envs/great/bin/python}"
 elif [ "${METHOD}" = "diffputer" ]; then
     PYTHON_BIN="${DIFFPUTER_PYTHON:-/scratch/work/agrawaa4/conda_envs/tabdiff/bin/python}"
 else

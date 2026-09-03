@@ -63,7 +63,11 @@ def main() -> None:
             seen_bands.add(band)
     if found == 0:
         raise ValueError(f"no accepted queries found in {query_dir}")
-    if selected_ids is not None and found != len(selected_ids):
+    if (
+        selected_ids is not None
+        and not args.test_supported_only
+        and found != len(selected_ids)
+    ):
         raise ValueError(
             f"selected {len(selected_ids)} query ids but found {found} accepted files"
         )

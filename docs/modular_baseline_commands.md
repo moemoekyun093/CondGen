@@ -76,10 +76,16 @@ The same command can include existing methods:
 ```text
 --method doob=doob:tabdiff/ckpt/shoppers/.../guide_directory
 --method harpoon=harpoon:/path/to/diffputer_selfmade.pt
+--method harpoon_style_eta1=harpoon_style:1.0
 ```
 
 For Doob, also pass `--base-checkpoint FILE`. Sampling jobs are bundled and
 skip every CSV that already exists.
+
+Use `--evaluation-method LABEL=SAMPLE_DIRECTORY` to add an existing method to
+the downstream plots without scheduling any sampling for it.
+Use `--evaluation-dependency JOB[:JOB...]` when those existing samples are
+still being produced; unlike `--dependency`, it does not delay new sampling.
 
 GReaT uses a total prompt-plus-generation limit of 512 tokens by default. This
 avoids the upstream 0.0.9 default of 100 tokens being shorter than a

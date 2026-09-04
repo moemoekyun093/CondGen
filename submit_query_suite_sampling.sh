@@ -19,16 +19,19 @@ NUM_TIMESTEPS=50
 EVALUATION_OUTPUT=""
 RUN_SYNTHCITY=1
 TRAIN_DEPENDENCY=""
+EVALUATION_DEPENDENCY=""
 QUERY_TEST_SUPPORTED_ONLY=0
 METHODS=()
+EVALUATION_METHODS=()
 
 usage() {
     cat <<'EOF'
 Usage: bash submit_query_suite_sampling.sh --dataname NAME --query-dir DIR \
   [--query-split-manifest FILE] --method LABEL=KIND:MODEL_PATH [--method ...]
 
-KIND is doob, harpoon, diffputer, or great. MODEL_PATH is a guide directory,
-HARPOON checkpoint, DiffPuter adapter directory/checkpoint, or GReaT directory.
+KIND is doob, harpoon, harpoon_style, diffputer, or great. MODEL_PATH is a
+guide directory, HARPOON checkpoint, HARPOON-style eta, DiffPuter adapter
+directory/checkpoint, or GReaT directory.
 
 Options:
   --query-split train|test   Default: test
@@ -45,12 +48,14 @@ Options:
   --test-data FILE           Baseline test CSV (default data/NAME/test.csv)
   --info-file FILE           Dataset metadata (default data/NAME/info.json)
   --evaluation-output DIR    Also submit evaluation after all missing samples
+  --evaluation-method L=DIR  Include existing samples in evaluation only
   --group-by FIELD           Evaluation grouping (default: target_band)
   --query-coordinates FILE   Exact transformed coordinates for width analysis
   --filtered-min-rows N      Minimum valid rows for filtered quality metrics
   --real-data FILE           Evaluation reference (default synthetic/NAME/real.csv)
   --skip-synthcity           With --evaluation-output, omit Alpha/Beta
   --dependency JOB[:JOB...]  Wait for model training before sampling
+  --evaluation-dependency J  Extra job(s) required only before evaluation
   --baseline-method LABEL    Paired-difference baseline during automatic evaluation
   --test-supported-only      Keep only query files marked test_supported
 EOF
@@ -63,6 +68,7 @@ while [ "$#" -gt 0 ]; do
         --query-split) QUERY_SPLIT="$2"; shift 2 ;;
         --sample-root) SAMPLE_ROOT="$2"; shift 2 ;;
         --method) METHODS+=("$2"); shift 2 ;;
+        --evaluation-method) EVALUATION_METHODS+=("$2"); shift 2 ;;
         --num-seeds) NUM_SEEDS="$2"; shift 2 ;;
         --seed-bases) SEED_BASES="$2"; shift 2 ;;
         --max-bundles) MAX_BUNDLES="$2"; shift 2 ;;
@@ -80,6 +86,7 @@ while [ "$#" -gt 0 ]; do
         --real-data) REAL_DATA="$2"; shift 2 ;;
         --skip-synthcity) RUN_SYNTHCITY=0; shift ;;
         --dependency) TRAIN_DEPENDENCY="$2"; shift 2 ;;
+        --evaluation-dependency) EVALUATION_DEPENDENCY="$2"; shift 2 ;;
         --baseline-method) EVAL_BASELINE_METHOD="$2"; shift 2 ;;
         --test-supported-only) QUERY_TEST_SUPPORTED_ONLY=1; shift ;;
         -h|--help) usage; exit 0 ;;
@@ -119,7 +126,7 @@ for spec in "${METHODS[@]}"; do
     model_path="${remainder#*:}"
     if [ "${label}" = "${spec}" ] || [ "${kind}" = "${remainder}" ] || \
        [[ ! "${label}" =~ ^[A-Za-z0-9_.-]+$ ]] || [[ "${model_path}" == *"|"* ]] || \
-       [[ ! "${kind}" =~ ^(doob|harpoon|diffputer|great)$ ]]; then
+       [[ ! "${kind}" =~ ^(doob|harpoon|harpoon_style|diffputer|great)$ ]]; then
         echo "ERROR: invalid --method ${spec}; expected LABEL=KIND:MODEL_PATH"
         exit 1
     fi
@@ -159,6 +166,18 @@ for spec in "${METHODS[@]}"; do
             export DOOB_GUIDE_DIR="${model_path}"
             ;;
         harpoon) export HARPOON_CHECKPOINT="${model_path}" ;;
+        harpoon_style)
+            if [ -z "${BASE_CHECKPOINT:-}" ]; then
+                echo "ERROR: --base-checkpoint is required for HARPOON-style TabDiff"
+                exit 1
+            fi
+            if ! [[ "${model_path}" =~ ^[0-9]+([.][0-9]+)?$ ]] || \
+               ! awk -v value="${model_path}" 'BEGIN { exit !(value > 0) }'; then
+                echo "ERROR: HARPOON-style MODEL_PATH must be a positive eta, got ${model_path}"
+                exit 1
+            fi
+            export HARPOON_STYLE_ETA="${model_path}"
+            ;;
         diffputer|great) export BASELINE_MODEL_PATH="${model_path}" ;;
     esac
     dependency_args=()
@@ -195,11 +214,36 @@ if [ -n "${EVALUATION_OUTPUT}" ]; then
         label="${spec%%=*}"
         evaluation_args+=(--method "${label}=${SAMPLE_ROOT}/${label}")
     done
-    if [ "${#JOB_IDS[@]}" -gt 0 ]; then
-        dependency="$(IFS=:; echo "${JOB_IDS[*]}")"
+    for spec in "${EVALUATION_METHODS[@]}"; do
+        if [[ "${spec}" != *=* ]]; then
+            echo "ERROR: invalid --evaluation-method ${spec}; expected LABEL=DIRECTORY"
+            exit 1
+        fi
+        label="${spec%%=*}"
+        directory="${spec#*=}"
+        if [[ ! "${label}" =~ ^[A-Za-z0-9_.-]+$ ]] || [ -z "${directory}" ] || \
+           [ -n "${SEEN_LABELS[${label}]:-}" ]; then
+            echo "ERROR: unsafe, empty, or duplicate evaluation method ${spec}"
+            exit 1
+        fi
+        SEEN_LABELS["${label}"]=1
+        evaluation_args+=(--method "${spec}")
+    done
+    evaluation_dependencies=()
+    [ "${#JOB_IDS[@]}" -gt 0 ] && evaluation_dependencies+=("${JOB_IDS[@]}")
+    if [ -n "${EVALUATION_DEPENDENCY}" ]; then
+        IFS=':' read -r -a extra_dependencies <<< "${EVALUATION_DEPENDENCY}"
+        evaluation_dependencies+=("${extra_dependencies[@]}")
+    fi
+    if [ "${#evaluation_dependencies[@]}" -gt 0 ]; then
+        dependency="$(IFS=:; echo "${evaluation_dependencies[*]}")"
         evaluation_args+=(--dependency "${dependency}")
     fi
     [ "${RUN_SYNTHCITY}" = "0" ] && evaluation_args+=(--skip-synthcity)
     [ -n "${EVAL_BASELINE_METHOD:-}" ] && evaluation_args+=(--baseline-method "${EVAL_BASELINE_METHOD}")
     bash submit_query_suite_evaluation.sh "${evaluation_args[@]}"
+fi
+if [ -n "${EVALUATION_METHODS[*]:-}" ] && [ -z "${EVALUATION_OUTPUT}" ]; then
+    echo "ERROR: --evaluation-method requires --evaluation-output"
+    exit 1
 fi

@@ -16,7 +16,7 @@ TABDIFF_PROJECT_ROOT="${TABDIFF_PROJECT_ROOT:-/scratch/work/agrawaa4/TabDiff}"
 cd "${TABDIFF_PROJECT_ROOT}"
 export PYTHONUNBUFFERED=1
 
-METHOD_KIND="${METHOD_KIND:?set METHOD_KIND to doob, harpoon, diffputer, or great}"
+METHOD_KIND="${METHOD_KIND:?set METHOD_KIND to doob, harpoon, harpoon_style, diffputer, or great}"
 METHOD_LABEL="${METHOD_LABEL:?set METHOD_LABEL}"
 DATANAME="${DATANAME:-shoppers}"
 MODEL_NAME="${MODEL_NAME:-ft_periodic_seed0}"
@@ -31,8 +31,8 @@ NUM_SAMPLES="${NUM_SAMPLES:-1000}"
 BATCH_SIZE="${BATCH_SIZE:-1000}"
 NUM_TIMESTEPS="${NUM_TIMESTEPS:-50}"
 
-if [[ ! "${METHOD_KIND}" =~ ^(doob|harpoon|diffputer|great)$ ]]; then
-    echo "ERROR: METHOD_KIND must be doob, harpoon, diffputer, or great"
+if [[ ! "${METHOD_KIND}" =~ ^(doob|harpoon|harpoon_style|diffputer|great)$ ]]; then
+    echo "ERROR: METHOD_KIND must be doob, harpoon, harpoon_style, diffputer, or great"
     exit 1
 fi
 if [[ ! "${METHOD_LABEL}" =~ ^[A-Za-z0-9_.-]+$ ]]; then
@@ -126,6 +126,22 @@ for ((unit = BUNDLE_INDEX; unit < TOTAL_UNITS; unit += BUNDLE_COUNT)); do
             --batch-size "${BATCH_SIZE}" \
             --guidance-scale "${HARPOON_GUIDANCE_SCALE:-0.2}" \
             --seed "${sample_seed}" \
+            --device cuda
+    elif [ "${METHOD_KIND}" = "harpoon_style" ]; then
+        TABDIFF_PYTHON="${TABDIFF_PYTHON:-/scratch/work/agrawaa4/conda_envs/tabdiff/bin/python}"
+        [ -x "${TABDIFF_PYTHON}" ] || {
+            echo "ERROR: TabDiff Python not found: ${TABDIFF_PYTHON}"; exit 1;
+        }
+        "${TABDIFF_PYTHON}" -u sample_harpoon_style_tabdiff.py \
+            --dataname "${DATANAME}" \
+            --base-ckpt "${BASE_CHECKPOINT:?set BASE_CHECKPOINT}" \
+            --query-file "${query_file}" \
+            --num-samples "${NUM_SAMPLES}" \
+            --batch-size "${BATCH_SIZE}" \
+            --eta "${HARPOON_STYLE_ETA:?set HARPOON_STYLE_ETA}" \
+            --num-timesteps "${NUM_TIMESTEPS}" \
+            --seed "${sample_seed}" \
+            --output "${output}" \
             --device cuda
     else
         if [ "${METHOD_KIND}" = "great" ]; then

@@ -15,7 +15,7 @@ TRANSFORM=""
 SAMPLE_DIR="conditional_samples/shoppers/tabbyflow_conditional_unseen_test"
 EVALUATION_DIR=""
 NUM_SAMPLES=1000
-NUM_SEEDS=1
+NUM_SEEDS=5
 SEED_BASES=""
 BUNDLES=4
 SOLVER="dopri5"
@@ -39,7 +39,7 @@ Options:
   --evaluation-method L=DIR   Add existing samples to the comparison; repeatable
   --baseline-method LABEL     Paired-difference reference in evaluation
   --num-samples N             Rows per query and seed, default 1000
-  --num-seeds N               Default 1
+  --num-seeds N               Default 5
   --seed-bases CSV            Explicit seeds, overriding --num-seeds
   --bundles N                 Long array jobs, default 4
   --solver dopri5|euler|heun  Default official adaptive dopri5

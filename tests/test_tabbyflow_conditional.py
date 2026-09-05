@@ -47,14 +47,16 @@ class TruncatedNormalTest(unittest.TestCase):
         self.assertAlmostEqual(result.item(), math.sqrt(2.0 / math.pi), places=5)
 
     def test_result_is_inside_narrow_interval(self):
+        lower = torch.tensor([[-1.0]])
+        upper = torch.tensor([[-0.9]])
         result = truncated_normal_mean(
             torch.tensor([[20.0]]),
             torch.tensor([[1.0]]),
-            torch.tensor([[-1.0]]),
-            torch.tensor([[-0.9]]),
+            lower,
+            upper,
         )
-        self.assertGreaterEqual(result.item(), -1.0)
-        self.assertLessEqual(result.item(), -0.9)
+        self.assertGreaterEqual(result.item(), lower.item())
+        self.assertLessEqual(result.item(), upper.item())
 
 
 class ConditionalVelocityTest(unittest.TestCase):

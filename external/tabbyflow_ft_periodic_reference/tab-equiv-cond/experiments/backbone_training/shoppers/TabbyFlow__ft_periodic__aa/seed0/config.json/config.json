@@ -1,0 +1,56 @@
+{
+  "family": "TabbyFlow",
+  "family_key": "unimod_efvfm",
+  "variant": "ft_periodic",
+  "family_tweaks": {
+    "max_grad_norm": 1.0,
+    "warmup_epochs": 100
+  },
+  "denoiser": "ft_periodic",
+  "ft_kw": {
+    "num_layers": 6,
+    "d_token": 128,
+    "n_head": 8,
+    "factor": 4,
+    "bias": true,
+    "n_frequencies": 48,
+    "freq_sigma": 0.05
+  },
+  "learnable_schedule": false,
+  "dataset": "shoppers",
+  "seed": 0,
+  "d_num": 10,
+  "categories": [
+    10,
+    8,
+    13,
+    9,
+    20,
+    3,
+    2,
+    2
+  ],
+  "protocol": "aa_faithful",
+  "train_on": "trainval",
+  "n_train": 11097,
+  "recipe": {
+    "epochs": 10000,
+    "lr": 0.001,
+    "weight_decay": 0.0,
+    "batch_size": 4096,
+    "ema_decay": 0.997,
+    "lr_factor": 0.9,
+    "lr_patience": 50,
+    "c_lambda": 1.0,
+    "d_lambda": 1.0,
+    "closs_weight_schedule": "anneal",
+    "select_after_epoch": 4000,
+    "ckpt_every_epochs": 2000
+  },
+  "epochs_run": 10000,
+  "best_raw_train_loss": 17.46062041553622,
+  "best_ema_train_loss": 17.545436122626498,
+  "norm_scheme": "quantile",
+  "norm_file": "/scratch/work/royi1/code/2026-tables/tab-equiv-cond/experiments/backbone_training/shoppers/TabbyFlow__ft_periodic__aa/seed0/num_transform.joblib",
+  "selected_checkpoint": "checkpoints/best_ema.pt"
+}

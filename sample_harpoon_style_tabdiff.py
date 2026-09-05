@@ -31,49 +31,29 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> None:
-    args = parse_args()
-    if args.num_samples <= 0 or args.batch_size <= 0:
-        raise ValueError("sample and batch sizes must be positive")
-    if args.num_timesteps < 2:
-        raise ValueError("num-timesteps must be at least 2")
-    if args.eta <= 0:
-        raise ValueError("eta must be positive")
-
-    device = torch.device(args.device)
-    torch.manual_seed(args.seed)
-    np.random.seed(args.seed)
+def sample_query(
+    runtime,
+    query,
+    *,
+    num_samples: int,
+    batch_size: int,
+    eta: float,
+    seed: int,
+):
+    """Generate one query without rebuilding the frozen TabDiff runtime."""
+    torch.manual_seed(seed)
+    np.random.seed(seed)
     if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(args.seed)
+        torch.cuda.manual_seed_all(seed)
 
-    base_checkpoint = resolve_base_checkpoint(
-        args.dataname, args.base_ckpt, args.base_exp_name
-    )
-    runtime = load_doob_runtime(args.dataname, base_checkpoint, device)
-    query_path = Path(args.query_file)
-    with query_path.open("r", encoding="utf-8") as stream:
-        specification = json.load(stream)
-    query = load_structured_query_suite(
-        query_path.parent,
-        runtime,
-        query_ids=[specification["query_id"]],
-    )[0]
-
-    runtime.diffusion.num_timesteps = args.num_timesteps
+    device = runtime.diffusion.device
     runtime.diffusion.set_harpoon_style_guidance(
         query.model_kwargs(device, torch.float32),
-        strength=args.eta,
+        strength=eta,
     )
-
-    print(f"Query: {query.query_id}")
-    print("Method: HARPOON-style manifold guidance on frozen TabDiff")
-    print("Constraint loss: squared ReLU intervals plus categorical set-mass loss")
-    print("Manifold term: full constraint gradient through the frozen dirty estimate Q_t")
-    print(f"Guidance eta: {args.eta}")
-    print(f"Reverse steps: {args.num_timesteps}")
     samples = runtime.diffusion.sample_all(
-        args.num_samples,
-        min(args.batch_size, args.num_samples),
+        num_samples,
+        min(batch_size, num_samples),
         fixed_categorical={},
         categorical_start_mode="full",
     )
@@ -89,10 +69,22 @@ def main() -> None:
         int(key): value for key, value in runtime.info["idx_name_mapping"].items()
     }
     frame.rename(columns=index_to_name, inplace=True)
+    return frame
+
+
+def save_query_result(
+    frame,
+    query,
+    output: str | Path,
+    *,
+    eta: float,
+    num_timesteps: int,
+    base_checkpoint: str,
+) -> float:
+    """Write samples and diagnostics, returning the raw joint hit rate."""
     constraint_report, joint = raw_constraint_report(frame, query.specification)
     modality_report = raw_modality_constraint_report(frame, query.specification)
-
-    output = Path(args.output)
+    output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     frame.to_csv(output, index=False)
     with output.with_suffix(".query.json").open("w", encoding="utf-8") as stream:
@@ -105,13 +97,63 @@ def main() -> None:
         "raw_joint_violation_rate": float(1.0 - joint.mean()),
         "method": "harpoon_style_guidance_on_tabdiff",
         "manifold_guidance": "grad_x_t L_inf(Q_t(x_t), query) through frozen denoiser",
-        "guidance_eta": args.eta,
-        "num_timesteps": args.num_timesteps,
+        "guidance_eta": eta,
+        "num_timesteps": num_timesteps,
         "base_checkpoint": base_checkpoint,
     }
     with output.with_suffix(".constraints.json").open("w", encoding="utf-8") as stream:
         json.dump(report, stream, indent=2)
-    print(f"Raw full-query hit rate: {joint.mean():.2%}")
+    return float(joint.mean())
+
+
+def main() -> None:
+    args = parse_args()
+    if args.num_samples <= 0 or args.batch_size <= 0:
+        raise ValueError("sample and batch sizes must be positive")
+    if args.num_timesteps < 2:
+        raise ValueError("num-timesteps must be at least 2")
+    if args.eta <= 0:
+        raise ValueError("eta must be positive")
+
+    device = torch.device(args.device)
+    base_checkpoint = resolve_base_checkpoint(
+        args.dataname, args.base_ckpt, args.base_exp_name
+    )
+    runtime = load_doob_runtime(args.dataname, base_checkpoint, device)
+    query_path = Path(args.query_file)
+    with query_path.open("r", encoding="utf-8") as stream:
+        specification = json.load(stream)
+    query = load_structured_query_suite(
+        query_path.parent,
+        runtime,
+        query_ids=[specification["query_id"]],
+    )[0]
+
+    runtime.diffusion.num_timesteps = args.num_timesteps
+    print(f"Query: {query.query_id}")
+    print("Method: HARPOON-style manifold guidance on frozen TabDiff")
+    print("Constraint loss: squared ReLU intervals plus categorical set-mass loss")
+    print("Manifold term: full constraint gradient through the frozen dirty estimate Q_t")
+    print(f"Guidance eta: {args.eta}")
+    print(f"Reverse steps: {args.num_timesteps}")
+    frame = sample_query(
+        runtime,
+        query,
+        num_samples=args.num_samples,
+        batch_size=args.batch_size,
+        eta=args.eta,
+        seed=args.seed,
+    )
+    hit_rate = save_query_result(
+        frame,
+        query,
+        args.output,
+        eta=args.eta,
+        num_timesteps=args.num_timesteps,
+        base_checkpoint=base_checkpoint,
+    )
+    print(f"Raw full-query hit rate: {hit_rate:.2%}")
+    output = Path(args.output)
     print(f"Saved {output}")
 
 

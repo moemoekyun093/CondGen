@@ -71,6 +71,35 @@ echo "Bundle       : $((BUNDLE_INDEX + 1))/${BUNDLE_COUNT}"
 echo "Sample root  : ${SAMPLE_ROOT}/${METHOD_LABEL}"
 nvidia-smi
 
+if [ "${METHOD_KIND}" = "harpoon_style" ]; then
+    TABDIFF_PYTHON="${TABDIFF_PYTHON:-/scratch/work/agrawaa4/conda_envs/tabdiff/bin/python}"
+    [ -x "${TABDIFF_PYTHON}" ] || {
+        echo "ERROR: TabDiff Python not found: ${TABDIFF_PYTHON}"; exit 1;
+    }
+    persistent_args=(
+        --dataname "${DATANAME}"
+        --query-dir "${QUERY_DIR}"
+        --query-split "${QUERY_SPLIT}"
+        --base-ckpt "${BASE_CHECKPOINT:?set BASE_CHECKPOINT}"
+        --output-dir "${SAMPLE_ROOT}/${METHOD_LABEL}"
+        --seed-bases "${SEED_BASES}"
+        --bundle-index "${BUNDLE_INDEX}"
+        --bundle-count "${BUNDLE_COUNT}"
+        --num-samples "${NUM_SAMPLES}"
+        --batch-size "${BATCH_SIZE}"
+        --eta "${HARPOON_STYLE_ETA:?set HARPOON_STYLE_ETA}"
+        --num-timesteps "${NUM_TIMESTEPS}"
+        --device cuda
+    )
+    [ -n "${QUERY_SPLIT_MANIFEST}" ] && persistent_args+=(
+        --query-split-manifest "${QUERY_SPLIT_MANIFEST}"
+    )
+    [ "${QUERY_TEST_SUPPORTED_ONLY:-0}" = 1 ] && \
+        persistent_args+=(--test-supported-only)
+    exec "${TABDIFF_PYTHON}" -u sample_harpoon_style_tabdiff_bundle.py \
+        "${persistent_args[@]}"
+fi
+
 sampled=0
 reused=0
 for ((unit = BUNDLE_INDEX; unit < TOTAL_UNITS; unit += BUNDLE_COUNT)); do
@@ -126,22 +155,6 @@ for ((unit = BUNDLE_INDEX; unit < TOTAL_UNITS; unit += BUNDLE_COUNT)); do
             --batch-size "${BATCH_SIZE}" \
             --guidance-scale "${HARPOON_GUIDANCE_SCALE:-0.2}" \
             --seed "${sample_seed}" \
-            --device cuda
-    elif [ "${METHOD_KIND}" = "harpoon_style" ]; then
-        TABDIFF_PYTHON="${TABDIFF_PYTHON:-/scratch/work/agrawaa4/conda_envs/tabdiff/bin/python}"
-        [ -x "${TABDIFF_PYTHON}" ] || {
-            echo "ERROR: TabDiff Python not found: ${TABDIFF_PYTHON}"; exit 1;
-        }
-        "${TABDIFF_PYTHON}" -u sample_harpoon_style_tabdiff.py \
-            --dataname "${DATANAME}" \
-            --base-ckpt "${BASE_CHECKPOINT:?set BASE_CHECKPOINT}" \
-            --query-file "${query_file}" \
-            --num-samples "${NUM_SAMPLES}" \
-            --batch-size "${BATCH_SIZE}" \
-            --eta "${HARPOON_STYLE_ETA:?set HARPOON_STYLE_ETA}" \
-            --num-timesteps "${NUM_TIMESTEPS}" \
-            --seed "${sample_seed}" \
-            --output "${output}" \
             --device cuda
     else
         if [ "${METHOD_KIND}" = "great" ]; then

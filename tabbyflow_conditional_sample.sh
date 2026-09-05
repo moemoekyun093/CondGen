@@ -26,7 +26,7 @@ arguments=(
     --seed-bases "${SEED_BASES:-10000}"
     --bundle-index "${SLURM_ARRAY_TASK_ID:-0}"
     --bundle-count "${BUNDLE_COUNT:-1}"
-    --solver "${TABBYFLOW_SOLVER:-dopri5}"
+    --solver "${TABBYFLOW_SOLVER:-heun}"
     --steps "${TABBYFLOW_STEPS:-50}"
     --device cuda
     --query-split "${QUERY_SPLIT:-test}"

@@ -366,7 +366,7 @@ def sample_conditioned_state(
     *,
     batch_size: int,
     seed: int,
-    solver: str = "dopri5",
+    solver: str = "heun",
     steps: int = 50,
     terminal_time: float = 0.999,
     rtol: float = 1e-5,

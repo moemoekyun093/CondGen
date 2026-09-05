@@ -41,7 +41,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed-bases", default="10000")
     parser.add_argument("--bundle-index", type=int, default=0)
     parser.add_argument("--bundle-count", type=int, default=1)
-    parser.add_argument("--solver", choices=("dopri5", "euler", "heun"), default="dopri5")
+    parser.add_argument("--solver", choices=("dopri5", "euler", "heun"), default="heun")
     parser.add_argument("--steps", type=int, default=50)
     parser.add_argument("--device", default="cuda")
     return parser.parse_args()

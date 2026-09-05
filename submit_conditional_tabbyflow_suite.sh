@@ -18,7 +18,7 @@ NUM_SAMPLES=1000
 NUM_SEEDS=5
 SEED_BASES=""
 BUNDLES=4
-SOLVER="dopri5"
+SOLVER="heun"
 STEPS=50
 RUN_SYNTHCITY=0
 BASELINE_METHOD=""
@@ -42,7 +42,7 @@ Options:
   --num-seeds N               Default 5
   --seed-bases CSV            Explicit seeds, overriding --num-seeds
   --bundles N                 Long array jobs, default 4
-  --solver dopri5|euler|heun  Default official adaptive dopri5
+  --solver dopri5|euler|heun  Default dependency-free 50-step Heun
   --steps N                   Fixed steps for Euler/Heun, default 50
   --with-synthcity            Also submit Alpha Precision/Beta Recall
 EOF
@@ -87,11 +87,18 @@ if [ -z "${SEED_BASES}" ]; then
 fi
 
 TABBYFLOW_PYTHON="${TABBYFLOW_PYTHON:-$(command -v python)}"
-"${TABBYFLOW_PYTHON}" -c 'import torch, torchdiffeq, pandas, sklearn, joblib' || {
+"${TABBYFLOW_PYTHON}" -c 'import torch, pandas, sklearn, joblib' || {
     echo "ERROR: ${TABBYFLOW_PYTHON} lacks a required TabbyFlow dependency"
     echo "Set TABBYFLOW_PYTHON to the compatible environment's Python executable."
     exit 1
 }
+if [ "${SOLVER}" = "dopri5" ]; then
+    "${TABBYFLOW_PYTHON}" -c 'import torchdiffeq' || {
+        echo "ERROR: --solver dopri5 requires torchdiffeq"
+        echo "Use the dependency-free default: --solver heun --steps 50"
+        exit 1
+    }
+fi
 
 DATA_DIR="${DATA_DIR:-data/${DATANAME}}"
 INFO_FILE="${INFO_FILE:-data/${DATANAME}/info.json}"
